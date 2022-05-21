@@ -9,6 +9,38 @@ MicroDS3231 Rtc;
 #define KEYBOARD_INTERVAL 10
 #define PIEZO_PIN 8
 
+/* Описатели шаблона:
+  % - начало шаблона
+  С - выводимая символьная вличина (не редактируется) номер величины между % и знаком
+  H - текущее кол-во часов (редактируется)
+  M - текущее кол-во минут (редактируется)
+  h - кол-во часов из EEPROM (редактируется) адрес памяти между % и знаком
+  m - кол-во минут из EEPROM (редактируется) адрес памяти между % и знаком
+  c - выводимая символьная вличина из EEPROM (редактируется) номер величины и адрес памяти между % и знаком
+*/
+
+char *displayMode[][4] = {
+  {"%1C %H%M%2C%3C", "Sd%0h%1m  ", "Sn%2h%3m  ", "Sb%4h%5m %6c"}
+};
+
+struct DisplayPart {
+  byte edited;
+  byte value;
+  byte length;
+  byte maxValue;
+  byte minValue;
+  char charValue;
+};
+
+struct TimeHour {
+  byte hour;
+  byte minute;
+};
+struct TimeMinute {
+  byte minute;
+  byte second;
+};
+
 struct {
   byte main;
   byte secondary;
@@ -19,15 +51,6 @@ struct {
   byte value;
   bool blinkOff;
 } settMode;
-
-struct TimeHour {
-  byte hour;
-  byte minute;
-};
-struct TimeMinute {
-  byte minute;
-  byte second;
-};
 
 struct {
   DateTime now;
@@ -55,13 +78,12 @@ void setup() {
   timeSettings.alarmOn = readEEPROM(6);
   timeSettings.timerSet.minute = readEEPROM(7);
   timeSettings.timerSet.second = readEEPROM(8);
-  Serial.begin(9600);           //  setup serial
-  Serial.println(currMode.main); // отладка
-
+  /*Serial.begin(9600);           //  setup serial
+  Serial.println(currMode.main); // отладка*/
 
 }
 
-byte readEEPROM(byte _adress) {
+byte readEEPROM(int _adress) {
   byte _value = EEPROM.read(_adress);
   if (_value == 255) return 0;
   else return _value;
@@ -77,7 +99,7 @@ void loop() {
 void readKeyboard() {
   static unsigned long _LastKeyboardTime = 0; // последнее время считывания клавиатуры
   bool _needDisplay = false; // есть необходимость обновить дисплей
-#define KEYBOARD_INTERVAL 10
+  #define KEYBOARD_INTERVAL 10
 
   if ((millis() - _LastKeyboardTime) > KEYBOARD_INTERVAL) {
     _LastKeyboardTime = millis();
@@ -118,8 +140,6 @@ bool keyLeftRightPressed(bool Left) {
   else if ((!Left) && (settMode.value == _maxValue)) settMode.value = _minValue;
   else if (Left) settMode.value--;
   else settMode.value++;
-
-  Serial.println(settMode.value); // отладка
 
   return true;
 }
@@ -232,7 +252,7 @@ bool keyModePressed() {
             case 3:
               EEPROM.update(5, settMode.value);
               timeSettings.alarmSet.minute = settMode.value;
-              settMode.value = timeSettings.alarmOn;              
+              settMode.value = timeSettings.alarmOn;
               break;
             default:
               return false;
@@ -265,7 +285,7 @@ bool keyModePressed() {
   if (_nextSetting) settMode.setting++;
   else settMode.setting = 0;
   settMode.blinkOff = false;
-  
+
   return true;
 }
 
@@ -309,87 +329,143 @@ void loopTime() {
 
 }
 
-// общая функция вывода дисплея
-void printDisplay() {
+DisplayPart workDisplayPart(int toDo, char _c, char _charAdress[5]) {
+  DisplayPart _return;
 
-  switch (currMode.main) {
-    case 0:
-      printDisplay0_Time();
-      break;
-    case 1:
-      break;
-    default:
-      break;
+  // отладка
+  /*Serial.print("IN:");
+  Serial.print(_c);
+  Serial.print("-");
+  Serial.println(_charAdress);*/
+  
+  int _adress = atoi(_charAdress);
+  _return.minValue = 0;
+  _return.edited = false;
+  _return.length = 0;
+  _return.charValue = ' ';
+  if (_c == 'M' || _c == 'm' || _c == 'S' || _c == 's') {
+    _return.maxValue = 59;
+    _return.edited = true;
+    _return.length = 2;
+    if (_c == 'M') _return.value = timeSettings.now.minute;
+    else if (_c == 'S') _return.value = timeSettings.now.second;
+    else _return.value = readEEPROM(_adress);
   }
+  else if (_c == 'H' || _c == 'h') {
+    _return.maxValue = 23;
+    _return.edited = true;
+    _return.length = 2;
+    if (_c == 'H') _return.value = timeSettings.now.hour;
+    else _return.value = readEEPROM(_adress);
+  }
+  else if (_c == 'c') {
+    _return.maxValue = 1;
+    _return.edited = true;
+    _return.length = 1;
+    _return.value = readEEPROM(_adress);
+  }
+  else if (_c == 'C') {
+    if (_adress == 1) {
+      if (timeSettings.nowMorning) _return.charValue = 'd';
+      else _return.charValue = 'n';
+    }
+    else if (_adress == 2) {
+      if (timeSettings.timerOn) _return.charValue = 't';
+      else _return.charValue = ' ';
+    }
+    else if (_adress == 3) {
+      if (readEEPROM(6) == 1) _return.charValue = 'b';
+      else _return.charValue = ' ';
+    }
+    else _return.charValue = 'E';
+  }
+  else _return.charValue = 'E';
+
+  // отладка
+  /*Serial.print("OUT:");
+  Serial.print(_return.value);
+  Serial.print("-");
+  Serial.println(_return.charValue);*/
+
+  return _return;
 }
 
-// функция вывода дисплея в режиме 0: вывод времени
-void printDisplay0_Time() {
+bool itNumber(char _c) {
+  return (_c == '0' || _c == '1' || _c == '2' || _c == '3' || _c == '4' || _c == '5' || _c == '6' || _c == '7' || _c == '8' || _c == '9');
+}
 
-  char _s[8];
-  String _s0;
-  String _s1;
-  byte b1;
-  byte b2;
-  byte b3;
+// общая функция вывода дисплея
+void printDisplay() {
+  bool _itData;
+  char _c;
+  char _toDisplay[9];
+  char _charAdress[5];
+  char _strValue[2];
+  byte _value;
+  int _i0 = 0;
+  int _i1 = 0;
+  int _i2 = 0;
+  int _i3 = 0;
+  int _adress;
+  DisplayPart _displayPart;
 
-  switch (currMode.secondary) {
-    case 0:
-      if (timeSettings.nowMorning) _s0 = String("d "); else _s0 = String("n ");
-      b1 = timeSettings.now.hour;
-      b2 = timeSettings.now.minute;
-      if (timeSettings.timerOn) _s1 = String("t"); else _s1 = String(" ");
-      if (timeSettings.alarmOn == 1) _s1.concat("b"); else _s1.concat(" ");
-      break;
-    case 1:
-      _s0 = String("Sd");
-      b1 = timeSettings.morning.hour;
-      b2 = timeSettings.morning.minute;
-      _s1 = String("  ");
-      break;
-    case 2:
-      _s0 = String("Sn");
-      b1 = timeSettings.evening.hour;
-      b2 = timeSettings.evening.minute;
-      _s1 = String("  ");
-      break;
-    case 3:
-      _s0 = String("Sb");
-      b1 = timeSettings.alarmSet.hour;
-      b2 = timeSettings.alarmSet.minute;
-      if (settMode.setting == 3) {
-        if (settMode.value == 1) _s1 = String(" 1"); else _s1 = String(" 0");
+  _itData = false;
+  //Serial.println(displayMode[currMode.main][currMode.secondary]); // отладка
+  _c = displayMode[currMode.main][currMode.secondary][_i0];
+  while (_c != '\0') {
+    _i0++;
+    if (_itData) {
+      if (itNumber(_c)) {
+        _charAdress[_i2] = _c;
+        _i2++;
       }
       else {
-        if (timeSettings.alarmOn == 1) _s1 = String(" 1"); else _s1 = String(" 0");
+        _itData = false;
+        _charAdress[_i2] = '\0';
+        _displayPart = workDisplayPart(0, _c, _charAdress);
+        if (_displayPart.edited) {
+          _i3++;
+          if (_i3 == settMode.setting) _value = settMode.value;
+          else _value = _displayPart.value;
+          if (_i3 == settMode.setting && settMode.blinkOff) {
+            for (int i = 0; i < _displayPart.length; i++) {
+              _toDisplay[_i1] = ' ';
+              _i1++;
+            }
+          }
+          else {
+            if (_displayPart.length == 1) {
+              sprintf(_strValue, "%1d", _value);
+              _toDisplay[_i1] = _strValue[0];
+              _i1++;
+            }
+            else if (_displayPart.length == 2) {
+              sprintf(_strValue, "%02d", _value);
+              _toDisplay[_i1] = _strValue[0];
+              _i1++;
+              _toDisplay[_i1] = _strValue[1];
+              _i1++;
+            }
+          }
+        }
+        else {
+          _toDisplay[_i1] = _displayPart.charValue;
+          _i1++;
+        }
       }
-      break;
+    }
+    else if (_c == '%') {
+      _itData = true;
+      _i2 = 0;
+    }
+    else {
+      _toDisplay[_i1] = _c;
+      _i1++;
+    }
+    _c = displayMode[currMode.main][currMode.secondary][_i0];
   }
-
-  if (settMode.setting == 1) b1 = settMode.value;
-  if (settMode.setting == 2) b2 = settMode.value;  
-
-  if ((settMode.blinkOff) && (settMode.setting == 1)) _s0.concat("  ");
-  else {
-    char _sTemp[2];
-    sprintf(_sTemp, "%02d", b1 % 99);
-    _s0.concat(_sTemp);
-  }
-
-  if ((settMode.blinkOff) && (settMode.setting == 2)) _s0.concat("  ");
-  else {
-    char _sTemp[2];
-    sprintf(_sTemp, "%02d", b2 % 99);
-    _s0.concat(_sTemp);
-  }
-
-  if ((settMode.blinkOff) && (settMode.setting == 3)) _s0.concat("  ");
-  else _s0.concat(_s1);
-
-  char _sTemp[9];
-  _s0.toCharArray(_sTemp, 9);
-
-  Module.setDisplayToString(_sTemp, 0, false);
+  _toDisplay[_i1] = '\0';
+  Module.setDisplayToString(_toDisplay, 0, false);
 }
 
 // Функция анализа нажатия клавиатуры
