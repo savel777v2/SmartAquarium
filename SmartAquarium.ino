@@ -17,6 +17,7 @@ struct CurrSettings {
   byte timerMinute;
   byte timerSecond;
   byte setting;
+  unsigned long alarmStartSound;
 };
 
 struct {
@@ -31,6 +32,10 @@ struct {
 
 CurrSettings currSettings;
 
+// frequency, duration
+#define NUMBER_OF_NOTES 10
+unsigned int alarmMelody[14][2] = {{2500, 50}, {0, 100}, {2500, 50}, {0, 100}, {2500, 50}, {0, 100}, {2500, 50}, {0, 100}, {2500, 50}, {0, 3000}};
+
 /* Описатели шаблона:
   % - начало шаблона
   С - выводимая символьная вличина (не редактируется) номер величины между % и знаком
@@ -40,7 +45,6 @@ CurrSettings currSettings;
   m - кол-во минут из EEPROM (редактируется) адрес памяти между % и знаком
   c - выводимая символьная вличина из EEPROM (редактируется) номер величины и адрес памяти между % и знаком
 */
-
 char *displayMode[][5] = {
   {"%1C %H%M%2C%3C", "St%7n%8a %t", "Sd%0h%1m  ", "Sn%2h%3m  ", "Sb%4h%5m %6c"}
 };
@@ -69,7 +73,7 @@ class ModePart {
     char get_typeOfPart() {
       return typeOfPart;
     };
-    
+
     byte get_value() {
       return value;
     };
@@ -82,7 +86,7 @@ class ModePart {
       char _charAdress[10];
 
       typeOfPart = 'E';
-      value = 0;      
+      value = 0;
       isNull = 0;
       charValue[0] = '\0';
       adress = 0;
@@ -90,7 +94,7 @@ class ModePart {
       maxValue = 0;
       edited = false;
       lengthValue = 0;
-      
+
       if (_charMode[0] != '%') {
         typeOfPart = 'T';
         lengthValue = 0;
@@ -271,7 +275,7 @@ class ModePart {
   private:
 
     byte value;
-    bool edited;    
+    bool edited;
     int isNull;
     char typeOfPart;
     char charValue[10];
@@ -288,13 +292,11 @@ void setup() {
 
   pinMode(PIEZO_PIN, OUTPUT); // настраиваем вывод 2 на выход
   tone(PIEZO_PIN, 200);
-  delay(500);
+  delay(100);
   noTone(PIEZO_PIN);
 
   /*Serial.begin(9600);
-  Serial.println("debugging");
-  Serial.print("Esc setting != 0: ");     
-  debugEditingModePart();*/
+  Serial.println("debugging");*/
 
   initModeForParts(displayMode[currMode.main][currMode.secondary]);
   EditingModePart.set_isNull(1);
@@ -307,7 +309,7 @@ void setup() {
   Serial.print(EditingModePart.get_isNull());
   Serial.print(",value: ");
   Serial.println(EditingModePart.get_value());
-}*/
+  }*/
 
 void loop() {
 
@@ -381,10 +383,15 @@ bool keyDownUpPressed(bool Down) {
 bool keyEscPressed() {
 
   /*Serial.print("Esc 0: ");
-  debugEditingModePart();*/
+    debugEditingModePart();*/
+
+  if (currSettings.alarmStartSound != 0) {
+    currSettings.alarmStartSound = 0;
+    return false;
+  }
 
   if (currSettings.setting != 0) {
-    EditingModePart.set_isNull(1);    
+    EditingModePart.set_isNull(1);
     currSettings.setting = 0;
     settMode.blinkOff = false;
   }
@@ -395,13 +402,13 @@ bool keyEscPressed() {
   else if (currMode.main != 0) {
     currMode.main = 0;
     initModeForParts(displayMode[currMode.main][currMode.secondary]);
-  }  
+  }
   else return false;
 
   /*Serial.print("Esc 1: ");
-  debugEditingModePart();*/
-  
-  return true;  
+    debugEditingModePart();*/
+
+  return true;
 }
 
 // обработка нажатия клавиши Mode
@@ -411,15 +418,15 @@ bool keyModePressed() {
   bool _findSetting = false;
 
   /*Serial.print("Mode 0: ");
-  debugEditingModePart();*/
+    debugEditingModePart();*/
 
   if (EditingModePart.get_isNull() == 0) {
     EditingModePart.writeValue(&currSettings);
-    EditingModePart.set_isNull(1);    
+    EditingModePart.set_isNull(1);
   }
 
   currSettings.setting++;
-  
+
   for (int _i = 0; (_i < 8 && !_findSetting && modeForParts[_i][0] != '\0') ; _i++) {
     EditingModePart.initialize(modeForParts[_i], &currSettings);
     if (EditingModePart.get_edited()) {
@@ -438,29 +445,53 @@ bool keyModePressed() {
   }
 
   /*Serial.print("Mode 1: ");
-  debugEditingModePart();*/
+    debugEditingModePart();*/
 
   return true;
 }
 
 // общая функция изменения времени
 void loopTime() {
-  static unsigned long _lastLoopTime = 0; // последнее время обработки изменения времени
-  static unsigned long _lastTimerTime = 0; // последнее время обработки изменения времени
-  bool _needDisplay = false; // есть необходимость обновить дисплей
+  static unsigned long _lastLoopTime = 0;
+  static unsigned long _lastTimerTime = 0;
+  static unsigned long _nextNoteTime = 0;
+  static byte _iNote = 0;
+  bool _needDisplay = false;
 
+  // Loop once First time
   if (_lastLoopTime == 0) {
     currSettings.now = Rtc.getTime();
     _lastLoopTime  = millis();
     _needDisplay = true;
   }
 
+  // Alarm sound loop
+  if (currSettings.alarmStartSound != 0) {
+    if ((millis() - currSettings.alarmStartSound) >= 60000) {
+      currSettings.alarmStartSound = 0;
+      _nextNoteTime = 0;
+      noTone(PIEZO_PIN);
+    }
+    else if (millis() > _nextNoteTime) {
+      if (alarmMelody[_iNote][0] == 0) noTone(PIEZO_PIN);
+      else tone(PIEZO_PIN, alarmMelody[_iNote][0]);
+      _nextNoteTime = millis() + alarmMelody[_iNote][1];
+      if (++_iNote == NUMBER_OF_NOTES) _iNote = 0;
+    }
+  }
+  else if (_nextNoteTime != 0) {
+    _nextNoteTime = 0;
+    noTone(PIEZO_PIN);
+  }
+
+  // Loop decrement timer
   if (currSettings.timerOn && ((millis() - _lastTimerTime) > 1000)) {
     if (_lastTimerTime == 0) currSettings.timerSecond++; // first second compensation
     _lastTimerTime  = millis();
     if (currSettings.timerSecond == 0) {
       if (currSettings.timerMinute == 0) {
         currSettings.timerOn = false;
+        currSettings.alarmStartSound = millis();
         _lastTimerTime  = 0;
         if ((currMode.main == 0) && (currMode.secondary == 0)) _needDisplay = true;
       }
@@ -471,6 +502,7 @@ void loopTime() {
     if ((currMode.main == 0) && (currMode.secondary == 1)) _needDisplay = true;
   }
 
+  // Loop blink Settings
   if (currSettings.setting > 0) {
     if ((millis() - settMode.lastBlinkTime) > 500) {
       settMode.lastBlinkTime  = millis();
@@ -479,6 +511,7 @@ void loopTime() {
     }
   }
 
+  // Loop increment local time
   if ((millis() - _lastLoopTime) > 1000) {
     // секунда оттикала
     _lastLoopTime  = millis();
