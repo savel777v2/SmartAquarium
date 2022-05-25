@@ -12,7 +12,7 @@ MicroDS3231 Rtc;
 struct CurrSettings {
   DateTime now;
   byte alarmOn;
-  bool nowMorning;
+  bool nowDay;
   bool timerOn;
   byte timerMinute;
   byte timerSecond;
@@ -36,6 +36,8 @@ CurrSettings currSettings;
 #define NUMBER_OF_NOTES 10
 unsigned int alarmMelody[14][2] = {{2500, 50}, {0, 100}, {2500, 50}, {0, 100}, {2500, 50}, {0, 100}, {2500, 50}, {0, 100}, {2500, 50}, {0, 3000}};
 
+byte lampPinsLevel[][2] = {{9, 0}, {10, 0}, {11, 0}}; // Pin from left to right, Level
+
 /* Описатели шаблона:
   % - начало шаблона
   С - выводимая символьная вличина (не редактируется) номер величины между % и знаком
@@ -45,8 +47,9 @@ unsigned int alarmMelody[14][2] = {{2500, 50}, {0, 100}, {2500, 50}, {0, 100}, {
   m - кол-во минут из EEPROM (редактируется) адрес памяти между % и знаком
   c - выводимая символьная вличина из EEPROM (редактируется) номер величины и адрес памяти между % и знаком
 */
-char *displayMode[][5] = {
-  {"%1C %H%M%2C%3C", "St%7n%8a %t", "Sd%0h%1m  ", "Sn%2h%3m  ", "Sb%4h%5m %6c"}
+char *displayMode[][7] = {
+  {"%1C %H%M%2C%3C", "St%7n%8a %t", "Sd%0h%1m  ", "Sn%2h%3m  ", "Sb%4h%5m %6c", "Sdn %9m %10c", ""},
+  {""}
 };
 
 char modeForParts[8][10];
@@ -228,7 +231,7 @@ class ModePart {
       if (typeOfPart == 'C') {
         char _addChar;
         if (adress == 1) {
-          if (_currSettingsPtr->nowMorning) _addChar = 'd';
+          if (_currSettingsPtr->nowDay) _addChar = 'd';
           else _addChar = 'n';
         }
         else if (adress == 2) {
@@ -294,12 +297,15 @@ void setup() {
   tone(PIEZO_PIN, 200);
   delay(100);
   noTone(PIEZO_PIN);
-
-  /*Serial.begin(9600);
-    Serial.println("debugging");*/
+  for (int i = 0; i < 3; i++) {
+    pinMode(lampPinsLevel[i][0], OUTPUT);
+  }
 
   initModeForParts(displayMode[currMode.main][currMode.secondary]);
   EditingModePart.set_isNull(1);
+
+  Serial.begin(9600);
+  Serial.println("debugging");
 
 }
 
@@ -310,6 +316,17 @@ void setup() {
   Serial.print(",value: ");
   Serial.println(EditingModePart.get_value());
   }*/
+
+/*void debugOnOffLamps(char _char[10], int _i, int _nowInMinutes, int _minutesLamp) {
+  Serial.print(_char);
+  Serial.print(" _i: ");
+  Serial.print(_i);
+  Serial.print(" _nowInMinutes: ");
+  Serial.print(_nowInMinutes);
+  Serial.print(" _minutesLamp: ");
+  Serial.println(_minutesLamp);
+}*/
+
 
 void loop() {
 
@@ -361,15 +378,11 @@ bool keyLeftRightPressed(bool Left) {
 
 // обработка нажатия клавиш Down,Up
 bool keyDownUpPressed(bool Down) {
-  byte _minValue = 0;
-  byte _maxValue;
 
   if (currSettings.setting != 0) return false;
 
-  if (currMode.main == 0) _maxValue = 4;
-
-  if ((Down) && (currMode.secondary == _maxValue)) return false;
-  if ((!Down) && (currMode.secondary == _minValue)) return false;
+  if ((Down) && (displayMode[currMode.main][currMode.secondary + 1][0] == '\0')) return false;
+  if ((!Down) && (currMode.secondary == 0)) return false;
 
   if (Down) currMode.secondary++;
   else currMode.secondary--;
@@ -457,8 +470,8 @@ void conditionControl() {
   int _morningInMinutes = (int)EEPROM.read(0) * 60 + EEPROM.read(1);
   int _eveningInMinutes = (int)EEPROM.read(2) * 60 + EEPROM.read(3);
   int _nowInMinutes = (int)currSettings.now.hour * 60 + currSettings.now.minute;
-  if (_eveningInMinutes > _morningInMinutes) currSettings.nowMorning = (_nowInMinutes >= _morningInMinutes && _nowInMinutes < _eveningInMinutes);
-  else currSettings.nowMorning = (_nowInMinutes >= _morningInMinutes || _nowInMinutes < _eveningInMinutes);
+  if (_eveningInMinutes > _morningInMinutes) currSettings.nowDay = (_nowInMinutes >= _morningInMinutes && _nowInMinutes < _eveningInMinutes);
+  else currSettings.nowDay = (_nowInMinutes >= _morningInMinutes || _nowInMinutes < _eveningInMinutes);
 
   // starting alarm
   if (currSettings.alarmStartSound == 0) {
@@ -467,6 +480,51 @@ void conditionControl() {
       if (_nowInMinutes == _alarmInMinutes) currSettings.alarmStartSound = millis();
     }
   }
+
+  // turn on\off lamps
+  if (!currSettings.nowDay) {
+    for (int i = 0; i < 3; i++) lampPinsLevel[i][1] = 0;
+  }
+  else if (EEPROM.read(10) == 0) {
+    for (int i = 0; i < 3; i++) lampPinsLevel[i][1] = 1;
+  }
+  else {
+    int _minutesBetweenLamps = EEPROM.read(9);
+    for (int i = 0; i < 3; i++) {
+      // after morning
+      int _minutesLamp = _morningInMinutes + _minutesBetweenLamps * i;
+      lampPinsLevel[i][1] = 0;
+      if (_nowInMinutes >= _morningInMinutes) {
+        if (_nowInMinutes >= _minutesLamp) lampPinsLevel[i][1] = 1;
+      }
+      else if (_minutesLamp >= 1440) {
+        _minutesLamp = _minutesLamp - 1440;
+        if (_nowInMinutes >= _minutesLamp) lampPinsLevel[i][1] = 1;
+      }
+      else lampPinsLevel[i][1] = 1;
+      // before evening
+      _minutesLamp = _eveningInMinutes + _minutesBetweenLamps * (i - 2);
+      if (_nowInMinutes < _eveningInMinutes) {
+        if (_nowInMinutes >= _minutesLamp) lampPinsLevel[i][1] = 0;
+      }
+      else if (_minutesLamp < 0) {
+        _minutesLamp = _minutesLamp + 1440;
+        if (_nowInMinutes >= _minutesLamp) lampPinsLevel[i][1] = 0;
+      }
+    }
+  }
+
+  Serial.print("time h ");
+  Serial.print(currSettings.now.hour);
+  Serial.print(" m ");
+  Serial.print(currSettings.now.minute);
+  Serial.print(" lampPinsLevel ");
+  for (int i = 0; i < 3; i++) {
+    if (lampPinsLevel[i][1] == 0) digitalWrite(lampPinsLevel[i][0], HIGH);
+    else digitalWrite(lampPinsLevel[i][0], LOW);
+    Serial.print(lampPinsLevel[i][1]);
+  }
+  Serial.println(".");
 
 }
 
