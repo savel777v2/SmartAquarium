@@ -296,7 +296,7 @@ void setup() {
   noTone(PIEZO_PIN);
 
   /*Serial.begin(9600);
-  Serial.println("debugging");*/
+    Serial.println("debugging");*/
 
   initModeForParts(displayMode[currMode.main][currMode.secondary]);
   EditingModePart.set_isNull(1);
@@ -450,7 +450,27 @@ bool keyModePressed() {
   return true;
 }
 
-// общая функция изменения времени
+// all options control
+void conditionControl() {
+
+  // it's day or nigth
+  int _morningInMinutes = (int)EEPROM.read(0) * 60 + EEPROM.read(1);
+  int _eveningInMinutes = (int)EEPROM.read(2) * 60 + EEPROM.read(3);
+  int _nowInMinutes = (int)currSettings.now.hour * 60 + currSettings.now.minute;
+  if (_eveningInMinutes > _morningInMinutes) currSettings.nowMorning = (_nowInMinutes >= _morningInMinutes && _nowInMinutes < _eveningInMinutes);
+  else currSettings.nowMorning = (_nowInMinutes >= _morningInMinutes || _nowInMinutes < _eveningInMinutes);
+
+  // starting alarm
+  if (currSettings.alarmStartSound == 0) {
+    if (EEPROM.read(6) == 1) {
+      int _alarmInMinutes = (int)EEPROM.read(4) * 60 + EEPROM.read(5);
+      if (_nowInMinutes == _alarmInMinutes) currSettings.alarmStartSound = millis();
+    }
+  }
+
+}
+
+// main procedure for control time
 void loopTime() {
   static unsigned long _lastLoopTime = 0;
   static unsigned long _lastTimerTime = 0;
@@ -461,6 +481,7 @@ void loopTime() {
   // Loop once First time
   if (_lastLoopTime == 0) {
     currSettings.now = Rtc.getTime();
+    conditionControl();
     _lastLoopTime  = millis();
     _needDisplay = true;
   }
@@ -516,7 +537,6 @@ void loopTime() {
     // секунда оттикала
     _lastLoopTime  = millis();
     currSettings.now.second++;
-    if ((currMode.main == 0) && (currMode.secondary == 0)) _needDisplay = true;
     if (currSettings.now.second == 60) {
       currSettings.now.second = 0;
       currSettings.now.minute++;
@@ -525,6 +545,7 @@ void loopTime() {
         // синхронизация раз в час
         currSettings.now = Rtc.getTime();
       }
+      conditionControl();
     }
   }
 
