@@ -5,10 +5,10 @@ TM1638 Module(4, 5, 6); // DIO, CLK, STB
 #include <microDS3231.h>
 MicroDS3231 Rtc;
 
-#define DISPLAY_INTERVAL 0
 #define KEYBOARD_INTERVAL 10
 #define PIEZO_PIN 3
 #define TURN_OFF_MANUAL_LAMP 10 * 60 * 1000 // at least on change minute
+#define TEMP_PRINT_INTERVAL 500
 
 struct CurrSettings {
   DateTime now;
@@ -48,9 +48,14 @@ byte lampPinsLevel[][2] = {{A1, 0}, {A2, 0}, {A3, 0}}; // Pin from left to right
   h - кол-во часов из EEPROM (редактируется) адрес памяти между % и знаком
   m - кол-во минут из EEPROM (редактируется) адрес памяти между % и знаком
   c - выводимая символьная вличина из EEPROM (редактируется) номер величины и адрес памяти между % и знаком
+  t - таймер включен, отключен
+  T - выводимая текстовая информация
+  Q - информация с датчиков температуры, адрес - номер датчика
+  q - настройка температуры, адрес - номер настройки в EEPROM
 */
 char *displayMode[][7] = {
   {"%1C %H%M%2C%3C", "St%7n%8a %t", "Sd%0h%1m  ", "Sn%2h%3m  ", "Sb%4h%5m %6c", "Sdn %9m %10c", ""},
+  {"i%1Qo%2Q", "Td%11q  %12c", "Tn%13q  %14c", ""},
   {""}
 };
 
@@ -141,6 +146,17 @@ class ModePart {
           edited = true;
           lengthValue = 1;
         }
+        else if (typeOfPart == 'Q') {
+          maxValue = 1;
+          edited = false;
+          lengthValue = 3;
+        }
+        else if (typeOfPart == 'q') {
+          minValue = 14;
+          maxValue = 30;
+          edited = true;
+          lengthValue = 3;
+        }
         else if (typeOfPart == 'C') {
           maxValue = 1;
           edited = false;
@@ -164,7 +180,7 @@ class ModePart {
         value = EEPROM.read(6);
         checkFromEEPROM = true;
       }
-      else if (typeOfPart == 'E' || typeOfPart == 'C' || typeOfPart == 'T') value = 0;
+      else if (typeOfPart == 'E' || typeOfPart == 'C' || typeOfPart == 'T' || typeOfPart == 'Q') value = 0;
       else if (typeOfPart == 'n' && _currSettingsPtr->timerOn) value = _currSettingsPtr->timerMinute;
       else if (typeOfPart == 'a' && _currSettingsPtr->timerOn) value = _currSettingsPtr->timerSecond;
       else {
@@ -224,7 +240,7 @@ class ModePart {
 
     void valueToDisplay(char* charDisplay, CurrSettings* _currSettingsPtr, bool _blinkOff) {
       int _indexOut = 0;
-      char _strValue[2];
+      char _strValue[10];
 
       while (charDisplay[_indexOut] != '\0') {
         _indexOut++;
@@ -254,15 +270,39 @@ class ModePart {
           _indexOut++;
         }
       }
+      else if (typeOfPart == 'Q') {
+        float _floatValue;
+        if (adress == 1) {
+          _floatValue = Rtc.getTemperatureFloat();
+        }
+        else {
+          _floatValue = Rtc.getTemperatureFloat();
+        }
+        int _intValue = _floatValue * 10;
+        sprintf(_strValue, "%03d", _intValue);
+        for (int i = 0; i < 3; i++) {
+          charDisplay[_indexOut] = _strValue[i];
+          _indexOut++;
+        }
+      }
       else if (_blinkOff) {
         for (int i = 0; i < lengthValue; i++) {
           charDisplay[_indexOut] = ' ';
           _indexOut++;
         }
       }
+      else if (typeOfPart == 'q') {
+        sprintf(_strValue, "%02d", value);
+        charDisplay[_indexOut] = _strValue[0];
+        _indexOut++;
+        charDisplay[_indexOut] = _strValue[1];
+        _indexOut++;
+        charDisplay[_indexOut] = '0';
+        _indexOut++;
+      }
       else {
         if (lengthValue == 1) {
-          sprintf(_strValue, "%1d", value);
+          sprintf(_strValue, "%01d", value);
           charDisplay[_indexOut] = _strValue[0];
           _indexOut++;
         }
@@ -319,12 +359,12 @@ void setup() {
 */
 
 /*
-void debugManualLamp() {
+  void debugManualLamp() {
   Serial.print("manualLamp: ");
   Serial.print(currSettings.manualLamp);
   Serial.print(",nowDay: ");
   Serial.println(currSettings.nowDay);
-}
+  }
 */
 
 /*void debugOnOffLamps(char _char[10], int _i, int _nowInMinutes, int _minutesLamp) {
@@ -354,7 +394,6 @@ byte readEEPROM(int _adress) {
 void readKeyboard() {
   static unsigned long _LastKeyboardTime = 0; // последнее время считывания клавиатуры
   bool _needDisplay = false; // есть необходимость обновить дисплей
-#define KEYBOARD_INTERVAL 10
 
   if ((millis() - _LastKeyboardTime) > KEYBOARD_INTERVAL) {
     _LastKeyboardTime = millis();
@@ -397,29 +436,37 @@ bool keyLampsPressed() {
 }
 
 // обработка нажатия клавиш Left,Right
-bool keyLeftRightPressed(bool Left) {
-  byte _minValue = 0;
-  byte _maxValue;
+bool keyLeftRightPressed(bool _left) {
 
-  if (EditingModePart.get_isNull() == 1) return false;
+  if (EditingModePart.get_isNull() == 0) {
+    EditingModePart.LeftRightValue(_left);
+    settMode.lastBlinkTime = millis();
+    settMode.blinkOff = false;
+    return true;
+  }
 
-  EditingModePart.LeftRightValue(Left);
-  settMode.lastBlinkTime = millis();
-  settMode.blinkOff = false;
+  if (currMode.secondary != 0) return false;
+  if ((!_left) && (displayMode[currMode.main + 1][currMode.secondary][0] == '\0')) return false;
+  if ((_left) && (currMode.main == 0)) return false;
+
+  if (_left) currMode.main--;
+  else currMode.main++;
+
+  initModeForParts(displayMode[currMode.main][currMode.secondary]);
 
   return true;
 
 }
 
 // обработка нажатия клавиш Down,Up
-bool keyDownUpPressed(bool Down) {
+bool keyDownUpPressed(bool _down) {
 
   if (currSettings.setting != 0) return false;
 
-  if ((Down) && (displayMode[currMode.main][currMode.secondary + 1][0] == '\0')) return false;
-  if ((!Down) && (currMode.secondary == 0)) return false;
+  if ((_down) && (displayMode[currMode.main][currMode.secondary + 1][0] == '\0')) return false;
+  if ((!_down) && (currMode.secondary == 0)) return false;
 
-  if (Down) currMode.secondary++;
+  if (_down) currMode.secondary++;
   else currMode.secondary--;
 
   initModeForParts(displayMode[currMode.main][currMode.secondary]);
@@ -575,6 +622,7 @@ void conditionControl() {
 // main procedure for control time
 void loopTime() {
   static unsigned long _lastLoopTime = 0;
+  static unsigned long _lastTempPrintTime = 0;
   static unsigned long _lastTimerTime = 0;
   static unsigned long _nextNoteTime = 0;
   static byte _iNote = 0;
@@ -585,7 +633,7 @@ void loopTime() {
     currSettings.now = Rtc.getTime();
     conditionControl();
     _lastLoopTime  = millis();
-    _needDisplay = true;    
+    _needDisplay = true;
   }
 
   // Alarm sound loop
@@ -605,6 +653,12 @@ void loopTime() {
   else if (_nextNoteTime != 0) {
     _nextNoteTime = 0;
     noTone(PIEZO_PIN);
+  }
+
+  // Renew temperature
+  if (currMode.main == 1 && currMode.secondary == 0 && (millis() - _lastTempPrintTime) > TEMP_PRINT_INTERVAL) {
+    _lastTempPrintTime = millis();
+    _needDisplay = true;
   }
 
   // Loop decrement timer
