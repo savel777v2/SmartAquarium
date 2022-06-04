@@ -7,7 +7,8 @@ MicroDS3231 Rtc;
 
 #define DISPLAY_INTERVAL 0
 #define KEYBOARD_INTERVAL 10
-#define PIEZO_PIN 8
+#define PIEZO_PIN 3
+#define TURN_OFF_MANUAL_LAMP 10 * 60 * 1000 // at least on change minute
 
 struct CurrSettings {
   DateTime now;
@@ -18,6 +19,7 @@ struct CurrSettings {
   byte timerSecond;
   byte setting;
   unsigned long alarmStartSound;
+  byte manualLamp;
 };
 
 struct {
@@ -36,7 +38,7 @@ CurrSettings currSettings;
 #define NUMBER_OF_NOTES 10
 unsigned int alarmMelody[14][2] = {{2500, 50}, {0, 100}, {2500, 50}, {0, 100}, {2500, 50}, {0, 100}, {2500, 50}, {0, 100}, {2500, 50}, {0, 3000}};
 
-byte lampPinsLevel[][2] = {{9, 0}, {10, 0}, {11, 0}}; // Pin from left to right, Level
+byte lampPinsLevel[][2] = {{A1, 0}, {A2, 0}, {A3, 0}}; // Pin from left to right, Level
 
 /* Описатели шаблона:
   % - начало шаблона
@@ -294,9 +296,7 @@ ModePart EditingModePart;
 void setup() {
 
   pinMode(PIEZO_PIN, OUTPUT); // настраиваем вывод 2 на выход
-  tone(PIEZO_PIN, 200);
-  delay(100);
-  noTone(PIEZO_PIN);
+  tone(PIEZO_PIN, 2500, 100);
   for (int i = 0; i < 3; i++) {
     pinMode(lampPinsLevel[i][0], OUTPUT);
   }
@@ -304,18 +304,28 @@ void setup() {
   initModeForParts(displayMode[currMode.main][currMode.secondary]);
   EditingModePart.set_isNull(1);
 
-  Serial.begin(9600);
-  Serial.println("debugging");
-
+  /*Serial.begin(9600);
+  Serial.println("debugging");*/
 }
 
-/*void debugEditingModePart() {
+/*
+  void debugEditingModePart() {
   Serial.print(EditingModePart.get_typeOfPart());
   Serial.print(",isNull: ");
   Serial.print(EditingModePart.get_isNull());
   Serial.print(",value: ");
   Serial.println(EditingModePart.get_value());
-  }*/
+  }
+*/
+
+/*
+void debugManualLamp() {
+  Serial.print("manualLamp: ");
+  Serial.print(currSettings.manualLamp);
+  Serial.print(",nowDay: ");
+  Serial.println(currSettings.nowDay);
+}
+*/
 
 /*void debugOnOffLamps(char _char[10], int _i, int _nowInMinutes, int _minutesLamp) {
   Serial.print(_char);
@@ -325,7 +335,7 @@ void setup() {
   Serial.print(_nowInMinutes);
   Serial.print(" _minutesLamp: ");
   Serial.println(_minutesLamp);
-}*/
+  }*/
 
 
 void loop() {
@@ -355,9 +365,34 @@ void readKeyboard() {
     if (keyPressed(Keys, 3, 1)) _needDisplay = keyLeftRightPressed(false);
     if (keyPressed(Keys, 4, 1)) _needDisplay = keyDownUpPressed(true);
     if (keyPressed(Keys, 5, 1)) _needDisplay = keyDownUpPressed(false);
+    if (keyPressed(Keys, 7, 1)) _needDisplay = keyLampsPressed();
   }
 
   if (_needDisplay) printDisplay();
+
+}
+
+// обработка нажатия клавиш Left,Right
+bool keyLampsPressed() {
+  byte _newLampLevel;
+
+  if (currSettings.manualLamp == 2) {
+    currSettings.manualLamp = 0;
+  }
+  else {
+    currSettings.manualLamp++;
+    if (currSettings.manualLamp == 1) {
+      if (currSettings.nowDay) _newLampLevel = 0;
+      else _newLampLevel = 1;
+    }
+    else {
+      if (lampPinsLevel[0][1] == 0) _newLampLevel = 1;
+      else _newLampLevel = 0;
+    }
+    for (int i = 0; i < 3; i++) lampPinsLevel[i][1] = _newLampLevel;
+  }
+  conditionControl();
+  return false;
 
 }
 
@@ -465,6 +500,7 @@ bool keyModePressed() {
 
 // all options control
 void conditionControl() {
+  static unsigned long _manualLampTime = 0;
 
   // it's day or nigth
   int _morningInMinutes = (int)EEPROM.read(0) * 60 + EEPROM.read(1);
@@ -481,50 +517,58 @@ void conditionControl() {
     }
   }
 
-  // turn on\off lamps
-  if (!currSettings.nowDay) {
-    for (int i = 0; i < 3; i++) lampPinsLevel[i][1] = 0;
+  // turn off manual lamp
+  if (currSettings.manualLamp > 0) {
+    if (_manualLampTime == 0) _manualLampTime = millis();
+    if ((millis() - _manualLampTime) >= TURN_OFF_MANUAL_LAMP) currSettings.manualLamp = 0;
   }
-  else if (EEPROM.read(10) == 0) {
-    for (int i = 0; i < 3; i++) lampPinsLevel[i][1] = 1;
+
+  // clear static values
+  if (_manualLampTime > 0 && currSettings.manualLamp == 0) {
+    _manualLampTime = 0;
+    tone(PIEZO_PIN, 2500, 100);
   }
-  else {
-    int _minutesBetweenLamps = EEPROM.read(9);
-    for (int i = 0; i < 3; i++) {
-      // after morning
-      int _minutesLamp = _morningInMinutes + _minutesBetweenLamps * i;
-      lampPinsLevel[i][1] = 0;
-      if (_nowInMinutes >= _morningInMinutes) {
-        if (_nowInMinutes >= _minutesLamp) lampPinsLevel[i][1] = 1;
-      }
-      else if (_minutesLamp >= 1440) {
-        _minutesLamp = _minutesLamp - 1440;
-        if (_nowInMinutes >= _minutesLamp) lampPinsLevel[i][1] = 1;
-      }
-      else lampPinsLevel[i][1] = 1;
-      // before evening
-      _minutesLamp = _eveningInMinutes + _minutesBetweenLamps * (i - 2);
-      if (_nowInMinutes < _eveningInMinutes) {
-        if (_nowInMinutes >= _minutesLamp) lampPinsLevel[i][1] = 0;
-      }
-      else if (_minutesLamp < 0) {
-        _minutesLamp = _minutesLamp + 1440;
-        if (_nowInMinutes >= _minutesLamp) lampPinsLevel[i][1] = 0;
+
+  // turn on\off flags of lamps
+  if (currSettings.manualLamp == 0) {
+    if (!currSettings.nowDay) {
+      for (int i = 0; i < 3; i++) lampPinsLevel[i][1] = 0;
+    }
+    else if (EEPROM.read(10) == 0) {
+      for (int i = 0; i < 3; i++) lampPinsLevel[i][1] = 1;
+    }
+    else {
+      int _minutesBetweenLamps = EEPROM.read(9);
+      for (int i = 0; i < 3; i++) {
+        // after morning
+        int _minutesLamp = _morningInMinutes + _minutesBetweenLamps * i;
+        lampPinsLevel[i][1] = 0;
+        if (_nowInMinutes >= _morningInMinutes) {
+          if (_nowInMinutes >= _minutesLamp) lampPinsLevel[i][1] = 1;
+        }
+        else if (_minutesLamp >= 1440) {
+          _minutesLamp = _minutesLamp - 1440;
+          if (_nowInMinutes >= _minutesLamp) lampPinsLevel[i][1] = 1;
+        }
+        else lampPinsLevel[i][1] = 1;
+        // before evening
+        _minutesLamp = _eveningInMinutes + _minutesBetweenLamps * (i - 2);
+        if (_nowInMinutes < _eveningInMinutes) {
+          if (_nowInMinutes >= _minutesLamp) lampPinsLevel[i][1] = 0;
+        }
+        else if (_minutesLamp < 0) {
+          _minutesLamp = _minutesLamp + 1440;
+          if (_nowInMinutes >= _minutesLamp) lampPinsLevel[i][1] = 0;
+        }
       }
     }
   }
 
-  Serial.print("time h ");
-  Serial.print(currSettings.now.hour);
-  Serial.print(" m ");
-  Serial.print(currSettings.now.minute);
-  Serial.print(" lampPinsLevel ");
+  // turn on\off lamps
   for (int i = 0; i < 3; i++) {
-    if (lampPinsLevel[i][1] == 0) digitalWrite(lampPinsLevel[i][0], HIGH);
+    if (lampPinsLevel[i][1] == 1) digitalWrite(lampPinsLevel[i][0], HIGH);
     else digitalWrite(lampPinsLevel[i][0], LOW);
-    Serial.print(lampPinsLevel[i][1]);
   }
-  Serial.println(".");
 
 }
 
@@ -541,7 +585,7 @@ void loopTime() {
     currSettings.now = Rtc.getTime();
     conditionControl();
     _lastLoopTime  = millis();
-    _needDisplay = true;
+    _needDisplay = true;    
   }
 
   // Alarm sound loop
