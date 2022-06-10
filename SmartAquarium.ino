@@ -7,8 +7,15 @@ MicroDS3231 Rtc;
 
 #define KEYBOARD_INTERVAL 10
 #define PIEZO_PIN 3
-#define TURN_OFF_MANUAL_LAMP 10 * 60 * 1000 // at least on change minute
-#define TEMP_PRINT_INTERVAL 500
+#define TURN_OFF_MANUAL_LAMP 120000 // at least on change minute
+#define DS18B20_PIN 7
+#define TEMP_RENEW_INTERVAL 200
+
+#include <OneWire.h>
+#include <DS18B20.h>
+
+OneWire oneWire(DS18B20_PIN);
+DS18B20 sensor(&oneWire);
 
 struct CurrSettings {
   DateTime now;
@@ -20,6 +27,8 @@ struct CurrSettings {
   byte setting;
   unsigned long alarmStartSound;
   byte manualLamp;
+  float aquaTemp;
+  bool aquaTempErr;
 };
 
 struct {
@@ -272,14 +281,17 @@ class ModePart {
       }
       else if (typeOfPart == 'Q') {
         float _floatValue;
-        if (adress == 1) {
-          _floatValue = Rtc.getTemperatureFloat();
+        if (adress == 2 & _currSettingsPtr->aquaTempErr) {
+          _strValue[0] = 'E';
+          _strValue[1] = 'r';
+          _strValue[2] = 'r';
         }
         else {
-          _floatValue = Rtc.getTemperatureFloat();
+          if (adress == 1) _floatValue = Rtc.getTemperatureFloat();
+          else _floatValue = _currSettingsPtr->aquaTemp;
+          int _intValue = _floatValue * 10;
+          sprintf(_strValue, "%03d", _intValue);
         }
-        int _intValue = _floatValue * 10;
-        sprintf(_strValue, "%03d", _intValue);
         for (int i = 0; i < 3; i++) {
           charDisplay[_indexOut] = _strValue[i];
           _indexOut++;
@@ -341,12 +353,24 @@ void setup() {
     pinMode(lampPinsLevel[i][0], OUTPUT);
   }
 
+  currSettings.aquaTempErr = !sensor.begin();
+  if (!currSettings.aquaTempErr) sensor.setResolution(12);
+
   initModeForParts(displayMode[currMode.main][currMode.secondary]);
   EditingModePart.set_isNull(1);
 
   /*Serial.begin(9600);
-  Serial.println("debugging");*/
+  Serial.println("debugging");*/  
 }
+
+/*
+void debugTemp() {  
+  Serial.print("aquaTemp: ");
+  Serial.print(currSettings.aquaTemp);
+  Serial.print(",aquaTempErr: ");
+  Serial.println(currSettings.aquaTempErr);
+}
+*/
 
 /*
   void debugEditingModePart() {
@@ -622,7 +646,9 @@ void conditionControl() {
 // main procedure for control time
 void loopTime() {
   static unsigned long _lastLoopTime = 0;
-  static unsigned long _lastTempPrintTime = 0;
+  static unsigned long _lastTempTime = 0;
+  static bool _waitingTemp = false;
+  static unsigned long _intWaitingTemp = 0;
   static unsigned long _lastTimerTime = 0;
   static unsigned long _nextNoteTime = 0;
   static byte _iNote = 0;
@@ -655,10 +681,27 @@ void loopTime() {
     noTone(PIEZO_PIN);
   }
 
+  // request temperature
+  if (!currSettings.aquaTempErr & !_waitingTemp & (millis() - _lastTempTime) > TEMP_RENEW_INTERVAL) {    
+    _lastTempTime = millis();
+    sensor.requestTemperatures();
+    _intWaitingTemp = 0;
+    _waitingTemp = true;    
+  }
+
   // Renew temperature
-  if (currMode.main == 1 && currMode.secondary == 0 && (millis() - _lastTempPrintTime) > TEMP_PRINT_INTERVAL) {
-    _lastTempPrintTime = millis();
-    _needDisplay = true;
+  if (_waitingTemp & (millis() - _lastTempTime) > 10) {
+    _lastTempTime = millis();
+    if (sensor.isConversionComplete()) {
+      currSettings.aquaTempErr = false;
+      currSettings.aquaTemp = sensor.getTempC();
+      _waitingTemp = false;
+      if (currMode.main == 1 && currMode.secondary == 0) _needDisplay = true;
+    }
+    else if (_intWaitingTemp++ > 10) {
+      currSettings.aquaTempErr = true;
+      if (currMode.main == 1 && currMode.secondary == 0) _needDisplay = true;
+    }
   }
 
   // Loop decrement timer
