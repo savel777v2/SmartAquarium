@@ -10,6 +10,7 @@ MicroDS3231 Rtc;
 #define TURN_OFF_MANUAL_LAMP 120000 // at least on change minute
 #define DS18B20_PIN 7
 #define TEMP_RENEW_INTERVAL 200
+#define HEATER_PIN A0
 
 #include <OneWire.h>
 #include <DS18B20.h>
@@ -29,6 +30,7 @@ struct CurrSettings {
   byte manualLamp;
   float aquaTemp;
   bool aquaTempErr;
+  bool heaterOn = false;
 };
 
 struct {
@@ -61,10 +63,11 @@ byte lampPinsLevel[][2] = {{A1, 0}, {A2, 0}, {A3, 0}}; // Pin from left to right
   T - выводимая текстовая информация
   Q - информация с датчиков температуры, адрес - номер датчика
   q - настройка температуры, адрес - номер настройки в EEPROM
+  w - настройка люфта температуры в целях ее регулировки, адрес - номер настройки в EEPROM
 */
 char *displayMode[][7] = {
   {"%1C %H%M%2C%3C", "St%7n%8a %t", "Sd%0h%1m  ", "Sn%2h%3m  ", "Sb%4h%5m %6c", "Sdn %9m %10c", ""},
-  {"i%1Qo%2Q", "Td%11q  %12c", "Tn%13q  %14c", ""},
+  {"i%1Qo%2Q", "Td%11q  %12c", "Tn%13q  %14c", "dt %15w   "},
   {""}
 };
 
@@ -165,6 +168,12 @@ class ModePart {
           maxValue = 30;
           edited = true;
           lengthValue = 3;
+        }
+        else if (typeOfPart == 'w') {
+          minValue = 5;
+          maxValue = 10;
+          edited = true;
+          lengthValue = 2;
         }
         else if (typeOfPart == 'C') {
           maxValue = 1;
@@ -353,6 +362,9 @@ void setup() {
     pinMode(lampPinsLevel[i][0], OUTPUT);
   }
 
+  pinMode(HEATER_PIN, OUTPUT);  
+  digitalWrite(HEATER_PIN, HIGH); // false - off
+
   currSettings.aquaTempErr = !sensor.begin();
   if (!currSettings.aquaTempErr) sensor.setResolution(12);
 
@@ -360,16 +372,16 @@ void setup() {
   EditingModePart.set_isNull(1);
 
   /*Serial.begin(9600);
-  Serial.println("debugging");*/  
+  Serial.println("debugging");*/
 }
 
 /*
-void debugTemp() {  
+  void debugTemp() {
   Serial.print("aquaTemp: ");
   Serial.print(currSettings.aquaTemp);
   Serial.print(",aquaTempErr: ");
   Serial.println(currSettings.aquaTempErr);
-}
+  }
 */
 
 /*
@@ -588,13 +600,36 @@ void conditionControl() {
     }
   }
 
+  // control off heater
+  byte needingTemp;
+  bool heaterAlwaysOff = false;
+  if (currSettings.nowDay) {
+    needingTemp = EEPROM.read(11);
+    if (EEPROM.read(12) == 0) heaterAlwaysOff = true;
+  }
+  else {
+    needingTemp = EEPROM.read(13);
+    if (EEPROM.read(14) == 0) heaterAlwaysOff = true;
+  }
+  byte deltaTemp = EEPROM.read(15);
+  float minTemp = needingTemp - (float)deltaTemp / 10;
+  float maxTemp = needingTemp + (float)deltaTemp / 10;
+  if (currSettings.heaterOn && (heaterAlwaysOff || currSettings.aquaTempErr || currSettings.aquaTemp >= maxTemp)) {
+    currSettings.heaterOn = false;
+    digitalWrite(HEATER_PIN, HIGH);
+  }
+  else if (!currSettings.heaterOn && !heaterAlwaysOff && currSettings.aquaTemp <= minTemp) {
+    currSettings.heaterOn = true;
+    digitalWrite(HEATER_PIN, LOW);
+  }
+
   // turn off manual lamp
   if (currSettings.manualLamp > 0) {
     if (_manualLampTime == 0) _manualLampTime = millis();
     if ((millis() - _manualLampTime) >= TURN_OFF_MANUAL_LAMP) currSettings.manualLamp = 0;
   }
 
-  // clear static values
+  // clear static values for manual lamp
   if (_manualLampTime > 0 && currSettings.manualLamp == 0) {
     _manualLampTime = 0;
     tone(PIEZO_PIN, 2500, 100);
@@ -637,8 +672,8 @@ void conditionControl() {
 
   // turn on\off lamps
   for (int i = 0; i < 3; i++) {
-    if (lampPinsLevel[i][1] == 1) digitalWrite(lampPinsLevel[i][0], HIGH);
-    else digitalWrite(lampPinsLevel[i][0], LOW);
+    if (lampPinsLevel[i][1] == 1) digitalWrite(lampPinsLevel[i][0], LOW);
+    else digitalWrite(lampPinsLevel[i][0], HIGH);
   }
 
 }
@@ -682,15 +717,15 @@ void loopTime() {
   }
 
   // request temperature
-  if (!currSettings.aquaTempErr & !_waitingTemp & (millis() - _lastTempTime) > TEMP_RENEW_INTERVAL) {    
+  if (!currSettings.aquaTempErr && !_waitingTemp && (millis() - _lastTempTime) > TEMP_RENEW_INTERVAL) {
     _lastTempTime = millis();
     sensor.requestTemperatures();
     _intWaitingTemp = 0;
-    _waitingTemp = true;    
+    _waitingTemp = true;
   }
 
   // Renew temperature
-  if (_waitingTemp & (millis() - _lastTempTime) > 10) {
+  if (_waitingTemp && (millis() - _lastTempTime) > 10) {
     _lastTempTime = millis();
     if (sensor.isConversionComplete()) {
       currSettings.aquaTempErr = false;
