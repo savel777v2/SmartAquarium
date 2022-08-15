@@ -433,21 +433,24 @@ void readKeyboard() {
 
   if ((millis() - _LastKeyboardTime) > KEYBOARD_INTERVAL) {
     _LastKeyboardTime = millis();
-    byte Keys = Module.getButtons();
-    if (keyPressed(Keys, 0, 0)) _needDisplay = keyEscPressed();
-    if (keyPressed(Keys, 1, 0)) _needDisplay = keyModePressed();
-    if (keyPressed(Keys, 2, 1)) _needDisplay = keyLeftRightPressed(true);
-    if (keyPressed(Keys, 3, 1)) _needDisplay = keyLeftRightPressed(false);
-    if (keyPressed(Keys, 4, 1)) _needDisplay = keyDownUpPressed(true);
-    if (keyPressed(Keys, 5, 1)) _needDisplay = keyDownUpPressed(false);
-    if (keyPressed(Keys, 7, 1)) _needDisplay = keyLampsPressed();
+    byte Keys = Module.getButtons();    
+    if (Keys != 255)
+    {      
+      if (keyPressed(Keys, 0, 0)) _needDisplay = keyEscPressed();
+      if (keyPressed(Keys, 1, 0)) _needDisplay = keyModePressed();
+      if (keyPressed(Keys, 2, 1)) _needDisplay = keyLeftRightPressed(true);
+      if (keyPressed(Keys, 3, 1)) _needDisplay = keyLeftRightPressed(false);
+      if (keyPressed(Keys, 4, 1)) _needDisplay = keyDownUpPressed(true);
+      if (keyPressed(Keys, 5, 1)) _needDisplay = keyDownUpPressed(false);
+      if (keyPressed(Keys, 7, 0)) _needDisplay = keyLampsPressed();
+    }    
   }
 
   if (_needDisplay) printDisplay();
 
 }
 
-// обработка нажатия клавиш Left,Right
+// обработка нажатия клавиши Lamps
 bool keyLampsPressed() {
   byte _newLampLevel;
 
@@ -631,7 +634,7 @@ void conditionControl() {
 
   // clear static values for manual lamp
   if (_manualLampTime > 0 && currSettings.manualLamp == 0) {
-    _manualLampTime = 0;
+    _manualLampTime = 0;    
     tone(PIEZO_PIN, 2500, 100);
   }
 
@@ -691,7 +694,7 @@ void loopTime() {
 
   // Loop once First time
   if (_lastLoopTime == 0) {
-    currSettings.now = Rtc.getTime();
+    currSettings.now = Rtc.getTime();    
     conditionControl();
     _lastLoopTime  = millis();
     _needDisplay = true;
@@ -701,18 +704,18 @@ void loopTime() {
   if (currSettings.alarmStartSound != 0) {
     if ((millis() - currSettings.alarmStartSound) >= 60000) {
       currSettings.alarmStartSound = 0;
-      _nextNoteTime = 0;
+      _nextNoteTime = 0;      
       noTone(PIEZO_PIN);
     }
     else if (millis() > _nextNoteTime) {
       if (alarmMelody[_iNote][0] == 0) noTone(PIEZO_PIN);
-      else tone(PIEZO_PIN, alarmMelody[_iNote][0]);
+      else tone(PIEZO_PIN, alarmMelody[_iNote][0]);      
       _nextNoteTime = millis() + alarmMelody[_iNote][1];
       if (++_iNote == NUMBER_OF_NOTES) _iNote = 0;
     }
   }
   else if (_nextNoteTime != 0) {
-    _nextNoteTime = 0;
+    _nextNoteTime = 0;    
     noTone(PIEZO_PIN);
   }
 
