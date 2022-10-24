@@ -3,14 +3,16 @@
 TM1638 Module(4, 5, 6); // DIO, CLK, STB
 
 #include <microDS3231.h>
-MicroDS3231 Rtc;
+MicroDS3231 Rtc; // A4 - SDA, A% - SCL
 
 #define KEYBOARD_INTERVAL 10
-#define PIEZO_PIN 3
+#define PIEZO_PIN 3 // + ground
 #define TURN_OFF_MANUAL_LAMP 120000 // at least on change minute
 #define DS18B20_PIN 7
 #define TEMP_RENEW_INTERVAL 200
 #define HEATER_PIN A0
+
+byte lampPinsLevel[][2] = {{A1, 0}, {A2, 0}, {A3, 0}}; // Pin from left to right, Level
 
 #include <OneWire.h>
 #include <DS18B20.h>
@@ -49,8 +51,6 @@ CurrSettings currSettings;
 #define NUMBER_OF_NOTES 10
 unsigned int alarmMelody[14][2] = {{2500, 50}, {0, 100}, {2500, 50}, {0, 100}, {2500, 50}, {0, 100}, {2500, 50}, {0, 100}, {2500, 50}, {0, 3000}};
 
-byte lampPinsLevel[][2] = {{A1, 0}, {A2, 0}, {A3, 0}}; // Pin from left to right, Level
-
 /* Описатели шаблона:
   % - начало шаблона
   С - выводимая символьная вличина (не редактируется) номер величины между % и знаком
@@ -64,14 +64,20 @@ byte lampPinsLevel[][2] = {{A1, 0}, {A2, 0}, {A3, 0}}; // Pin from left to right
   Q - информация с датчиков температуры, адрес - номер датчика
   q - настройка температуры, адрес - номер настройки в EEPROM
   w - настройка люфта температуры в целях ее регулировки, адрес - номер настройки в EEPROM
+  L - информация по логам температуры из heaterTempLog
+
 */
 char *displayMode[][7] = {
   {"%1C %H%M%2C%3C", "St%7n%8a %t", "Sd%0h%1m  ", "Sn%2h%3m  ", "Sb%4h%5m %6c", "Sdn %9m %10c", ""},
-  {"i%1Qo%2Q", "Td%11q  %12c", "Tn%13q  %14c", "dt %15w   "},
+  {"i%1Qo%2Q", "Td%11q  %12c", "Tn%13q  %14c", "dt %15w   ", "%L"},
   {""}
 };
 
 char modeForParts[8][10];
+
+// логи температуры и работы нагревателя. температуры -100.0 до + 100.0 ложится в интервал 0 - 2000.
+// датчик нагревателя включен: + 10000. Температура -100.0 - это ошибка датчика температуры или отсутствие значения
+word heaterTempLog[96];
 
 class ModePart {
   public:
@@ -115,6 +121,7 @@ class ModePart {
       minValue = 0;
       maxValue = 0;
       edited = false;
+      circleEdit = true;
       lengthValue = 0;
 
       if (_charMode[0] != '%') {
@@ -180,6 +187,12 @@ class ModePart {
           edited = false;
           lengthValue = 1;
         }
+        else if (typeOfPart == 'L') {
+          maxValue = 95;
+          edited = true;
+          circleEdit = false;
+          lengthValue = 8;
+        }
       }
     };
 
@@ -190,6 +203,7 @@ class ModePart {
       if (typeOfPart == 'H') value = _currSettingsPtr->now.hour;
       else if (typeOfPart == 'M') value = _currSettingsPtr->now.minute;
       else if (typeOfPart == 'S') value = _currSettingsPtr->now.second;
+      else if (typeOfPart == 'L') value = 95;
       else if (typeOfPart == 't') {
         if (_currSettingsPtr->timerOn) value = 1;
         else value = 0;
@@ -220,8 +234,12 @@ class ModePart {
 
     void LeftRightValue(bool _left) {
 
-      if ((_left) && (value == minValue)) value = maxValue;
-      else if ((!_left) && (value == maxValue)) value = minValue;
+      if ((_left) && (value == minValue))  {
+        if (circleEdit) value = maxValue;
+      }
+      else if ((!_left) && (value == maxValue)) {
+        if (circleEdit) value = minValue;
+      }
       else if (_left) value--;
       else value++;
     };
@@ -251,6 +269,7 @@ class ModePart {
           _currSettingsPtr->timerOn = false;
         }
       }
+      else if (typeOfPart == 'L') value = 95;
       else if (edited) {
         EEPROM.update(adress, value);
       }
@@ -321,6 +340,54 @@ class ModePart {
         charDisplay[_indexOut] = '0';
         _indexOut++;
       }
+      else if (typeOfPart == 'L') {
+        byte _indexOfNow = _currSettingsPtr->now.hour * 4;
+        if (_currSettingsPtr->now.minute >= 45) _indexOfNow = _indexOfNow + 3;
+        else if (_currSettingsPtr->now.minute >= 30) _indexOfNow = _indexOfNow + 2;
+        else if (_currSettingsPtr->now.minute >= 15) _indexOfNow = _indexOfNow + 1;
+
+        byte _indexOfLog;
+        if ((95 - value) > _indexOfNow) _indexOfLog = _indexOfNow + value + 1;
+        else _indexOfLog = _indexOfNow + value - 95;
+
+        // печатаем на экран
+        byte _toPrint;
+        _toPrint = _indexOfLog / 4;
+        sprintf(_strValue, "%02d", _toPrint);
+        charDisplay[_indexOut] = _strValue[0];
+        _indexOut++;
+        charDisplay[_indexOut] = _strValue[1];
+        _indexOut++;
+        _toPrint = _indexOfLog % 4 * 15;
+        sprintf(_strValue, "%02d", _toPrint);
+        charDisplay[_indexOut] = _strValue[0];
+        _indexOut++;
+        charDisplay[_indexOut] = _strValue[1];
+        _indexOut++;
+        word _valueOfLog = heaterTempLog[_indexOfLog];
+        if (_valueOfLog > 10000) {
+          charDisplay[_indexOut] = 'o';
+          _valueOfLog = _valueOfLog - 10000;
+        }
+        else charDisplay[_indexOut] = ' ';
+        _indexOut++;
+        if (_valueOfLog == 0) {
+          charDisplay[_indexOut] = 'E';
+          _indexOut++;
+          charDisplay[_indexOut] = 'r';
+          _indexOut++;
+          charDisplay[_indexOut] = 'r';
+          _indexOut++;
+        }
+        else {
+          _valueOfLog = _valueOfLog - 1000;
+          sprintf(_strValue, "%03d", _valueOfLog);
+          for (int i = 0; i < 3; i++) {
+            charDisplay[_indexOut] = _strValue[i];
+            _indexOut++;
+          }
+        }
+      }
       else {
         if (lengthValue == 1) {
           sprintf(_strValue, "%01d", value);
@@ -342,6 +409,7 @@ class ModePart {
 
     byte value;
     bool edited;
+    bool circleEdit;
     int isNull;
     char typeOfPart;
     char charValue[10];
@@ -362,7 +430,7 @@ void setup() {
     pinMode(lampPinsLevel[i][0], OUTPUT);
   }
 
-  pinMode(HEATER_PIN, OUTPUT);  
+  pinMode(HEATER_PIN, OUTPUT);
   digitalWrite(HEATER_PIN, HIGH); // false - off
 
   currSettings.aquaTempErr = !sensor.begin();
@@ -372,7 +440,7 @@ void setup() {
   EditingModePart.set_isNull(1);
 
   /*Serial.begin(9600);
-  Serial.println("debugging");*/
+    Serial.println("debugging");*/
 }
 
 /*
@@ -433,9 +501,9 @@ void readKeyboard() {
 
   if ((millis() - _LastKeyboardTime) > KEYBOARD_INTERVAL) {
     _LastKeyboardTime = millis();
-    byte Keys = Module.getButtons();    
+    byte Keys = Module.getButtons();
     if (Keys != 255)
-    {      
+    {
       if (keyPressed(Keys, 0, 0)) _needDisplay = keyEscPressed();
       if (keyPressed(Keys, 1, 0)) _needDisplay = keyModePressed();
       if (keyPressed(Keys, 2, 1)) _needDisplay = keyLeftRightPressed(true);
@@ -443,7 +511,7 @@ void readKeyboard() {
       if (keyPressed(Keys, 4, 1)) _needDisplay = keyDownUpPressed(true);
       if (keyPressed(Keys, 5, 1)) _needDisplay = keyDownUpPressed(false);
       if (keyPressed(Keys, 7, 0)) _needDisplay = keyLampsPressed();
-    }    
+    }
   }
 
   if (_needDisplay) printDisplay();
@@ -634,7 +702,7 @@ void conditionControl() {
 
   // clear static values for manual lamp
   if (_manualLampTime > 0 && currSettings.manualLamp == 0) {
-    _manualLampTime = 0;    
+    _manualLampTime = 0;
     tone(PIEZO_PIN, 2500, 100);
   }
 
@@ -679,6 +747,23 @@ void conditionControl() {
     else digitalWrite(lampPinsLevel[i][0], HIGH);
   }
 
+  // heaterTempLog each 15 minutes
+  if (currSettings.now.minute % 15 == 0) {
+
+    byte _indexOfLog = currSettings.now.hour * 4;
+    if (currSettings.now.minute >= 45) _indexOfLog = _indexOfLog + 3;
+    else if (currSettings.now.minute >= 30) _indexOfLog = _indexOfLog + 2;
+    else if (currSettings.now.minute >= 15) _indexOfLog = _indexOfLog + 1;
+
+    word _logValue;
+    if (currSettings.aquaTempErr) _logValue = 0;
+    else _logValue = (float)currSettings.aquaTemp * 10 + 1000;
+    if (currSettings.heaterOn) _logValue = _logValue + 10000;
+
+    heaterTempLog[_indexOfLog] = _logValue;
+
+  }
+
 }
 
 // main procedure for control time
@@ -694,7 +779,7 @@ void loopTime() {
 
   // Loop once First time
   if (_lastLoopTime == 0) {
-    currSettings.now = Rtc.getTime();    
+    currSettings.now = Rtc.getTime();
     conditionControl();
     _lastLoopTime  = millis();
     _needDisplay = true;
@@ -704,18 +789,18 @@ void loopTime() {
   if (currSettings.alarmStartSound != 0) {
     if ((millis() - currSettings.alarmStartSound) >= 60000) {
       currSettings.alarmStartSound = 0;
-      _nextNoteTime = 0;      
+      _nextNoteTime = 0;
       noTone(PIEZO_PIN);
     }
     else if (millis() > _nextNoteTime) {
       if (alarmMelody[_iNote][0] == 0) noTone(PIEZO_PIN);
-      else tone(PIEZO_PIN, alarmMelody[_iNote][0]);      
+      else tone(PIEZO_PIN, alarmMelody[_iNote][0]);
       _nextNoteTime = millis() + alarmMelody[_iNote][1];
       if (++_iNote == NUMBER_OF_NOTES) _iNote = 0;
     }
   }
   else if (_nextNoteTime != 0) {
-    _nextNoteTime = 0;    
+    _nextNoteTime = 0;
     noTone(PIEZO_PIN);
   }
 
@@ -846,6 +931,8 @@ void printDisplay() {
   Module.setDisplayToString(_toDisplay, 0, false);
 
 }
+
+
 
 // Функция анализа нажатия клавиатуры
 //  _keys - байт с нажатыми клавишами
