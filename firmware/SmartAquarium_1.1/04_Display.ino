@@ -1,14 +1,14 @@
 // общая функция вывода дисплея
 void printDisplay() {
   char _toDisplay[9];
+  int _indexSetting = 0;
+  bool _findSetting;
   MenuItemPart _PrintMenuItemPart;
 
-  _toDisplay[0] = '\0';
-
-  int _indexSetting = 0;
+  _toDisplay[0] = '\0';  
   for (int _i = 0; _i < 8; _i++) if (partsOfMenuItem[_i][0] != '\0') {
       _PrintMenuItemPart.initialize(partsOfMenuItem[_i], &currSettings);
-      bool _findSetting = false;
+      _findSetting = false;
       if (_PrintMenuItemPart.get_edited()) {
         _indexSetting++;
         if (currSettings.setting == _indexSetting) _findSetting = true;
