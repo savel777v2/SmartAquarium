@@ -25,11 +25,9 @@ void setup() {
 }
 
 void loop() {
-
   loopTime();
   readKeyboard();
   CounterForBubbles.tick();
-  
 }
 
 // all options control

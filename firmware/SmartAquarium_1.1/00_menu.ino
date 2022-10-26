@@ -13,14 +13,17 @@
   w - настройка люфта температуры в целях ее регулировки, адрес - номер настройки в EEPROM
   L - информация по логам температуры из heaterTempLog
   b - счетчик пузырьков абсалютный
+  s - скорость пузырьков в секунду
+  B - скорость пузырьков в минуту
+  S - считываний сенсора в секунду
 
 */
-BubbleCounter CounterForBubbles(7, A7, onTheBubble);
+BubbleCounter CounterForBubbles(10, A7, onTheBubble);
 
 char *menuItems[][7] = {
   {"%1C %H%M%2C%3C", "St%7n%8a %t", "Sd%0h%1m  ", "Sn%2h%3m  ", "Sb%4h%5m %6c", "Sdn %9m %10c", ""},
   {"i%1Qo%2Q", "%L", "Td%11q  %12c", "Tn%13q  %14c", "dt %15w   "},
-  {"C %b"},
+  {"C %b", "S %s", "M %B", "I %S"},
   {""}
 };
 
@@ -199,7 +202,7 @@ void MenuItemPart::initialize(char _charMode[10], CurrSettings* _currSettingsPtr
       circleEdit = false;
       lengthValue = 8;
     }
-    else if (typeOfPart == 'b') {
+    else if (typeOfPart == 'b' || typeOfPart == 's' || typeOfPart == 'B' || typeOfPart == 'S') {
       edited = false;
       lengthValue = 6;
     }
@@ -214,7 +217,7 @@ void MenuItemPart::readValue(CurrSettings* _currSettingsPtr) {
   else if (typeOfPart == 'M') value = _currSettingsPtr->now.minute;
   else if (typeOfPart == 'S') value = _currSettingsPtr->now.second;
   else if (typeOfPart == 'L') value = 95;
-  else if (typeOfPart == 'b') value = CounterForBubbles.get_bubbleCounter();
+  else if (typeOfPart == 'b' || typeOfPart == 's' || typeOfPart == 'B' || typeOfPart == 'S') value = 0;
   else if (typeOfPart == 't') {
     if (_currSettingsPtr->timerOn) value = 1;
     else value = 0;
@@ -351,6 +354,42 @@ void MenuItemPart::valueToDisplay(char* charDisplay, CurrSettings* _currSettings
     charDisplay[_indexOut] = '0';
     _indexOut++;
   }
+  else if (typeOfPart == 'b') {
+    long _longValue = CounterForBubbles.get_bubbleCounter();
+    sprintf(_strValue, "%6d", _longValue);
+    for (int i = 0; i < 6; i++) {
+      charDisplay[_indexOut] = _strValue[i];
+      _indexOut++;
+    }
+  }
+  else if (typeOfPart == 's' || typeOfPart == 'B' || typeOfPart == 'S') {
+    int _intValue;
+    
+    if (typeOfPart == 's') _intValue = CounterForBubbles.get_bubbleIn100Second();
+    else if (typeOfPart == 'B') _intValue = CounterForBubbles.get_bubbleInMinute();
+    else if (typeOfPart == 'S') _intValue = CounterForBubbles.get_sensorInSecond();
+    if (_intValue == -1) {
+      charDisplay[_indexOut] = ' ';
+      _indexOut++;
+      charDisplay[_indexOut] = ' ';
+      _indexOut++;
+      charDisplay[_indexOut] = ' ';
+      _indexOut++;
+      charDisplay[_indexOut] = 'E';
+      _indexOut++;
+      charDisplay[_indexOut] = 'r';
+      _indexOut++;
+      charDisplay[_indexOut] = 'r';
+      _indexOut++;
+    }
+    else {
+      sprintf(_strValue, "%6d", _intValue);
+      for (int i = 0; i < 6; i++) {
+        charDisplay[_indexOut] = _strValue[i];
+        _indexOut++;
+      }
+    }
+  }
   else if (typeOfPart == 'L') {
     byte _indexOfNow = _currSettingsPtr->now.hour * 4;
     if (_currSettingsPtr->now.minute >= 45) _indexOfNow = _indexOfNow + 3;
@@ -399,16 +438,11 @@ void MenuItemPart::valueToDisplay(char* charDisplay, CurrSettings* _currSettings
       }
     }
   }
-  else {    
+  else {
     if (lengthValue == 1) sprintf(_strValue, "%01d", value);
     else if (lengthValue == 2) sprintf(_strValue, "%02d", value);
-    else if (lengthValue == 6) sprintf(_strValue, "%06d", value);
-      /*
-      charDisplay[_indexOut] = _strValue[0];
-      _indexOut++;
-      charDisplay[_indexOut] = _strValue[1];
-      _indexOut++;*/
-    
+    else if (lengthValue == 6) sprintf(_strValue, "%6d", value);
+
     for (int i = 0; i < lengthValue; i++) {
       charDisplay[_indexOut] = _strValue[i];
       _indexOut++;

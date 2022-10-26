@@ -9,8 +9,10 @@ class BubbleCounter {
     void set_bubbleVibration(int bubbleVibration);
     int get_bubbleVibration();
     int get_sensorInSecond();
-    long get_bubbleCounter();
+    long get_bubbleCounter();        
     bool get_itsBubble();
+    int get_bubbleIn100Second();
+    int get_bubbleInMinute();
     void tick();
 
   private:
@@ -73,9 +75,22 @@ bool BubbleCounter::_checkError() {
   else return false;
 }
 
+int BubbleCounter::get_bubbleIn100Second() {  
+  if (!_checkError()) return -1;
+  if ((_durationBubble + _durationNoBubble) == 0) return 0;
+  return 100000/(_durationBubble + _durationNoBubble);  
+}
+
+int BubbleCounter::get_bubbleInMinute() {  
+  if (!_checkError()) return -1;
+  if ((_durationBubble + _durationNoBubble) == 0) return 0;
+  return 60000/(_durationBubble + _durationNoBubble);
+}
+
 // функция подсчета пузырьков
 void BubbleCounter::tick() {
-  int _newLevel, _countSensor;
+  int _newLevel; 
+  static int _countSensor;
   unsigned long _currentTime; // текущее время считывания
   static unsigned long _beginCountSensorInSecond; // начало обсчета сенсор в секунду
   static unsigned long _lastTimeBubbleLevel; // последнее время уровня пузырька
@@ -89,11 +104,11 @@ void BubbleCounter::tick() {
   _currentTime = millis();
 
   // сколько считываний в секунду
-  if ((_currentTime - _beginCountSensorInSecond) > 1000) {
+  if ((_currentTime - _beginCountSensorInSecond) > 1000) {    
     _sensorInSecond = _countSensor;
     _externalFunction = true;
     _beginCountSensorInSecond = _currentTime;
-    _countSensor = 0;    
+    _countSensor = 0;
   }
   else _countSensor++;
 

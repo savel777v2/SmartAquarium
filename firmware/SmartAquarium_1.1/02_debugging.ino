@@ -32,14 +32,15 @@ void debugOnOffLamps(char _char[10], int _i, int _nowInMinutes, int _minutesLamp
   Serial.println(_minutesLamp);
 }
 
-void debugOnOffLamps(char _char[10], int _i, int _nowInMinutes, int _minutesLamp) {
-  Serial.print(_char);
-  Serial.print(" _i: ");
-  Serial.print(_i);
-  Serial.print(" _nowInMinutes: ");
-  Serial.print(_nowInMinutes);
-  Serial.print(" _minutesLamp: ");
-  Serial.println(_minutesLamp);
+void debugCounterForBubbles() {
+  Serial.print("bubbleCounter: ");
+  Serial.print(CounterForBubbles.get_bubbleCounter());
+  Serial.print("bubbleIn100Second: ");
+  Serial.print(CounterForBubbles.get_bubbleIn100Second());
+  Serial.print("bubbleInMinute: ");
+  Serial.print(CounterForBubbles.get_bubbleInMinute());
+  Serial.print(",sensorInSecond: ");
+  Serial.println(CounterForBubbles.get_sensorInSecond());
 }
 
 #endif
