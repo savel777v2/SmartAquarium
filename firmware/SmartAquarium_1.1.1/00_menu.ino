@@ -16,7 +16,7 @@
 */
 char *menuItems[][7] = {
   {"%1C %H%M%2C%3C", "St%7n%8a %t", "Sd%0h%1m  ", "Sn%2h%3m  ", "Sb%4h%5m %6c", "Sdn %9m %10c", ""},
-  {"i%1Qo%2Q", "Td%11q  %12c", "Tn%13q  %14c", "dt %15w   ", "%L"},
+  {"i%1Qo%2Q", "%L", "Td%11q  %12c", "Tn%13q  %14c", "dt %15w   "},
   {""}
 };
 
