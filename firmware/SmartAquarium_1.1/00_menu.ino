@@ -12,11 +12,15 @@
   q - настройка температуры, адрес - номер настройки в EEPROM
   w - настройка люфта температуры в целях ее регулировки, адрес - номер настройки в EEPROM
   L - информация по логам температуры из heaterTempLog
+  b - счетчик пузырьков абсалютный
 
 */
+BubbleCounter CounterForBubbles(7, A7, onTheBubble);
+
 char *menuItems[][7] = {
   {"%1C %H%M%2C%3C", "St%7n%8a %t", "Sd%0h%1m  ", "Sn%2h%3m  ", "Sb%4h%5m %6c", "Sdn %9m %10c", ""},
   {"i%1Qo%2Q", "%L", "Td%11q  %12c", "Tn%13q  %14c", "dt %15w   "},
+  {"C %b"},
   {""}
 };
 
@@ -82,37 +86,35 @@ class MenuItemPart {
     byte minValue;
     byte maxValue;
     byte lengthValue;
-
-
 };
 
 int MenuItemPart::get_isNull() {
   return isNull;
-};
+}
 
 void MenuItemPart::set_isNull(int _isNull) {
   isNull = _isNull;
-};
+}
 
 bool MenuItemPart::get_edited() {
   return edited;
-};
+}
 
 void MenuItemPart::set_edited(bool _edited) {
   edited = _edited;
-};
+}
 
 char MenuItemPart::get_typeOfPart() {
   return typeOfPart;
-};
+}
 
 byte MenuItemPart::get_value() {
   return value;
-};
+}
 
 void MenuItemPart::set_value(byte _value) {
   value = _value;
-};
+}
 
 void MenuItemPart::initialize(char _charMode[10], CurrSettings* _currSettingsPtr) {
   char _charAdress[10];
@@ -197,8 +199,12 @@ void MenuItemPart::initialize(char _charMode[10], CurrSettings* _currSettingsPtr
       circleEdit = false;
       lengthValue = 8;
     }
+    else if (typeOfPart == 'b') {
+      edited = false;
+      lengthValue = 6;
+    }
   }
-};
+}
 
 void MenuItemPart::readValue(CurrSettings* _currSettingsPtr) {
 
@@ -208,6 +214,7 @@ void MenuItemPart::readValue(CurrSettings* _currSettingsPtr) {
   else if (typeOfPart == 'M') value = _currSettingsPtr->now.minute;
   else if (typeOfPart == 'S') value = _currSettingsPtr->now.second;
   else if (typeOfPart == 'L') value = 95;
+  else if (typeOfPart == 'b') value = CounterForBubbles.get_bubbleCounter();
   else if (typeOfPart == 't') {
     if (_currSettingsPtr->timerOn) value = 1;
     else value = 0;
@@ -234,7 +241,7 @@ void MenuItemPart::readValue(CurrSettings* _currSettingsPtr) {
       //EEPROM.update(adress, value);
     }
   }
-};
+}
 
 void MenuItemPart::LeftRightValue(bool _left) {
 
@@ -246,7 +253,7 @@ void MenuItemPart::LeftRightValue(bool _left) {
   }
   else if (_left) value--;
   else value++;
-};
+}
 
 void MenuItemPart::writeValue(CurrSettings* _currSettingsPtr) {
 
@@ -277,7 +284,7 @@ void MenuItemPart::writeValue(CurrSettings* _currSettingsPtr) {
   else if (edited) {
     EEPROM.update(adress, value);
   }
-};
+}
 
 void MenuItemPart::valueToDisplay(char* charDisplay, CurrSettings* _currSettingsPtr, bool _blinkOff) {
   int _indexOut = 0;
@@ -392,19 +399,20 @@ void MenuItemPart::valueToDisplay(char* charDisplay, CurrSettings* _currSettings
       }
     }
   }
-  else {
-    if (lengthValue == 1) {
-      sprintf(_strValue, "%01d", value);
-      charDisplay[_indexOut] = _strValue[0];
-      _indexOut++;
-    }
-    else if (lengthValue == 2) {
-      sprintf(_strValue, "%02d", value);
+  else {    
+    if (lengthValue == 1) sprintf(_strValue, "%01d", value);
+    else if (lengthValue == 2) sprintf(_strValue, "%02d", value);
+    else if (lengthValue == 6) sprintf(_strValue, "%06d", value);
+      /*
       charDisplay[_indexOut] = _strValue[0];
       _indexOut++;
       charDisplay[_indexOut] = _strValue[1];
+      _indexOut++;*/
+    
+    for (int i = 0; i < lengthValue; i++) {
+      charDisplay[_indexOut] = _strValue[i];
       _indexOut++;
     }
   }
   charDisplay[_indexOut] = '\0';
-};
+}
