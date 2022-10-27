@@ -9,27 +9,32 @@ class BubbleCounter {
     void set_bubbleVibration(int bubbleVibration);
     int get_bubbleVibration();
     int get_sensorInSecond();
-    long get_bubbleCounter();        
+    long get_bubbleCounter();
     bool get_itsBubble();
     int get_bubbleIn100Second();
     int get_bubbleInMinute();
+    int get_MinLevel();
+    int get_MaxLevel();
+    int get_durationBubble();
+    int get_durationNoBubble();
     void tick();
 
   private:
-    bool _checkError();
+    bool _checkErrorBubble();
+    bool _checkErrorNoBubble();
 
     int _laserPin, _analogPin;
     void (*_onTheBubble)();
-    int _minBubbleLevel = 100; // мин уровень срабатывания пузырька
+    int _minBubbleLevel = 200; // мин уровень срабатывания пузырька
     int _bubbleVibration = 5; // дребезг срабатывания пузырька в мс
     int _sensorInSecond = 0; // считываний сенсора в секунду
     long _bubbleCounter = 0; // счетчик пузырьков
-    unsigned long _durationNoBubble = 0; // продолжительность интервала простоя
     unsigned long _durationBubble = 0; // продолжительность интервала пузыря
+    unsigned long _durationNoBubble = 0; // продолжительность интервала простоя
     // мин. и макс. уровни сигналов
-    int _MinLevelBubble, _MaxLevelBubble, _MinLevelNoBubble, _MaxLevelNoBubble;    
+    int _MinLevel, _MaxLevel, _MinLevelBubble, _MaxLevelBubble, _MinLevelNoBubble, _MaxLevelNoBubble;
     bool _itsBubble = false; // флаг пролета пузырька
-    
+
 
 };
 
@@ -69,42 +74,87 @@ bool BubbleCounter::get_itsBubble() {
   return _itsBubble;
 }
 
-bool BubbleCounter::_checkError() {
-  // выход показателй за предельные значения
-  if ((_durationNoBubble > 10000) || (_durationNoBubble < 10) || (_durationBubble > 100) || (_durationBubble < 10)) return true;
+bool BubbleCounter::_checkErrorBubble() {
+  // выход показателя за предельные значения
+  if (_durationBubble > 50 || _durationBubble < 5) return true;
   else return false;
 }
 
-int BubbleCounter::get_bubbleIn100Second() {  
-  if (!_checkError()) return -1;
-  if ((_durationBubble + _durationNoBubble) == 0) return 0;
-  return 100000/(_durationBubble + _durationNoBubble);  
+bool _checkErrorBubble();
+    bool _checkErrorNoBubble();
+
+bool BubbleCounter::_checkErrorNoBubble() {
+  // выход показателй за предельные значения
+  if (_durationNoBubble > 99000 || _durationNoBubble < 30) return true;
+  else return false;
 }
 
-int BubbleCounter::get_bubbleInMinute() {  
-  if (!_checkError()) return -1;
+int BubbleCounter::get_bubbleIn100Second() {
+  if (_checkErrorBubble() || _checkErrorNoBubble()) return -1;
   if ((_durationBubble + _durationNoBubble) == 0) return 0;
-  return 60000/(_durationBubble + _durationNoBubble);
+  return 100000 / (_durationBubble + _durationNoBubble);
 }
+
+int BubbleCounter::get_bubbleInMinute() {
+  if (_checkErrorBubble() || _checkErrorNoBubble()) return -1;
+  if ((_durationBubble + _durationNoBubble) == 0) return 0;
+  return 60000 / (_durationBubble + _durationNoBubble);
+}
+
+int BubbleCounter::get_MinLevel() {
+  return _MinLevel;
+}
+
+int BubbleCounter::get_MaxLevel() {
+  return _MaxLevel;
+}
+
+int BubbleCounter::get_durationBubble() {
+  if (_checkErrorBubble()) return -1;  
+  return _durationBubble;
+}
+
+int BubbleCounter::get_durationNoBubble() {
+  if (_checkErrorNoBubble()) return -1;  
+  return _durationNoBubble;
+}
+
+int get_durationBubble();
+    int get_durationNoBubble();
 
 // функция подсчета пузырьков
 void BubbleCounter::tick() {
-  int _newLevel; 
+  int _newLevel;
   static int _countSensor;
   unsigned long _currentTime; // текущее время считывания
   static unsigned long _beginCountSensorInSecond; // начало обсчета сенсор в секунду
+  static unsigned long _beginMinMaxLevel; // начало обсчета сенсор в секунду
   static unsigned long _lastTimeBubbleLevel; // последнее время уровня пузырька
   static long _beginBubble; // начало регистрации пузырька
   static long _beginNoBubble; // начало регистрации без пузырька
   // обсчет мин. и макс. уровней сигналов
-  static int _tempMinLevelBubble, _tempMaxLevelBubble, _tempMinLevelNoBubble, _tempMaxLevelNoBubble;
+  static int _tempMinLevel, _tempMaxLevel, _tempMinLevelBubble, _tempMaxLevelBubble, _tempMinLevelNoBubble, _tempMaxLevelNoBubble;
   bool _externalFunction = false;
 
   _newLevel = analogRead(_analogPin);
   _currentTime = millis();
 
+  // обсчет мин.\макс. уровень датчика - 2 раза в секунду
+  _tempMinLevel = min(_newLevel, _tempMinLevel);
+  _tempMaxLevel = max(_newLevel, _tempMaxLevel);
+  if ((_currentTime - _beginMinMaxLevel) > 500) {
+    _MinLevel = _tempMinLevel;
+    _MaxLevel = _tempMaxLevel;
+    _tempMinLevel = 20000;
+    _tempMaxLevel = 0;
+    _externalFunction = true;
+    _beginMinMaxLevel = _currentTime;
+  }
+
   // сколько считываний в секунду
-  if ((_currentTime - _beginCountSensorInSecond) > 1000) {    
+  if ((_currentTime - _beginCountSensorInSecond) > 1000) {
+    _MinLevelNoBubble = _tempMinLevelNoBubble;
+    _MaxLevelNoBubble = _tempMaxLevelNoBubble;
     _sensorInSecond = _countSensor;
     _externalFunction = true;
     _beginCountSensorInSecond = _currentTime;
@@ -120,7 +170,7 @@ void BubbleCounter::tick() {
       _beginBubble = _currentTime;
       _itsBubble = true;
       _externalFunction = true;
-      if (!_checkError()) _bubbleCounter++;
+      if (!(_checkErrorBubble() || _checkErrorNoBubble())) _bubbleCounter++;
 
       // обсчет уровней сигналов
       _tempMinLevelBubble = _newLevel;
@@ -161,7 +211,7 @@ void BubbleCounter::tick() {
         _beginBubble = -1;
         _itsBubble = false;
         _externalFunction = true;
-                
+
         _MinLevelBubble = _tempMinLevelBubble;
         _MaxLevelBubble = _tempMaxLevelBubble;
         // начало интервала без пузырька - при завершении пузырька
@@ -178,6 +228,6 @@ void BubbleCounter::tick() {
   }
 
   // вызов внешней функции
-  if (_externalFunction) (*_onTheBubble)();  
-  
+  if (_externalFunction) (*_onTheBubble)();
+
 }

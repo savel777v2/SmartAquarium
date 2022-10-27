@@ -16,6 +16,10 @@
   s - скорость пузырьков в секунду
   B - скорость пузырьков в минуту
   S - считываний сенсора в секунду
+  u - минимальный уровень сенсора
+  U - максималньый уровень сенсора
+  O - продолжительность пузыря
+  o - продолжительность между пузырями
 
 */
 BubbleCounter CounterForBubbles(10, A7, onTheBubble);
@@ -23,7 +27,7 @@ BubbleCounter CounterForBubbles(10, A7, onTheBubble);
 char *menuItems[][7] = {
   {"%1C %H%M%2C%3C", "St%7n%8a %t", "Sd%0h%1m  ", "Sn%2h%3m  ", "Sb%4h%5m %6c", "Sdn %9m %10c", ""},
   {"i%1Qo%2Q", "%L", "Td%11q  %12c", "Tn%13q  %14c", "dt %15w   "},
-  {"C %b", "S %s", "M %B", "I %S"},
+  {"C %b", "S %s", "M %B", "I %S", "%u%U", "%O%o"},
   {""}
 };
 
@@ -206,6 +210,10 @@ void MenuItemPart::initialize(char _charMode[10], CurrSettings* _currSettingsPtr
       edited = false;
       lengthValue = 6;
     }
+    else if (typeOfPart == 'u' || typeOfPart == 'U' || typeOfPart == 'O' || typeOfPart == 'o') {
+      edited = false;
+      lengthValue = 4;
+    }
   }
 }
 
@@ -217,7 +225,7 @@ void MenuItemPart::readValue(CurrSettings* _currSettingsPtr) {
   else if (typeOfPart == 'M') value = _currSettingsPtr->now.minute;
   else if (typeOfPart == 'S') value = _currSettingsPtr->now.second;
   else if (typeOfPart == 'L') value = 95;
-  else if (typeOfPart == 'b' || typeOfPart == 's' || typeOfPart == 'B' || typeOfPart == 'S') value = 0;
+  else if (typeOfPart == 'b' || typeOfPart == 's' || typeOfPart == 'B' || typeOfPart == 'S' || typeOfPart == 'u' || typeOfPart == 'U' || typeOfPart == 'O' || typeOfPart == 'o') value = 0;
   else if (typeOfPart == 't') {
     if (_currSettingsPtr->timerOn) value = 1;
     else value = 0;
@@ -364,10 +372,11 @@ void MenuItemPart::valueToDisplay(char* charDisplay, CurrSettings* _currSettings
   }
   else if (typeOfPart == 's' || typeOfPart == 'B' || typeOfPart == 'S') {
     int _intValue;
-    
+
     if (typeOfPart == 's') _intValue = CounterForBubbles.get_bubbleIn100Second();
     else if (typeOfPart == 'B') _intValue = CounterForBubbles.get_bubbleInMinute();
     else if (typeOfPart == 'S') _intValue = CounterForBubbles.get_sensorInSecond();
+    
     if (_intValue == -1) {
       charDisplay[_indexOut] = ' ';
       _indexOut++;
@@ -385,6 +394,32 @@ void MenuItemPart::valueToDisplay(char* charDisplay, CurrSettings* _currSettings
     else {
       sprintf(_strValue, "%6d", _intValue);
       for (int i = 0; i < 6; i++) {
+        charDisplay[_indexOut] = _strValue[i];
+        _indexOut++;
+      }
+    }
+  }
+  else if (typeOfPart == 'u' || typeOfPart == 'U' || typeOfPart == 'O' || typeOfPart == 'o') {
+    int _intValue;
+
+    if (typeOfPart == 'u') _intValue = CounterForBubbles.get_MinLevel();
+    else if (typeOfPart == 'U') _intValue = CounterForBubbles.get_MaxLevel();
+    else if (typeOfPart == 'O') _intValue = CounterForBubbles.get_durationBubble();
+    else if (typeOfPart == 'o') _intValue = CounterForBubbles.get_durationNoBubble();
+    
+    if (_intValue == -1) {
+      charDisplay[_indexOut] = ' ';
+      _indexOut++;
+      charDisplay[_indexOut] = 'E';
+      _indexOut++;
+      charDisplay[_indexOut] = 'r';
+      _indexOut++;
+      charDisplay[_indexOut] = 'r';
+      _indexOut++;
+    }
+    else {
+      sprintf(_strValue, "%4d", _intValue);
+      for (int i = 0; i < 4; i++) {
         charDisplay[_indexOut] = _strValue[i];
         _indexOut++;
       }
