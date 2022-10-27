@@ -19,6 +19,6 @@ void printDisplay() {
 
     }
 
-  Module.setDisplayToString(_toDisplay, 0, false);
+  Module.setDisplayToString(_toDisplay, menuPointer[currMode.main][currMode.secondary], false);
 
 }

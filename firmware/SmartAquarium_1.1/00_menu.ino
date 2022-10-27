@@ -33,6 +33,12 @@ char *menuItems[][7] = {
   {""}
 };
 
+byte menuPointer[][7] = {
+  {B0010000, B0010000, B0010000, B0010000, B0010000, B0000000, 0},
+  {B0100010, B1000010, B0010000, B0010000, B0010000, B0000000, 0},
+  {B0000000, B0000100, B0000000, B0000000, B0000000, B0000000, 0}
+};
+
 char partsOfMenuItem[8][10];
 
 bool itNumber(char _c) {
@@ -494,7 +500,7 @@ void MenuItemPart::valueToDisplay(char* charDisplay, CurrSettings* _currSettings
     else {
       _valueOfLog = _valueOfLog - 1000;
       sprintf(_strValue, "%03d", _valueOfLog);
-      for (int i = 0; i < lengthValue; i++) {
+      for (int i = 0; i < 3; i++) {
         charDisplay[_indexOut] = _strValue[i];
         _indexOut++;
       }
