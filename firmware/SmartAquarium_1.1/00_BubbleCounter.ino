@@ -4,12 +4,13 @@ class BubbleCounter {
   public:
 
     BubbleCounter(int laserPin, int analogPin, void (*function)());
-    void set_minBubbleLevel(int minBubbleLevel);
-    int get_minBubbleLevel();
-    void set_bubbleVibration(int bubbleVibration);
-    int get_bubbleVibration();
+    void set_minBubbleLevel(byte minBubbleLevel);
+    byte get_minBubbleLevel();
+    void set_bubbleVibration(byte bubbleVibration);
+    byte get_bubbleVibration();
     int get_sensorInSecond();
-    long get_bubbleCounter();
+    void set_bubbleCounter(unsigned long bubbleCounter);
+    unsigned long get_bubbleCounter();
     bool get_itsBubble();
     int get_bubbleIn100Second();
     int get_bubbleInMinute();
@@ -25,10 +26,10 @@ class BubbleCounter {
 
     int _laserPin, _analogPin;
     void (*_onTheBubble)();
-    int _minBubbleLevel = 200; // мин уровень срабатывания пузырька
-    int _bubbleVibration = 5; // дребезг срабатывания пузырька в мс
+    byte _minBubbleLevel = 200; // мин уровень срабатывания пузырька
+    byte _bubbleVibration = 5; // дребезг срабатывания пузырька в мс
     int _sensorInSecond = 0; // считываний сенсора в секунду
-    long _bubbleCounter = 0; // счетчик пузырьков
+    unsigned long _bubbleCounter = 0; // счетчик пузырьков
     unsigned long _durationBubble = 0; // продолжительность интервала пузыря
     unsigned long _durationNoBubble = 0; // продолжительность интервала простоя
     // мин. и макс. уровни сигналов
@@ -46,19 +47,19 @@ BubbleCounter::BubbleCounter(int laserPin, int analogPin, void (*function)()) {
   digitalWrite(_laserPin, HIGH);
 }
 
-void BubbleCounter::set_minBubbleLevel(int minBubbleLevel) {
+void BubbleCounter::set_minBubbleLevel(byte minBubbleLevel) {
   _minBubbleLevel = minBubbleLevel;
 }
 
-int BubbleCounter::get_minBubbleLevel() {
+byte BubbleCounter::get_minBubbleLevel() {
   return _minBubbleLevel;
 }
 
-void BubbleCounter::set_bubbleVibration(int bubbleVibration) {
+void BubbleCounter::set_bubbleVibration(byte bubbleVibration) {
   _bubbleVibration = bubbleVibration;
 }
 
-int BubbleCounter::get_bubbleVibration() {
+byte BubbleCounter::get_bubbleVibration() {
   return _bubbleVibration;
 }
 
@@ -66,7 +67,11 @@ int BubbleCounter::get_sensorInSecond() {
   return _sensorInSecond;
 }
 
-long BubbleCounter::get_bubbleCounter() {
+void BubbleCounter::set_bubbleCounter(unsigned long bubbleCounter) {
+  _bubbleCounter = bubbleCounter;
+}
+
+unsigned long BubbleCounter::get_bubbleCounter() {
   return _bubbleCounter;
 }
 

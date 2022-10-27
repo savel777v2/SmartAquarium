@@ -2,6 +2,11 @@ MenuItemPart EditingMenuItemPart;
 
 void setup() {
 
+#if (DEBUG_MODE == 1)
+  Serial.begin(9600);
+  Serial.println("debugging");
+#endif
+
   pinMode(PIEZO_PIN, OUTPUT); // настраиваем вывод 2 на выход
   tone(PIEZO_PIN, 2500, 100);
   for (int i = 0; i < 3; i++) {
@@ -17,10 +22,26 @@ void setup() {
   initPartsOfMenuItem(menuItems[currMode.main][currMode.secondary]);
   EditingMenuItemPart.set_isNull(1);
 
-#if (DEBUG_MODE == 1)
-  Serial.begin(9600);
-  Serial.println("debugging");
-#endif
+  // initialization settinggs BubbleCounter from EEPROM
+  unsigned long _value4 = EEPROM.read(16);
+  if (_value4 != 4294967295) CounterForBubbles.set_bubbleCounter(_value4);
+  byte _value1;
+  _value1 = EEPROM.read(20);
+  /*Serial.print("get_bubbleVibration: ");
+  Serial.println(_value1);*/
+  if (_value1 == 255) {
+    _value1 = CounterForBubbles.get_bubbleVibration();
+    EEPROM.update(20, _value1);
+  }
+  else CounterForBubbles.set_bubbleVibration(_value1);
+  _value1 = EEPROM.read(21);  
+  /*Serial.print("get_bubbleVibration: ");
+  Serial.println(_value1);*/
+  if (_value1 == 255) {
+    _value1 = CounterForBubbles.get_minBubbleLevel();
+    EEPROM.update(21, _value1);
+  }
+  else CounterForBubbles.set_minBubbleLevel(_value1);
 
 }
 

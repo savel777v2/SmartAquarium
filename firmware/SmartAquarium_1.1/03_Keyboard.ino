@@ -13,12 +13,20 @@ void readKeyboard() {
       if (keyPressed(Keys, 3, 1)) _needDisplay = keyLeftRightPressed(false);
       if (keyPressed(Keys, 4, 1)) _needDisplay = keyDownUpPressed(true);
       if (keyPressed(Keys, 5, 1)) _needDisplay = keyDownUpPressed(false);
+      if (keyPressed(Keys, 6, 1)) _needDisplay = keySavePressed();
       if (keyPressed(Keys, 7, 0)) _needDisplay = keyLampsPressed();
     }
   }
 
   if (_needDisplay) printDisplay();
 
+}
+
+// обработка нажатия клавиши Save
+bool keySavePressed() {
+  unsigned long _value4 = CounterForBubbles.get_bubbleCounter();
+  EEPROM.update(16, _value4);
+  tone(PIEZO_PIN, 2500, 100);
 }
 
 // обработка нажатия клавиши Lamps

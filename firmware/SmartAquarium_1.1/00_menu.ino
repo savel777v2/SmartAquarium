@@ -20,6 +20,8 @@
   U - максималньый уровень сенсора
   O - продолжительность пузыря
   o - продолжительность между пузырями
+  v - уровень вибрации пузырька в мс.
+  V - уровень отсечки сигнала пузырька
 
 */
 BubbleCounter CounterForBubbles(10, A7, onTheBubble);
@@ -27,7 +29,7 @@ BubbleCounter CounterForBubbles(10, A7, onTheBubble);
 char *menuItems[][7] = {
   {"%1C %H%M%2C%3C", "St%7n%8a %t", "Sd%0h%1m  ", "Sn%2h%3m  ", "Sb%4h%5m %6c", "Sdn %9m %10c", ""},
   {"i%1Qo%2Q", "%L", "Td%11q  %12c", "Tn%13q  %14c", "dt %15w   "},
-  {"C %b", "S %s", "M %B", "I %S", "%u%U", "%O%o"},
+  {"C%b", "S %s", "M %B", "I %S", "%u%U", "%O%o", " %20v %21V"},
   {""}
 };
 
@@ -163,7 +165,6 @@ void MenuItemPart::initialize(char _charMode[10], CurrSettings* _currSettingsPtr
       lengthValue = 2;
     }
     if (typeOfPart == 'n' || typeOfPart == 'a') {
-
       maxValue = 59;
       edited = !_currSettingsPtr->timerOn;
       lengthValue = 2;
@@ -206,13 +207,29 @@ void MenuItemPart::initialize(char _charMode[10], CurrSettings* _currSettingsPtr
       circleEdit = false;
       lengthValue = 8;
     }
-    else if (typeOfPart == 'b' || typeOfPart == 's' || typeOfPart == 'B' || typeOfPart == 'S') {
+    else if (typeOfPart == 'b') {
+      edited = false;
+      lengthValue = 7;
+    }
+    else if (typeOfPart == 's' || typeOfPart == 'B' || typeOfPart == 'S') {
       edited = false;
       lengthValue = 6;
     }
     else if (typeOfPart == 'u' || typeOfPart == 'U' || typeOfPart == 'O' || typeOfPart == 'o') {
       edited = false;
       lengthValue = 4;
+    }
+    else if (typeOfPart == 'v') {
+      minValue = 1;
+      maxValue = 10;
+      edited = true;
+      lengthValue = 3;
+    }
+    else if (typeOfPart == 'V') {
+      minValue = 100;
+      maxValue = 250;
+      edited = true;
+      lengthValue = 3;
     }
   }
 }
@@ -291,7 +308,17 @@ void MenuItemPart::writeValue(CurrSettings* _currSettingsPtr) {
       _currSettingsPtr->timerOn = false;
     }
   }
-  else if (typeOfPart == 'L') value = 95;
+  else if (typeOfPart == 'v') {
+    EEPROM.update(adress, value);
+    CounterForBubbles.set_bubbleVibration(value);
+  }
+  else if (typeOfPart == 'V') {
+    EEPROM.update(adress, value);
+    CounterForBubbles.set_minBubbleLevel(value);
+  }
+  else if (typeOfPart == 'L') {
+    value = 95;
+  }
   else if (edited) {
     EEPROM.update(adress, value);
   }
@@ -363,9 +390,9 @@ void MenuItemPart::valueToDisplay(char* charDisplay, CurrSettings* _currSettings
     _indexOut++;
   }
   else if (typeOfPart == 'b') {
-    long _longValue = CounterForBubbles.get_bubbleCounter();
-    sprintf(_strValue, "%6d", _longValue);
-    for (int i = 0; i < 6; i++) {
+    unsigned long _longValue = CounterForBubbles.get_bubbleCounter();
+    sprintf(_strValue, "%7d", _longValue);
+    for (int i = 0; i < lengthValue; i++) {
       charDisplay[_indexOut] = _strValue[i];
       _indexOut++;
     }
@@ -376,7 +403,7 @@ void MenuItemPart::valueToDisplay(char* charDisplay, CurrSettings* _currSettings
     if (typeOfPart == 's') _intValue = CounterForBubbles.get_bubbleIn100Second();
     else if (typeOfPart == 'B') _intValue = CounterForBubbles.get_bubbleInMinute();
     else if (typeOfPart == 'S') _intValue = CounterForBubbles.get_sensorInSecond();
-    
+
     if (_intValue == -1) {
       charDisplay[_indexOut] = ' ';
       _indexOut++;
@@ -393,7 +420,7 @@ void MenuItemPart::valueToDisplay(char* charDisplay, CurrSettings* _currSettings
     }
     else {
       sprintf(_strValue, "%6d", _intValue);
-      for (int i = 0; i < 6; i++) {
+      for (int i = 0; i < lengthValue; i++) {
         charDisplay[_indexOut] = _strValue[i];
         _indexOut++;
       }
@@ -406,7 +433,7 @@ void MenuItemPart::valueToDisplay(char* charDisplay, CurrSettings* _currSettings
     else if (typeOfPart == 'U') _intValue = CounterForBubbles.get_MaxLevel();
     else if (typeOfPart == 'O') _intValue = CounterForBubbles.get_durationBubble();
     else if (typeOfPart == 'o') _intValue = CounterForBubbles.get_durationNoBubble();
-    
+
     if (_intValue == -1) {
       charDisplay[_indexOut] = ' ';
       _indexOut++;
@@ -419,7 +446,7 @@ void MenuItemPart::valueToDisplay(char* charDisplay, CurrSettings* _currSettings
     }
     else {
       sprintf(_strValue, "%4d", _intValue);
-      for (int i = 0; i < 4; i++) {
+      for (int i = 0; i < lengthValue; i++) {
         charDisplay[_indexOut] = _strValue[i];
         _indexOut++;
       }
@@ -467,7 +494,7 @@ void MenuItemPart::valueToDisplay(char* charDisplay, CurrSettings* _currSettings
     else {
       _valueOfLog = _valueOfLog - 1000;
       sprintf(_strValue, "%03d", _valueOfLog);
-      for (int i = 0; i < 3; i++) {
+      for (int i = 0; i < lengthValue; i++) {
         charDisplay[_indexOut] = _strValue[i];
         _indexOut++;
       }
@@ -476,6 +503,7 @@ void MenuItemPart::valueToDisplay(char* charDisplay, CurrSettings* _currSettings
   else {
     if (lengthValue == 1) sprintf(_strValue, "%01d", value);
     else if (lengthValue == 2) sprintf(_strValue, "%02d", value);
+    else if (lengthValue == 3) sprintf(_strValue, "%3d", value);
     else if (lengthValue == 6) sprintf(_strValue, "%6d", value);
 
     for (int i = 0; i < lengthValue; i++) {
