@@ -33,7 +33,7 @@ class BubbleCounter {
     unsigned long _durationBubble = 0; // продолжительность интервала пузыря
     unsigned long _durationNoBubble = 0; // продолжительность интервала простоя
     // мин. и макс. уровни сигналов
-    int _MinLevel, _MaxLevel, _MinLevelBubble, _MaxLevelBubble, _MinLevelNoBubble, _MaxLevelNoBubble;
+    int _MinLevel, _MaxLevel;
     bool _itsBubble = false; // флаг пролета пузырька
 
 
@@ -138,7 +138,7 @@ void BubbleCounter::tick() {
   static long _beginBubble; // начало регистрации пузырька
   static long _beginNoBubble; // начало регистрации без пузырька
   // обсчет мин. и макс. уровней сигналов
-  static int _tempMinLevel, _tempMaxLevel, _tempMinLevelBubble, _tempMaxLevelBubble, _tempMinLevelNoBubble, _tempMaxLevelNoBubble;
+  static int _tempMinLevel, _tempMaxLevel;
   bool _externalFunction = false;
 
   _newLevel = analogRead(_analogPin);
@@ -158,8 +158,6 @@ void BubbleCounter::tick() {
 
   // сколько считываний в секунду
   if ((_currentTime - _beginCountSensorInSecond) > 1000) {
-    _MinLevelNoBubble = _tempMinLevelNoBubble;
-    _MaxLevelNoBubble = _tempMaxLevelNoBubble;
     _sensorInSecond = _countSensor;
     _externalFunction = true;
     _beginCountSensorInSecond = _currentTime;
@@ -176,37 +174,19 @@ void BubbleCounter::tick() {
       _itsBubble = true;
       _externalFunction = true;
       if (!(_checkErrorBubble() || _checkErrorNoBubble())) _bubbleCounter++;
-
-      // обсчет уровней сигналов
-      _tempMinLevelBubble = _newLevel;
-      _tempMaxLevelBubble = _newLevel;
       // завершаем интервал без пузырька
       if (_beginNoBubble != -1) {
         _durationNoBubble = _currentTime - _beginNoBubble;
-        _beginNoBubble = -1;
-        _MinLevelNoBubble = _tempMinLevelNoBubble;
-        _MaxLevelNoBubble = _tempMaxLevelNoBubble;
+        _beginNoBubble = -1;        
       }
-    }
-    else {
-      // 1.2 идет старый пузырек обсчитываем его
-      _tempMinLevelBubble = min(_newLevel, _tempMinLevelBubble);
-      _tempMaxLevelBubble = max(_newLevel, _tempMaxLevelBubble);
-    }
+    }    
   }
   else {
     if (_beginBubble == -1) {
       // интервал без пузырька _beginBubble ==-1
       if (_beginNoBubble == -1) {
         // 2.1 начало интервала без пузырька - только при старте
-        _beginNoBubble = _currentTime;
-        _tempMinLevelNoBubble = _newLevel;
-        _tempMaxLevelNoBubble = _newLevel;
-      }
-      else {
-        // 2.2 идет интервал без пузырька
-        _tempMinLevelNoBubble = min(_newLevel, _tempMinLevelNoBubble);
-        _tempMaxLevelNoBubble = max(_newLevel, _tempMaxLevelNoBubble);
+        _beginNoBubble = _currentTime;        
       }
     }
     else {
@@ -216,18 +196,8 @@ void BubbleCounter::tick() {
         _beginBubble = -1;
         _itsBubble = false;
         _externalFunction = true;
-
-        _MinLevelBubble = _tempMinLevelBubble;
-        _MaxLevelBubble = _tempMaxLevelBubble;
         // начало интервала без пузырька - при завершении пузырька
-        _beginNoBubble = _currentTime;
-        _tempMinLevelNoBubble = _newLevel;
-        _tempMaxLevelNoBubble = _newLevel;
-      }
-      else {
-        // 2.4 интервал пузырька
-        _tempMinLevelBubble = min(_newLevel, _tempMinLevelBubble);
-        _tempMaxLevelBubble = max(_newLevel, _tempMaxLevelBubble);
+        _beginNoBubble = _currentTime;        
       }
     }
   }

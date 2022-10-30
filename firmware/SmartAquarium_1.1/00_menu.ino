@@ -17,21 +17,25 @@
   U - информация с счетчика пузырьков в 4-х значном формате, где адрес: 1 - минимальный уровень сенсора, 2 - максимальный уровень сенсора, 3 - продолжительность пузыря, 4 - продолжительность между пузырями
   v - уровень вибрации пузырька в мс.
   V - уровень отсечки сигнала пузырька
+  P - пользовательская скорость мотора
 
 */
-BubbleCounter CounterForBubbles(10, A7, onTheBubble);
+BubbleCounter CounterForBubbles(2, A7, onTheBubble); //10
+StepMotor StepMotorBubbles(8, 9, 10, 11, onTheStepMotorBubbles);
 
 char *menuItems[][7] = {
   {"%1C %H%M%2C%3C", "St%7n%8a %t", "Sd%0h%1m  ", "Sn%2h%3m  ", "Sb%4h%5m %6c", "Sdn %9m %10c", ""},
   {"i%1Qo%2Q", "%L", "Td%11q  %12c", "Tn%13q  %14c", "dt %15w   "},
   {"C%b", "S %1B", "M %2B", "I %3B", "%1U%2U", "%3U%4U", " %20v %21V"},
+  {"moto%P"},
   {""}
 };
 
 byte menuPointer[][7] = {
   {B0010000, B0010000, B0010000, B0010000, B0010000, B0000000, 0},
   {B0100010, B1000010, B0010000, B0010000, B0010000, B0000000, 0},
-  {B0000000, B0000100, B0000000, B0000000, B0000000, B0000000, 0}
+  {B0000000, B0000100, B0000000, B0000000, B0000000, B0000000, 0},
+  {B0000000, B0000000, B0000000, B0000000, B0000000, B0000000, 0}
 };
 
 char partsOfMenuItem[8][10];
@@ -234,6 +238,12 @@ void MenuItemPart::initialize(char _charMode[10], CurrSettings* _currSettingsPtr
       edited = true;
       lengthValue = 3;
     }
+    else if (typeOfPart == 'P') {
+      minValue = 68;
+      maxValue = 132;
+      edited = true;
+      lengthValue = 4;
+    }
   }
 }
 
@@ -244,7 +254,7 @@ void MenuItemPart::readValue(CurrSettings* _currSettingsPtr) {
   if (typeOfPart == 'H') value = _currSettingsPtr->now.hour;
   else if (typeOfPart == 'M') value = _currSettingsPtr->now.minute;
   else if (typeOfPart == 'S') value = _currSettingsPtr->now.second;
-  else if (typeOfPart == 'L') value = 95;
+  else if (typeOfPart == 'L') value = 95;  
   else if (typeOfPart == 'b' || typeOfPart == 'B' || typeOfPart == 'U') value = 0;
   else if (typeOfPart == 't') {
     if (_currSettingsPtr->timerOn) value = 1;
@@ -257,6 +267,7 @@ void MenuItemPart::readValue(CurrSettings* _currSettingsPtr) {
   else if (typeOfPart == 'E' || typeOfPart == 'C' || typeOfPart == 'T' || typeOfPart == 'Q') value = 0;
   else if (typeOfPart == 'n' && _currSettingsPtr->timerOn) value = _currSettingsPtr->timerMinute;
   else if (typeOfPart == 'a' && _currSettingsPtr->timerOn) value = _currSettingsPtr->timerSecond;
+  else if (typeOfPart == 'P') value = StepMotorBubbles.get_userSpeed() + 100;
   else {
     value = EEPROM.read(adress);
     checkFromEEPROM = true;
@@ -315,6 +326,9 @@ void MenuItemPart::writeValue(CurrSettings* _currSettingsPtr) {
   }
   else if (typeOfPart == 'L') {
     value = 95;
+  }
+  else if (typeOfPart == 'P') {
+    StepMotorBubbles.set_userSpeed(value - 100);
   }
   else if (edited) {
     EEPROM.update(adress, value);
@@ -436,6 +450,10 @@ void MenuItemPart::valueToDisplay(char* charDisplay, CurrSettings* _currSettings
       sprintf(_strValue, "%03d", _valueOfLog);
       addSybstring(charDisplay, _indexOut, _strValue);      
     }
+  }
+  else if (typeOfPart == 'P') {
+    sprintf(_strValue, "%4d", value - 100);
+    addSybstring(charDisplay, _indexOut, _strValue);
   }
   else {
     if (lengthValue == 1) sprintf(_strValue, "%01d", value);
