@@ -24,8 +24,10 @@ void readKeyboard() {
 
 // обработка нажатия клавиши Save
 bool keySavePressed() {
-  unsigned long _value4 = CounterForBubbles.get_bubbleCounter();
-  EEPROM.update(16, _value4);
+  /*unsigned long _value4 = CounterForBubbles.get_bubbleCounter();
+  EEPROM.update(16, _value4);*/
+  StepMotorBubbles.set_userSpeed(0);
+  printDisplay();
   tone(PIEZO_PIN, 2500, 100);
 }
 

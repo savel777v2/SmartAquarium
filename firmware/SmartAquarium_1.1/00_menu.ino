@@ -21,21 +21,21 @@
 
 */
 BubbleCounter CounterForBubbles(2, A7, onTheBubble); //10
-StepMotor StepMotorBubbles(8, 9, 10, 11, onTheStepMotorBubbles);
+StepMotor StepMotorBubbles(11, 10, 9, 8, onTheStepMotorBubbles);
 
-char *menuItems[][7] = {
+char *menuItems[][8] = {
   {"%1C %H%M%2C%3C", "St%7n%8a %t", "Sd%0h%1m  ", "Sn%2h%3m  ", "Sb%4h%5m %6c", "Sdn %9m %10c", ""},
-  {"i%1Qo%2Q", "%L", "Td%11q  %12c", "Tn%13q  %14c", "dt %15w   "},
-  {"C%b", "S %1B", "M %2B", "I %3B", "%1U%2U", "%3U%4U", " %20v %21V"},
-  {"moto%P"},
+  {"i%1Qo%2Q", "%L", "Td%11q  %12c", "Tn%13q  %14c", "dt %15w   ", ""},
+  {"S %1B", "M %2B", "C%b", "I %3B", "%1U%2U", "%3U%4U", " %20v %21V", ""},
+  {"moto%P", ""},
   {""}
 };
 
-byte menuPointer[][7] = {
-  {B0010000, B0010000, B0010000, B0010000, B0010000, B0000000, 0},
-  {B0100010, B1000010, B0010000, B0010000, B0010000, B0000000, 0},
-  {B0000000, B0000100, B0000000, B0000000, B0000000, B0000000, 0},
-  {B0000000, B0000000, B0000000, B0000000, B0000000, B0000000, 0}
+byte menuPointer[][8] = {
+  {B0010000, B0010000, B0010000, B0010000, B0010000, B0000000, B0000000, 0},
+  {B0100010, B1000010, B0010000, B0010000, B0010000, B0000000, B0000000, 0},
+  {B0000100, B0000000, B0000000, B0000000, B0000000, B0000000, B0000000, 0},
+  {B0000000, B0000000, B0000000, B0000000, B0000000, B0000000, B0000000, 0}
 };
 
 char partsOfMenuItem[8][10];
