@@ -31,7 +31,9 @@ class BubbleCounter {
     int _sensorInSecond = 0; // считываний сенсора в секунду
     unsigned long _bubbleCounter = 0; // счетчик пузырьков
     unsigned long _durationBubble = 0; // продолжительность интервала пузыря
-    unsigned long _durationNoBubble = 0; // продолжительность интервала простоя    
+    unsigned long _durationNoBubble = 0; // продолжительность интервала простоя
+    long _beginBubble = 0; // начало регистрации пузырька
+    long _beginNoBubble = 0; // начало регистрации без пузырька
     // мин. и макс. уровни сигналов
     int _MinLevel, _MaxLevel;
     bool _itsBubble = false; // флаг пролета пузырька
@@ -82,14 +84,14 @@ bool BubbleCounter::get_itsBubble() {
 bool BubbleCounter::_checkErrorBubble() {
   // выход показателя за предельные значения
   if (_durationBubble > 50 || _durationBubble < 5) return true;
-  //else if (_itsBubble && (millis() - _beginBubble) > 50) return true;
+  else if (_itsBubble && (millis() - _beginBubble) > 50) return true;
   else return false;
 }
 
 bool BubbleCounter::_checkErrorNoBubble() {
   // выход показателй за предельные значения
   if (_durationNoBubble > 10000 || _durationNoBubble < 30) return true;
-  //else if (!_itsBubble && (millis() - _beginNoBubble) > 10000) return true;
+  else if (!_itsBubble && (millis() - _beginNoBubble) > 10000) return true;
   else return false;
 }
 
@@ -131,8 +133,6 @@ void BubbleCounter::tick() {
   static unsigned long _beginMinMaxLevel; // начало обсчета сенсор в секунду
   static unsigned long _lastTimeSecond; // последнее время цикла секунды
   static unsigned long _lastTimeBubbleLevel; // последнее время уровня пузырька
-  static long _beginBubble; // начало регистрации пузырька
-  static long _beginNoBubble; // начало регистрации без пузырька
   // обсчет мин. и макс. уровней сигналов
   static int _tempMinLevel, _tempMaxLevel;
   bool _externalFunction = false;
@@ -185,10 +185,10 @@ void BubbleCounter::tick() {
         _beginBubble = -1;
         _itsBubble = false;
         _externalFunction = true;
-        _events = _events | 0b00001000;
-        if (!(_checkErrorBubble() || _checkErrorNoBubble())) _bubbleCounter++;
+        _events = _events | 0b00001000;        
         // начало интервала без пузырька - при завершении пузырька
         _beginNoBubble = _currentTime;
+        if (!(_checkErrorBubble() || _checkErrorNoBubble())) _bubbleCounter++;
       }
     }
   }
