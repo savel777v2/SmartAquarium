@@ -14,12 +14,13 @@ void onTheStepMotorBubbles(int _direction) {
   _multiplierForLed = 0;
   Module.setLED(0, _activeLed);
   if (_direction < 0) {    
-    if (_activeLed == 1 || _activeLed > 3) _activeLed = 3;
+    if (_activeLed == 0) _activeLed = 3;
     else _activeLed--;
   }
   else {
-    if (_activeLed == 6 || _activeLed < 4) _activeLed = 4;
+    if (_activeLed == 3) _activeLed = 0;
     else _activeLed++;
   }
   Module.setLED(1, _activeLed);
+  
 }

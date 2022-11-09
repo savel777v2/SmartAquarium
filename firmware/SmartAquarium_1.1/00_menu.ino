@@ -13,8 +13,14 @@
   w - настройка люфта температуры в целях ее регулировки, адрес - номер настройки в EEPROM
   L - информация по логам температуры из heaterTempLog
   b - счетчик пузырьков абсалютный
-  B - информация с счетчика пузырьков в 6-ти значном формате, где адрес: 1 - скорость пузырьков в секунду, 2 - скорость пузырьков в минуту, 3 - считываний сенсора в секунду  
-  U - информация с счетчика пузырьков в 4-х значном формате, где адрес: 1 - минимальный уровень сенсора, 2 - максимальный уровень сенсора, 3 - продолжительность пузыря, 4 - продолжительность между пузырями
+  B - информация с счетчика пузырьков в 4-х значном формате, где адрес:
+    1 - минимальный уровень сенсора,
+    2 - максимальный уровень сенсора,
+    3 - продолжительность пузыря,
+    4 - продолжительность между пузырями,
+    5 - скорость пузырьков в секунду
+    6 - скорость пузырьков в минуту
+    7 - считываний сенсора в секунду
   v - уровень вибрации пузырька в мс.
   V - уровень отсечки сигнала пузырька
   P - пользовательская скорость мотора
@@ -26,7 +32,7 @@ StepMotor StepMotorBubbles(11, 10, 9, 8, onTheStepMotorBubbles);
 char *menuItems[][8] = {
   {"%1C %H%M%2C%3C", "St%7n%8a %t", "Sd%0h%1m  ", "Sn%2h%3m  ", "Sb%4h%5m %6c", "Sdn %9m %10c", ""},
   {"i%1Qo%2Q", "%L", "Td%11q  %12c", "Tn%13q  %14c", "dt %15w   ", ""},
-  {"S %1B", "M %2B", "C%b", "I %3B", "%1U%2U", "%3U%4U", " %20v %21V", ""},
+  {"Sec %5B", "Min %6B", "C%b", "Loop%7B", "%1B%2B", "%3B%4B", " %20v %21V", ""},
   {"moto%P", ""},
   {""}
 };
@@ -220,10 +226,6 @@ void MenuItemPart::initialize(char _charMode[10], CurrSettings* _currSettingsPtr
     }
     else if (typeOfPart == 'B') {
       edited = false;
-      lengthValue = 6;
-    }
-    else if (typeOfPart == 'U') {
-      edited = false;
       lengthValue = 4;
     }
     else if (typeOfPart == 'v') {
@@ -254,8 +256,8 @@ void MenuItemPart::readValue(CurrSettings* _currSettingsPtr) {
   if (typeOfPart == 'H') value = _currSettingsPtr->now.hour;
   else if (typeOfPart == 'M') value = _currSettingsPtr->now.minute;
   else if (typeOfPart == 'S') value = _currSettingsPtr->now.second;
-  else if (typeOfPart == 'L') value = 95;  
-  else if (typeOfPart == 'b' || typeOfPart == 'B' || typeOfPart == 'U') value = 0;
+  else if (typeOfPart == 'L') value = 95;
+  else if (typeOfPart == 'b' || typeOfPart == 'B') value = 0;
   else if (typeOfPart == 't') {
     if (_currSettingsPtr->timerOn) value = 1;
     else value = 0;
@@ -385,7 +387,7 @@ void MenuItemPart::valueToDisplay(char* charDisplay, CurrSettings* _currSettings
   }
   else if (typeOfPart == 'q') {
     sprintf(_strValue, "%02d0", value);
-    addSybstring(charDisplay, _indexOut, _strValue);    
+    addSybstring(charDisplay, _indexOut, _strValue);
   }
   else if (typeOfPart == 'b') {
     unsigned long _longValue = CounterForBubbles.get_bubbleCounter();
@@ -395,28 +397,18 @@ void MenuItemPart::valueToDisplay(char* charDisplay, CurrSettings* _currSettings
   else if (typeOfPart == 'B') {
     int _intValue;
 
-    if (adress == 1) _intValue = CounterForBubbles.get_bubbleIn100Second();
-    else if (adress == 2) _intValue = CounterForBubbles.get_bubbleInMinute();
-    else if (adress == 3) _intValue = CounterForBubbles.get_sensorInSecond();
-
-    if (_intValue == -1) addSybstring(charDisplay, _indexOut, "   Err");
-    else {
-      sprintf(_strValue, "%6d", _intValue);
-      addSybstring(charDisplay, _indexOut, _strValue);
-    }
-  }
-  else if (typeOfPart == 'U') {
-    int _intValue;
-
     if (adress == 1) _intValue = CounterForBubbles.get_MinLevel();
     else if (adress == 2) _intValue = CounterForBubbles.get_MaxLevel();
     else if (adress == 3) _intValue = CounterForBubbles.get_durationBubble();
     else if (adress == 4) _intValue = CounterForBubbles.get_durationNoBubble();
+    else if (adress == 5) _intValue = CounterForBubbles.get_bubbleIn100Second();
+    else if (adress == 6) _intValue = CounterForBubbles.get_bubbleInMinute();
+    else if (adress == 7) _intValue = CounterForBubbles.get_sensorInSecond();
 
     if (_intValue == -1) addSybstring(charDisplay, _indexOut, " Err");
     else {
       sprintf(_strValue, "%4d", _intValue);
-      addSybstring(charDisplay, _indexOut, _strValue);      
+      addSybstring(charDisplay, _indexOut, _strValue);
     }
   }
   else if (typeOfPart == 'L') {
@@ -448,7 +440,7 @@ void MenuItemPart::valueToDisplay(char* charDisplay, CurrSettings* _currSettings
     else {
       _valueOfLog = _valueOfLog - 1000;
       sprintf(_strValue, "%03d", _valueOfLog);
-      addSybstring(charDisplay, _indexOut, _strValue);      
+      addSybstring(charDisplay, _indexOut, _strValue);
     }
   }
   else if (typeOfPart == 'P') {
@@ -460,7 +452,7 @@ void MenuItemPart::valueToDisplay(char* charDisplay, CurrSettings* _currSettings
     else if (lengthValue == 2) sprintf(_strValue, "%02d", value);
     else if (lengthValue == 3) sprintf(_strValue, "%3d", value);
     else if (lengthValue == 6) sprintf(_strValue, "%6d", value);
-    addSybstring(charDisplay, _indexOut, _strValue);    
+    addSybstring(charDisplay, _indexOut, _strValue);
   }
   charDisplay[_indexOut] = '\0';
 }

@@ -25,13 +25,13 @@ class BubbleCounter {
     bool _checkErrorNoBubble();
 
     int _laserPin, _analogPin;
-    void (*_onTheBubble)(byte _events); // значения _events: 
+    void (*_onTheBubble)(byte _events); // значения _events:
     byte _minBubbleLevel = 200; // мин уровень срабатывания пузырька
     byte _bubbleVibration = 5; // дребезг срабатывания пузырька в мс
     int _sensorInSecond = 0; // считываний сенсора в секунду
     unsigned long _bubbleCounter = 0; // счетчик пузырьков
     unsigned long _durationBubble = 0; // продолжительность интервала пузыря
-    unsigned long _durationNoBubble = 0; // продолжительность интервала простоя
+    unsigned long _durationNoBubble = 0; // продолжительность интервала простоя    
     // мин. и макс. уровни сигналов
     int _MinLevel, _MaxLevel;
     bool _itsBubble = false; // флаг пролета пузырька
@@ -44,7 +44,7 @@ BubbleCounter::BubbleCounter(int laserPin, int analogPin, void (*function)(byte 
   _analogPin = analogPin;
   _onTheBubble = *function;
   pinMode(_laserPin, OUTPUT);
-  digitalWrite(_laserPin, HIGH);  
+  digitalWrite(_laserPin, HIGH);
 }
 
 void BubbleCounter::set_minBubbleLevel(byte minBubbleLevel) {
@@ -82,15 +82,14 @@ bool BubbleCounter::get_itsBubble() {
 bool BubbleCounter::_checkErrorBubble() {
   // выход показателя за предельные значения
   if (_durationBubble > 50 || _durationBubble < 5) return true;
+  //else if (_itsBubble && (millis() - _beginBubble) > 50) return true;
   else return false;
 }
 
-bool _checkErrorBubble();
-    bool _checkErrorNoBubble();
-
 bool BubbleCounter::_checkErrorNoBubble() {
   // выход показателй за предельные значения
-  if (_durationNoBubble > 99000 || _durationNoBubble < 30) return true;
+  if (_durationNoBubble > 10000 || _durationNoBubble < 30) return true;
+  //else if (!_itsBubble && (millis() - _beginNoBubble) > 10000) return true;
   else return false;
 }
 
@@ -115,32 +114,29 @@ int BubbleCounter::get_MaxLevel() {
 }
 
 int BubbleCounter::get_durationBubble() {
-  if (_checkErrorBubble()) return -1;  
+  if (_checkErrorBubble()) return -1;
   return _durationBubble;
 }
 
 int BubbleCounter::get_durationNoBubble() {
-  if (_checkErrorNoBubble()) return -1;  
+  if (_checkErrorNoBubble()) return -1;
   return _durationNoBubble;
 }
-
-int get_durationBubble();
-    int get_durationNoBubble();
 
 // функция подсчета пузырьков
 void BubbleCounter::tick() {
   int _newLevel;
   static int _countSensor;
   unsigned long _currentTime; // текущее время считывания
-  static unsigned long _beginCountSensorInSecond; // начало обсчета сенсор в секунду
   static unsigned long _beginMinMaxLevel; // начало обсчета сенсор в секунду
+  static unsigned long _lastTimeSecond; // последнее время цикла секунды
   static unsigned long _lastTimeBubbleLevel; // последнее время уровня пузырька
   static long _beginBubble; // начало регистрации пузырька
   static long _beginNoBubble; // начало регистрации без пузырька
   // обсчет мин. и макс. уровней сигналов
   static int _tempMinLevel, _tempMaxLevel;
   bool _externalFunction = false;
-  byte _events = 0; // поразрядно: 0 - обсчет Min\Max, 1 - обсчет _sensorInSecond, 2 - начало пузырька, 3 - конец пузырька, 
+  byte _events = 0; // поразрядно: 0 - обсчет Min\Max, 1 - обсчет _sensorInSecond, 2 - начало пузырька, 3 - конец пузырька, 4 - ошибка сигнала
 
   _newLevel = analogRead(_analogPin);
   _currentTime = millis();
@@ -158,16 +154,6 @@ void BubbleCounter::tick() {
     _beginMinMaxLevel = _currentTime;
   }
 
-  // сколько считываний в секунду
-  if ((_currentTime - _beginCountSensorInSecond) > 1000) {
-    _sensorInSecond = _countSensor;
-    _externalFunction = true;
-    _events = _events | 0b00000010;
-    _beginCountSensorInSecond = _currentTime;
-    _countSensor = 0;
-  }
-  else _countSensor++;
-
   // анализ сигнала
   if (_newLevel > _minBubbleLevel) {
     _lastTimeBubbleLevel = _currentTime;
@@ -180,16 +166,16 @@ void BubbleCounter::tick() {
       // завершаем интервал без пузырька
       if (_beginNoBubble != -1) {
         _durationNoBubble = _currentTime - _beginNoBubble;
-        _beginNoBubble = -1;        
+        _beginNoBubble = -1;
       }
-    }    
+    }
   }
   else {
     if (_beginBubble == -1) {
       // интервал без пузырька _beginBubble ==-1
       if (_beginNoBubble == -1) {
         // 2.1 начало интервала без пузырька - только при старте
-        _beginNoBubble = _currentTime;        
+        _beginNoBubble = _currentTime;
       }
     }
     else {
@@ -202,10 +188,25 @@ void BubbleCounter::tick() {
         _events = _events | 0b00001000;
         if (!(_checkErrorBubble() || _checkErrorNoBubble())) _bubbleCounter++;
         // начало интервала без пузырька - при завершении пузырька
-        _beginNoBubble = _currentTime;        
+        _beginNoBubble = _currentTime;
       }
     }
   }
+
+  // секундный цикл
+  if ((_currentTime - _lastTimeSecond) > 1000) {
+    _lastTimeSecond = _currentTime;
+    // сколько считываний в секунду
+    _sensorInSecond = _countSensor;
+    _externalFunction = true;
+    _events = _events | 0b00000010;
+    _countSensor = 0;
+    // событие ошибки сигнала - раз в секунду если есть ошибка
+    if (_checkErrorBubble() || _checkErrorNoBubble()) {
+      _events = _events | 0b00010000;
+    }
+  }
+  else _countSensor++;
 
   // вызов внешней функции
   if (_externalFunction) (*_onTheBubble)(_events);

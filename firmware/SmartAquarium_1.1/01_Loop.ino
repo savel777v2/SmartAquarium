@@ -87,12 +87,12 @@ void conditionControl() {
   float maxTemp = needingTemp + (float)deltaTemp / 10;
   if (currSettings.heaterOn && (heaterAlwaysOff || currSettings.aquaTempErr || currSettings.aquaTemp >= maxTemp)) {
     currSettings.heaterOn = false;
-    Module.setLED(0, 0);
+    Module.setLED(0, 4);
     digitalWrite(HEATER_PIN, HIGH);
   }
   else if (!currSettings.heaterOn && !heaterAlwaysOff && currSettings.aquaTemp <= minTemp) {
     currSettings.heaterOn = true;
-    Module.setLED(1, 0);
+    Module.setLED(1, 4);
     digitalWrite(HEATER_PIN, LOW);
   }
 
