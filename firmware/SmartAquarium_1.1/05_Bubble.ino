@@ -4,6 +4,18 @@ void onTheBubble(byte _events) {
 
   if ((_events & 0b00000100) == 0b00000100) Module.setLED(1, 7); // начало пузырька
   if ((_events & 0b00001000) == 0b00001000) Module.setLED(0, 7); // конец пузырька
+
+  // регулярность пузырьков
+  if (_events >= 0b00001000 && !StepMotorBubbles.get_isActive()) {
+    if (CounterForBubbles.get_itsRegularBubbles()) {
+      currSettings.regularBubbles = true;
+      Module.setLED(0, 6);
+    }
+    else {
+      currSettings.regularBubbles = false;
+      Module.setLED(1, 6);
+    }
+  }
   
   // обновляем меню если в нужном режиме
   if (currMode.main == 2) {    

@@ -4,11 +4,17 @@ void onTheStepMotorBubbles(int _direction) {
   static byte _multiplierForLed = 8;
   static byte _activeLed = 0;
 
-  if (_direction == 0) {
+  if (_direction == 0) {    
     _multiplierForLed = 8;
     Module.setLED(0, _activeLed);
     return;
   }
+  else {
+    // регулярность пузырьков
+    currSettings.regularBubbles = false;
+    Module.setLED(1, 6);
+  }
+  
   if (++_multiplierForLed != 9) return;
 
   _multiplierForLed = 0;

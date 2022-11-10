@@ -10,6 +10,7 @@ class StepMotor {
     long get_positionMotor();
     void set_positionMove(long positionMove);
     long get_positionMove();
+    bool get_isActive();
     void tick();
 
   private:
@@ -25,6 +26,7 @@ class StepMotor {
     long _positionMotor = 0; // относительная позиция мотора
     long _positionMove = 0; // изменение позиции мотора
     int _userSpeed = 0; // нужное направление и скорость текущего движения мотора
+    int _directionMotor = 0; // текущее направление мотора
     int _userDelayMotor = _minDelay * _maxUserSpeed; // нужная задержка мотора (зависит от userSpeed)
     int _minDelay = 4; // минимальная задержка между шагом мотора в мс., соответсвует _maxUserSpeed
     int _maxUserSpeed = 32; // максимально допустимое значение линейной пользовательской скорости
@@ -128,9 +130,13 @@ long StepMotor::get_positionMove() {
   return _positionMove;
 }
 
+bool StepMotor::get_isActive() {
+  if (_userSpeed != 0 || _directionMotor != 0 || _positionMove != 0) return true;
+  else return false;
+}
+
 void StepMotor::tick() {
   static unsigned long _lastSeekMotor = 0; // время последнего шага мотора
-  static int _directionMotor = 0; // текущее направление мотора
   static int _stepDelay = _maxDelay; // текущая задержка шага мотора
   static byte _phaseMotor = 0; // фаза мотора 0-3
 
