@@ -26,8 +26,10 @@ void readKeyboard() {
 bool keySavePressed() {
   /*unsigned long _value4 = CounterForBubbles.get_bubbleCounter();
   EEPROM.update(16, _value4);*/
-  StepMotorBubbles.set_userSpeed(0);
-  printDisplay();
+  byte _positionMove = EEPROM.read(22);
+  StepMotorBubbles.set_positionMove(_positionMove - 125);
+  /*StepMotorBubbles.set_userSpeed(0);
+  printDisplay();*/
   tone(PIEZO_PIN, 2500, 100);
 }
 

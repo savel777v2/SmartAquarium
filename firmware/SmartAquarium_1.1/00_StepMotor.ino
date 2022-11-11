@@ -88,7 +88,7 @@ void StepMotor::motorPositionUp(byte& phaseMotor) {
   _positionMotor++;
   if (phaseMotor == 3) phaseMotor = 0;
   else phaseMotor++;
-  if (_positionMove != 0) _positionMove++;
+  if (_positionMove != 0) _positionMove--;
   _onTheStepMotor(+1);
 }
 
@@ -97,7 +97,7 @@ void StepMotor::motorPositionDown(byte& phaseMotor) {
   _positionMotor--;
   if (phaseMotor == 0) phaseMotor = 3;
   else phaseMotor--;
-  if (_positionMove != 0) _positionMove--;
+  if (_positionMove != 0) _positionMove++;
   _onTheStepMotor(-1);
 }
 
@@ -141,7 +141,7 @@ void StepMotor::tick() {
   static byte _phaseMotor = 0; // фаза мотора 0-3
 
   if (((_lastSeekMotor != 0) || (_userSpeed != 0) || (_directionMotor != 0) || (_positionMove != 0)) && ((millis() - _lastSeekMotor) > _stepDelay)) {
-    if ((_userSpeed == 0) && (_directionMotor == 0)) {
+    if ((_userSpeed == 0) && (_positionMove == 0) && (_directionMotor == 0)) {
       // остановка мотора в текущей фазе
       _onTheStepMotor(0);
       _lastSeekMotor = 0;
@@ -193,7 +193,7 @@ void StepMotor::tick() {
         else _directionMotor = 1;
         _stepDelay = _maxDelay;
       }
-      else if ((_userSpeed == 0) || (_directionMotor * _userSpeed < 0) || (_directionMotor * _positionMove < 0)) {
+      else if ((_userSpeed == 0 && _positionMove == 0) || (_directionMotor * _userSpeed < 0) || (_directionMotor * _positionMove < 0)) {
         // движение мотора в разные стороны - снижаем скорость наращивая задержку
         if (_stepDelay == _maxDelay) _directionMotor = 0; // можно менять направление
         else stepDelayBringCloser(_stepDelay, _maxDelay);
