@@ -8,28 +8,28 @@ void onTheBubble(byte _events) {
   // регулярность пузырьков
   if (_events >= 0b00001000 && !StepMotorBubbles.get_isActive()) {
     if (CounterForBubbles.get_itsRegularBubbles()) {
-      currSettings.regularBubbles = true;
+      // пузырьки регулярны - значит их скорость нужно проконтролировать
       Module.setLED(0, 6);
     }
     else {
-      currSettings.regularBubbles = false;
       Module.setLED(1, 6);
     }
   }
-  
+
   // обновляем меню если в нужном режиме
-  if (currMode.main == 2) {    
-    if (currMode.secondary == 3) {
-      if ((_events & 0b00000010) == 0b00000010) _needDisplay = true; //считываний сенсора в секунду
-    }
-    else if (currMode.secondary == 4) {
-      if ((_events & 0b00000001) == 0b00000001) _needDisplay = true; //обсчет Min\Max
-    }
-    else {
-      if (_events >= 0b00001000) _needDisplay = true; // конец пузырька или ошибка
-    }
+  if (currMode.main == 2 && currMode.secondary == 1) {
+    // обсчет Min\Max
+    if ((_events & 0b00000001) == 0b00000001) _needDisplay = true;
+  }
+  else if (currMode.main == 3 && currMode.secondary == 3) {
+    // считываний сенсора в секунду
+    if ((_events & 0b00000010) == 0b00000010) _needDisplay = true;
+  }
+  else if ((currMode.main == 2 && currMode.secondary == 0) || (currMode.main == 3 && currMode.secondary != 0)) {
+    // прочие режимы от пузырька в составе 2 и 3 на конец пузырька или ошибка
+    if (_events >= 0b00001000) _needDisplay = true;
   }
 
-  if (_needDisplay) printDisplay();  
+  if (_needDisplay) printDisplay();
 
 }

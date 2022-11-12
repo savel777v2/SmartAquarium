@@ -42,7 +42,6 @@ struct CurrSettings {
   float aquaTemp;
   bool aquaTempErr;
   bool heaterOn = false;
-  bool regularBubbles = false;
 };
 
 struct {

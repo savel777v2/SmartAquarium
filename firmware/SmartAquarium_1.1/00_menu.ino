@@ -21,6 +21,7 @@
     5 - скорость пузырьков в секунду
     6 - скорость пузырьков в минуту
     7 - считываний сенсора в секунду
+  N - настройка необходимая скорости пузырька в секунду, адрес - номер настройки в EEPROM
   v - уровень вибрации пузырька в мс.
   V - уровень отсечки сигнала пузырька
   S - пользовательская скорость мотора
@@ -34,15 +35,15 @@ StepMotor StepMotorBubbles(11, 10, 9, 8, onTheStepMotorBubbles);
 char *menuItems[][8] = {
   {"%1C %H%M%2C%3C", "St%7n%8a %t", "Sd%0h%1m  ", "Sn%2h%3m  ", "Sb%4h%5m %6c", "Sdn %9m %10c", ""},
   {"i%1Qo%2Q", "%L", "Td%11q  %12c", "Tn%13q  %14c", "dt %15w   ", ""},
-  {"%5B%22P", "Min %6B", "C%b", "Loop%7B", "%1B%2B", "%3B%4B", " %20v %21V", ""},
-  {"moto%S", ""},
+  {"%5B%22P", "%1B%2B", " %20v %21V", "Bd%23N %24c", "Bn%25N %26c", ""},
+  {"moto%S", "C%b", "Min %6B", "Loop%7B", "%3B%4B", ""},
   {""}
 };
 
 byte menuPointer[][8] = {
   {B00010000, B00010000, B00010000, B00010000, B00010000, B00000000, B00000000, 0},
   {B00100010, B01000010, B00010000, B00010000, B00010000, B00000000, B00000000, 0},
-  {B01000000, B00000000, B00000000, B00000000, B00000000, B00000000, B00000000, 0},
+  {B01000000, B00000000, B00000000, B00010000, B00010000, B00000000, B00000000, 0},
   {B00000000, B00000000, B00000000, B00000000, B00000000, B00000000, B00000000, 0}
 };
 
@@ -248,8 +249,13 @@ void MenuItemPart::initialize(char _charMode[10], CurrSettings* _currSettingsPtr
       edited = true;
       lengthValue = 4;
     }
-    else if (typeOfPart == 'P') {
-      minValue = 0;
+    else if (typeOfPart == 'P') {      
+      maxValue = 250;
+      edited = true;
+      lengthValue = 4;
+    }
+    else if (typeOfPart == 'N') {
+      minValue = 2;
       maxValue = 250;
       edited = true;
       lengthValue = 4;
@@ -456,6 +462,10 @@ void MenuItemPart::valueToDisplay(char* charDisplay, CurrSettings* _currSettings
   }
   else if (typeOfPart == 'P') {
     sprintf(_strValue, "%4d", value - 125);
+    addSybstring(charDisplay, _indexOut, _strValue);
+  }
+  else if (typeOfPart == 'N') {
+    sprintf(_strValue, "%4d", value * 10);
     addSybstring(charDisplay, _indexOut, _strValue);
   }
   else {

@@ -10,8 +10,7 @@ void onTheStepMotorBubbles(int _direction) {
     return;
   }
   else {
-    // регулярность пузырьков
-    currSettings.regularBubbles = false;
+    // пузыри уже нерегулярны    
     Module.setLED(1, 6);
   }
   
