@@ -54,6 +54,15 @@ struct {
   unsigned long lastBlinkTime = 0;
 } settMode;
 
+struct {
+  byte currStatus = 0; // 0 - отключен, 1 - включен, 2 - в процессе, 3 - результат достигнут, 4 - нет результата (ошибка)
+  int lastPositionMove = 0;
+  int moveNoResult = 0;
+  int minBubbleDuration = 0;
+  int maxBubbleDuration = 0;
+  byte needingBubbleSpeed = 0;
+} bubbleControl;
+
 CurrSettings currSettings;
 
 // frequency, duration

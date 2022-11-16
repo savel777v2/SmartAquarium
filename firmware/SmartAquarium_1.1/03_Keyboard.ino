@@ -140,6 +140,8 @@ bool keyModePressed() {
   if (EditingMenuItemPart.get_isNull() == 0) {
     EditingMenuItemPart.writeValue(&currSettings);
     EditingMenuItemPart.set_isNull(1);
+    // settings change - all need to control
+    conditionControl();
   }
 
   currSettings.setting++;

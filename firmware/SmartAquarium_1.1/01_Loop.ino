@@ -63,6 +63,30 @@ void conditionControl() {
   if (_eveningInMinutes > _morningInMinutes) currSettings.nowDay = (_nowInMinutes >= _morningInMinutes && _nowInMinutes < _eveningInMinutes);
   else currSettings.nowDay = (_nowInMinutes >= _morningInMinutes || _nowInMinutes < _eveningInMinutes);
 
+  // settings of a bubble speed
+  byte _needingBubbleSpeed;
+  byte _needingStatus;
+  if (currSettings.nowDay) {
+    _needingBubbleSpeed = EEPROM.read(23);
+    _needingStatus = EEPROM.read(24);
+  }
+  else {
+    _needingBubbleSpeed = EEPROM.read(25);
+    _needingStatus = EEPROM.read(26);
+  }
+  if (bubbleControl.currStatus == 0 && _needingStatus == 1) bubbleControl.currStatus = 1;
+  if (bubbleControl.currStatus != 0 && _needingStatus == 0) {
+    bubbleControl.currStatus = 0;
+    bubbleControl.minBubbleDuration = 0;
+    bubbleControl.maxBubbleDuration = 0;
+  }
+  if (bubbleControl.currStatus != 0 && _needingBubbleSpeed != bubbleControl.needingBubbleSpeed) {
+    bubbleControl.currStatus = 1;
+    bubbleControl.needingBubbleSpeed = _needingBubbleSpeed;
+    bubbleControl.minBubbleDuration = 100000 / ((int)bubbleControl.needingBubbleSpeed * 10 + 1) + 1;
+    bubbleControl.maxBubbleDuration = 100000 / ((int)bubbleControl.needingBubbleSpeed * 10);
+  }
+
   // starting alarm
   if (currSettings.alarmStartSound == 0) {
     if (EEPROM.read(6) == 1) {
