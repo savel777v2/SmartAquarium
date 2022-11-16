@@ -54,15 +54,6 @@ struct {
   unsigned long lastBlinkTime = 0;
 } settMode;
 
-struct {
-  byte currStatus = 0; // 0 - отключен, 1 - включен, 2 - в процессе, 3 - результат достигнут, 4 - нет результата (ошибка)
-  int lastPositionMove = 0;
-  int moveNoResult = 0;
-  int minBubbleDuration = 0;
-  int maxBubbleDuration = 0;
-  byte needingBubbleSpeed = 0;
-} bubbleControl;
-
 CurrSettings currSettings;
 
 // frequency, duration
@@ -72,3 +63,5 @@ unsigned int alarmMelody[14][2] = {{2500, 50}, {0, 100}, {2500, 50}, {0, 100}, {
 // логи температуры и работы нагревателя. температуры -100.0 до + 100.0 ложится в интервал 0 - 2000.
 // датчик нагревателя включен: + 10000. Температура -100.0 - это ошибка датчика температуры или отсутствие значения
 word heaterTempLog[96];
+
+// objects

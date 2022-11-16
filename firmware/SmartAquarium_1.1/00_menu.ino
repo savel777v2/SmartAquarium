@@ -1,4 +1,4 @@
-/* Описатели шаблона:
+ /* Описатели шаблона:
   % - начало шаблона
   С - выводимая символьная вличина (не редактируется) номер величины между % и знаком
   H - текущее кол-во часов (редактируется)
@@ -30,11 +30,9 @@
   V - уровень отсечки сигнала пузырька
   S - пользовательская скорость мотора
   P - нужная позиция мотора
-
-
 */
-BubbleCounter CounterForBubbles(2, A7, onTheBubble); //10
-StepMotor StepMotorBubbles(11, 10, 9, 8, onTheStepMotorBubbles);
+
+BubbleControl BubbleSpeedControl;
 
 char *menuItems[][8] = {
   {"%1C %H%M%2C%3C", "St%7n%8a %t", "Sd%0h%1m  ", "Sn%2h%3m  ", "Sb%4h%5m %6c", "Sdn %9m %10c", ""},
@@ -103,7 +101,7 @@ class MenuItemPart {
 
   private:
 
-    void addSybstring(char* _str1, int& _indexOut, char* _str2);
+    void _addSybstring(char* _str1, int& _indexOut, char* _str2);
 
     byte value;
     bool edited;
@@ -354,7 +352,7 @@ void MenuItemPart::writeValue(CurrSettings* _currSettingsPtr) {
   }
 }
 
-void MenuItemPart::addSybstring(char* _str1, int& _indexOut, char* _str2) {
+void MenuItemPart::_addSybstring(char* _str1, int& _indexOut, char* _str2) {
   for (int i = 0; _str2[i] != '\0'; i++) {
     _str1[_indexOut] = _str2[i];
     _indexOut++;
@@ -371,29 +369,29 @@ void MenuItemPart::valueToDisplay(char* charDisplay, CurrSettings* _currSettings
 
   if (typeOfPart == 'C') {
     if (adress == 1) {
-      if (_currSettingsPtr->nowDay) addSybstring(charDisplay, _indexOut, "d");
-      else addSybstring(charDisplay, _indexOut, "n");
+      if (_currSettingsPtr->nowDay) _addSybstring(charDisplay, _indexOut, "d");
+      else _addSybstring(charDisplay, _indexOut, "n");
     }
     else if (adress == 2) {
-      if (_currSettingsPtr->timerOn) addSybstring(charDisplay, _indexOut, "t");
-      else addSybstring(charDisplay, _indexOut, " ");
+      if (_currSettingsPtr->timerOn) _addSybstring(charDisplay, _indexOut, "t");
+      else _addSybstring(charDisplay, _indexOut, " ");
     }
     else if (adress == 3) {
-      if (value == 1) addSybstring(charDisplay, _indexOut, "b");
-      else addSybstring(charDisplay, _indexOut, " ");
+      if (value == 1) _addSybstring(charDisplay, _indexOut, "b");
+      else _addSybstring(charDisplay, _indexOut, " ");
     }
-    else addSybstring(charDisplay, _indexOut, "E");
+    else _addSybstring(charDisplay, _indexOut, "E");
   }
-  else if (typeOfPart == 'T') addSybstring(charDisplay, _indexOut, charValue);
+  else if (typeOfPart == 'T') _addSybstring(charDisplay, _indexOut, charValue);
   else if (typeOfPart == 'Q') {
     float _floatValue;
-    if (adress == 2 & _currSettingsPtr->aquaTempErr) addSybstring(charDisplay, _indexOut, "Err");
+    if (adress == 2 & _currSettingsPtr->aquaTempErr) _addSybstring(charDisplay, _indexOut, "Err");
     else {
       if (adress == 1) _floatValue = Rtc.getTemperatureFloat();
       else _floatValue = _currSettingsPtr->aquaTemp;
       int _intValue = _floatValue * 10;
       sprintf(_strValue, "%03d", _intValue);
-      addSybstring(charDisplay, _indexOut, _strValue);
+      _addSybstring(charDisplay, _indexOut, _strValue);
     }
   }
   else if (_blinkOff) {
@@ -404,12 +402,12 @@ void MenuItemPart::valueToDisplay(char* charDisplay, CurrSettings* _currSettings
   }
   else if (typeOfPart == 'q') {
     sprintf(_strValue, "%02d0", value);
-    addSybstring(charDisplay, _indexOut, _strValue);
+    _addSybstring(charDisplay, _indexOut, _strValue);
   }
   else if (typeOfPart == 'b') {
     unsigned long _longValue = CounterForBubbles.get_bubbleCounter();
     sprintf(_strValue, "%7d", _longValue);
-    addSybstring(charDisplay, _indexOut, _strValue);
+    _addSybstring(charDisplay, _indexOut, _strValue);
   }
   else if (typeOfPart == 'B') {
     int _intValue;
@@ -424,40 +422,20 @@ void MenuItemPart::valueToDisplay(char* charDisplay, CurrSettings* _currSettings
       case 7: _intValue = CounterForBubbles.get_sensorInSecond(); break;
     }
 
-    /*if (adress == 1) _intValue = CounterForBubbles.get_MinLevel();
-      else if (adress == 2) _intValue = CounterForBubbles.get_MaxLevel();
-      else if (adress == 3) _intValue = CounterForBubbles.get_durationBubble();
-      else if (adress == 4) _intValue = CounterForBubbles.get_durationNoBubble();
-      else if (adress == 5) _intValue = CounterForBubbles.get_bubbleIn100Second();
-      else if (adress == 6) _intValue = CounterForBubbles.get_bubbleInMinute();
-      else if (adress == 7) _intValue = CounterForBubbles.get_sensorInSecond();*/
-
-    if (_intValue == -1) addSybstring(charDisplay, _indexOut, " Err");
+    if (_intValue == -1) _addSybstring(charDisplay, _indexOut, " Err");
     else {
       sprintf(_strValue, "%4d", _intValue);
-      addSybstring(charDisplay, _indexOut, _strValue);
+      _addSybstring(charDisplay, _indexOut, _strValue);
     }
   }
   else if (typeOfPart == 'R') {
-    if (adress == 1)
-      switch (bubbleControl.currStatus) {
-        case 0: addSybstring(charDisplay, _indexOut, " OFF"); break;
-        case 1: addSybstring(charDisplay, _indexOut, "  ON"); break;
-        case 2:
-          sprintf(_strValue, "%4d", bubbleControl.lastPositionMove);
-          addSybstring(charDisplay, _indexOut, _strValue);
-          break;
-        case 3: addSybstring(charDisplay, _indexOut, " OK "); break;
-        case 4: addSybstring(charDisplay, _indexOut, " Err"); break;
-      }
-    else if (adress == 2) {
-      sprintf(_strValue, "%4d", bubbleControl.minBubbleDuration);
-      addSybstring(charDisplay, _indexOut, _strValue);
+
+    switch (adress) {
+      case 1: BubbleSpeedControl.get_condition(_strValue); break;      
+      case 2: sprintf(_strValue, "%4d", BubbleSpeedControl.get_minBubbleDuration()); break;
+      case 3: sprintf(_strValue, "%4d", BubbleSpeedControl.get_maxBubbleDuration()); break;      
     }
-    else if (adress == 3) {
-      sprintf(_strValue, "%4d", bubbleControl.maxBubbleDuration);
-      addSybstring(charDisplay, _indexOut, _strValue);
-    }
+    _addSybstring(charDisplay, _indexOut, _strValue);
   }
   else if (typeOfPart == 'L') {
     byte _indexOfNow = _currSettingsPtr->now.hour * 4;
@@ -473,10 +451,10 @@ void MenuItemPart::valueToDisplay(char* charDisplay, CurrSettings* _currSettings
     byte _toPrint;
     _toPrint = _indexOfLog / 4;
     sprintf(_strValue, "%02d", _toPrint);
-    addSybstring(charDisplay, _indexOut, _strValue);
+    _addSybstring(charDisplay, _indexOut, _strValue);
     _toPrint = _indexOfLog % 4 * 15;
     sprintf(_strValue, "%02d", _toPrint);
-    addSybstring(charDisplay, _indexOut, _strValue);
+    _addSybstring(charDisplay, _indexOut, _strValue);
     word _valueOfLog = heaterTempLog[_indexOfLog];
     if (_valueOfLog > 10000) {
       charDisplay[_indexOut] = 'o';
@@ -484,31 +462,31 @@ void MenuItemPart::valueToDisplay(char* charDisplay, CurrSettings* _currSettings
     }
     else charDisplay[_indexOut] = ' ';
     _indexOut++;
-    if (_valueOfLog == 0) addSybstring(charDisplay, _indexOut, "Err");
+    if (_valueOfLog == 0) _addSybstring(charDisplay, _indexOut, "Err");
     else {
       _valueOfLog = _valueOfLog - 1000;
       sprintf(_strValue, "%03d", _valueOfLog);
-      addSybstring(charDisplay, _indexOut, _strValue);
+      _addSybstring(charDisplay, _indexOut, _strValue);
     }
   }
   else if (typeOfPart == 'S') {
     sprintf(_strValue, "%4d", value - 100);
-    addSybstring(charDisplay, _indexOut, _strValue);
+    _addSybstring(charDisplay, _indexOut, _strValue);
   }
   else if (typeOfPart == 'P') {
     sprintf(_strValue, "%4d", value - 125);
-    addSybstring(charDisplay, _indexOut, _strValue);
+    _addSybstring(charDisplay, _indexOut, _strValue);
   }
   else if (typeOfPart == 'N') {
     sprintf(_strValue, "%4d", value * 10);
-    addSybstring(charDisplay, _indexOut, _strValue);
+    _addSybstring(charDisplay, _indexOut, _strValue);
   }
   else {
     if (lengthValue == 1) sprintf(_strValue, "%01d", value);
     else if (lengthValue == 2) sprintf(_strValue, "%02d", value);
     else if (lengthValue == 3) sprintf(_strValue, "%3d", value);
     else if (lengthValue == 6) sprintf(_strValue, "%6d", value);
-    addSybstring(charDisplay, _indexOut, _strValue);
+    _addSybstring(charDisplay, _indexOut, _strValue);
   }
   charDisplay[_indexOut] = '\0';
 }

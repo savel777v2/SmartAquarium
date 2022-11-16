@@ -66,7 +66,7 @@ void conditionControl() {
   // settings of a bubble speed
   byte _needingBubbleSpeed;
   byte _needingStatus;
-  if (currSettings.nowDay) {
+  if (currSettings.nowDay) {    
     _needingBubbleSpeed = EEPROM.read(23);
     _needingStatus = EEPROM.read(24);
   }
@@ -74,18 +74,8 @@ void conditionControl() {
     _needingBubbleSpeed = EEPROM.read(25);
     _needingStatus = EEPROM.read(26);
   }
-  if (bubbleControl.currStatus == 0 && _needingStatus == 1) bubbleControl.currStatus = 1;
-  if (bubbleControl.currStatus != 0 && _needingStatus == 0) {
-    bubbleControl.currStatus = 0;
-    bubbleControl.minBubbleDuration = 0;
-    bubbleControl.maxBubbleDuration = 0;
-  }
-  if (bubbleControl.currStatus != 0 && _needingBubbleSpeed != bubbleControl.needingBubbleSpeed) {
-    bubbleControl.currStatus = 1;
-    bubbleControl.needingBubbleSpeed = _needingBubbleSpeed;
-    bubbleControl.minBubbleDuration = 100000 / ((int)bubbleControl.needingBubbleSpeed * 10 + 1) + 1;
-    bubbleControl.maxBubbleDuration = 100000 / ((int)bubbleControl.needingBubbleSpeed * 10);
-  }
+  BubbleSpeedControl.set_currStatus(_needingStatus);
+  BubbleSpeedControl.set_bubblesIn10Second(_needingBubbleSpeed);
 
   // starting alarm
   if (currSettings.alarmStartSound == 0) {
