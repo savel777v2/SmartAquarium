@@ -20,8 +20,9 @@ class BubbleCounter {
     int get_durationNoBubble();
     long get_minDurationLastBubbles();
     long get_maxDurationLastBubbles();
+    long get_lastDuration();
     bool get_itsRegularBubbles();
-    void tick();    
+    void tick();
 
   private:
     bool _checkErrorBubble();
@@ -143,6 +144,10 @@ long BubbleCounter::get_maxDurationLastBubbles() {
   return _maxDuration;
 }
 
+long BubbleCounter::get_lastDuration() {
+  return _lastDurations[_iLastDuration];
+}
+
 bool BubbleCounter::get_itsRegularBubbles() {
   long _minDuration = _lastDurations[0];
   long _maxDuration = _lastDurations[0];
@@ -155,12 +160,12 @@ bool BubbleCounter::get_itsRegularBubbles() {
 }
 
 void BubbleCounter::_onTheBubble() {
+  if (++_iLastDuration == 5) _iLastDuration = 0;
   if (_checkErrorBubble() || _checkErrorNoBubble()) _lastDurations[_iLastDuration] = -1;
   else {
     _lastDurations[_iLastDuration] = _durationBubble + _durationNoBubble;
     _bubbleCounter++;
   }
-  if (++_iLastDuration == 5) _iLastDuration = 0;
 }
 
 // функция подсчета пузырьков

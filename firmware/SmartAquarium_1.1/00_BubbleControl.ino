@@ -13,6 +13,7 @@ class BubbleControl {
     byte get_bubblesIn10Second();
     int get_minBubbleDuration();
     int get_maxBubbleDuration();
+    void control(int bubbleDuration);
 
   private:
 
@@ -21,6 +22,7 @@ class BubbleControl {
 
     byte _currStatus = 0; // 0 - отключен, 1 - включен, 2 - в процессе, 3 - результат достигнут, 4 - ошибка 1 (ничего не меняется), 5 - ошибка 2 (не попали в длительность)
     int _lastPositionMove = 0;
+    int _lastBubbleDuration = 0;
     int _moveNoResult = 0;
     int _minBubbleDuration = 0;
     int _maxBubbleDuration = 0;
@@ -54,8 +56,6 @@ void BubbleControl::set_currStatus(byte currStatus) {
 byte BubbleControl::get_currStatus() {
   return _currStatus;
 }
-
-
 
 void BubbleControl::get_condition(char* _strValue) {
   switch (_currStatus) {
@@ -96,4 +96,70 @@ int BubbleControl::get_minBubbleDuration() {
 
 int BubbleControl::get_maxBubbleDuration() {
   return _maxBubbleDuration;
+}
+
+void BubbleControl::control(int bubbleDuration) {
+
+  // если не работаем или ошибка - ничего не нужно
+  if (_currStatus == 0 || _currStatus == 4 || _currStatus == 5) return;
+
+  // проверим может и так все хорошо
+  if (bubbleDuration <= _maxBubbleDuration && bubbleDuration >= _minBubbleDuration) {
+    // ура все срослось
+    _currStatus = 3;
+    return;
+  }
+
+  if (_currStatus == 2) {
+    // если ранее двигались
+    // есть ли результат прошлого действия
+    if (_lastBubbleDuration + 10 >= bubbleDuration && _lastBubbleDuration - 10 <= bubbleDuration) {
+      _moveNoResult = _moveNoResult + _lastPositionMove;
+      if (_moveNoResult >= 200 || _moveNoResult <= -200) {
+        tone(PIEZO_PIN, 2500, 3000);
+        _currStatus = 4;
+        return;
+      }
+    }
+    else {
+      _lastBubbleDuration = bubbleDuration;
+      _moveNoResult = 0;
+    }
+    // перелетели нужный результат
+    if ((bubbleDuration < _minBubbleDuration && _lastPositionMove > 0) || (bubbleDuration > _maxBubbleDuration && _lastPositionMove < 0)) {
+      switch (_lastPositionMove) {
+        case 100: _lastPositionMove = -10; break;
+        case -100: _lastPositionMove = 10; break;
+        case 10: _lastPositionMove = -5; break;
+        case -10: _lastPositionMove = 5; break;
+        default:
+          tone(PIEZO_PIN, 2500, 3000);
+          _currStatus = 5;
+          return;
+          break;
+      }
+    }
+  }
+  else {
+    // новое движение или показатель сам ушел
+    if (bubbleDuration < _minBubbleDuration) {
+      switch (_currStatus) {
+        case 1: _lastPositionMove = -100; break;
+        case 3: _lastPositionMove = -5; break;
+      }
+    }
+    if (bubbleDuration > _maxBubbleDuration) {
+      switch (_currStatus) {
+        case 1: _lastPositionMove = 100; break;
+        case 3: _lastPositionMove = 5; break;
+      }
+    }
+    _lastBubbleDuration = bubbleDuration;
+    _currStatus = 2;
+  }
+
+  // движение мотора собственно
+  tone(PIEZO_PIN, 2500, 500);
+  StepMotorBubbles.set_positionMove(_lastPositionMove);
+
 }

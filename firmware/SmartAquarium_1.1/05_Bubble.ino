@@ -9,6 +9,7 @@ void onTheBubble(byte _events) {
   if (_events >= 0b00001000 && !StepMotorBubbles.get_isActive()) {
     if (CounterForBubbles.get_itsRegularBubbles()) {
       // пузырьки регулярны - значит их скорость нужно проконтролировать
+      BubbleSpeedControl.control(CounterForBubbles.get_lastDuration());
       Module.setLED(0, 6);
     }
     else {
