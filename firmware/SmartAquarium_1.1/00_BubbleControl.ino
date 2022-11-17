@@ -13,6 +13,7 @@ class BubbleControl {
     byte get_bubblesIn10Second();
     int get_minBubbleDuration();
     int get_maxBubbleDuration();
+    void clearError();
     void control(int bubbleDuration);
 
   private:
@@ -20,19 +21,22 @@ class BubbleControl {
     void _checkReturnPosition(); // возвращает на место после ошибки
     void _addSybstring(char* _str1, char* _str2);
 
-    byte _currStatus = 0; // 0 - отключен, 1 - включен, 2 - в процессе, 3 - результат достигнут, 4 - ошибка 1 (ничего не меняется), 5 - ошибка 2 (не попали в длительность)
+    // 0 - отключен, 1 - включен, 2 - в процессе, 3 - результат достигнут, 4 - ошибка 1 (ничего не меняется), 5 - ошибка 2 (долго крутим), 6 - ошибка 3 (не попали в длительность)
+    byte _currStatus = 0;
     int _lastPositionMove = 0;
     int _lastBubbleDuration = 0;
     int _moveNoResult = 0;
+    int _moveOneWay = 0;
     int _minBubbleDuration = 0;
     int _maxBubbleDuration = 0;
     byte _bubblesIn10Second = 0;
 
 };
 
+// local functions
 void BubbleControl::_checkReturnPosition() {
   // return to position before NoResult
-  if (_currStatus == 4 && _moveNoResult != 0) StepMotorBubbles.set_positionMove(_moveNoResult * -1);
+  if (_currStatus == 4 && _moveNoResult != 0) StepMotorBubbles.set_positionMove(_moveNoResult * -1);  
 }
 
 void BubbleControl::_addSybstring(char* _str1, char* _str2) {
@@ -43,6 +47,7 @@ void BubbleControl::_addSybstring(char* _str1, char* _str2) {
   } while (_str2[i] != '\0');
 }
 
+// global functions
 void BubbleControl::set_currStatus(byte currStatus) {
   if (_currStatus == 0 && currStatus == 1) _currStatus = 1;
   if (_currStatus != 0 && currStatus == 0) {
@@ -64,9 +69,10 @@ void BubbleControl::get_condition(char* _strValue) {
     case 2:
       sprintf(_strValue, "%4d", _lastPositionMove);
       break;
-    case 3: _addSybstring(_strValue, " OK "); break;
+    case 3: _addSybstring(_strValue, "Good"); break;
     case 4: _addSybstring(_strValue, "Err1"); break;
     case 5: _addSybstring(_strValue, "Err2"); break;
+    case 6: _addSybstring(_strValue, "Err3"); break;
   }
 }
 
@@ -98,10 +104,16 @@ int BubbleControl::get_maxBubbleDuration() {
   return _maxBubbleDuration;
 }
 
+void BubbleControl::clearError() {
+  if (_currStatus >= 4) {
+    _currStatus = 1;
+  }
+}
+
 void BubbleControl::control(int bubbleDuration) {
 
   // если не работаем или ошибка - ничего не нужно
-  if (_currStatus == 0 || _currStatus == 4 || _currStatus == 5) return;
+  if (_currStatus == 0 || _currStatus >= 4) return;
 
   // проверим может и так все хорошо
   if (bubbleDuration <= _maxBubbleDuration && bubbleDuration >= _minBubbleDuration) {
@@ -113,7 +125,7 @@ void BubbleControl::control(int bubbleDuration) {
   if (_currStatus == 2) {
     // если ранее двигались
     // есть ли результат прошлого действия
-    if (_lastBubbleDuration + 10 >= bubbleDuration && _lastBubbleDuration - 10 <= bubbleDuration) {
+    if ((bubbleDuration <= _lastBubbleDuration + 10 && _lastPositionMove < 0) || (bubbleDuration >= _lastBubbleDuration - 10 && _lastPositionMove > 0)) {
       _moveNoResult = _moveNoResult + _lastPositionMove;
       if (_moveNoResult >= 200 || _moveNoResult <= -200) {
         tone(PIEZO_PIN, 2500, 3000);
@@ -134,9 +146,18 @@ void BubbleControl::control(int bubbleDuration) {
         case -10: _lastPositionMove = 5; break;
         default:
           tone(PIEZO_PIN, 2500, 3000);
-          _currStatus = 5;
+          _currStatus = 6;
           return;
           break;
+      }
+      _moveOneWay = 0;
+    }
+    else {
+       _moveOneWay = _moveOneWay + _lastPositionMove;
+       if (_moveOneWay >= 2000 || _moveNoResult <= -2000) {
+        tone(PIEZO_PIN, 2500, 3000);
+        _currStatus = 5;
+        return;
       }
     }
   }
@@ -154,8 +175,10 @@ void BubbleControl::control(int bubbleDuration) {
         case 3: _lastPositionMove = 5; break;
       }
     }
-    _lastBubbleDuration = bubbleDuration;
     _currStatus = 2;
+    _lastBubbleDuration = bubbleDuration;
+    _moveNoResult = 0;
+    _moveOneWay = 0;
   }
 
   // движение мотора собственно
