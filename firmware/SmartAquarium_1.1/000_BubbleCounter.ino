@@ -157,14 +157,15 @@ bool BubbleCounter::get_itsRegularBubbles() {
     _maxDuration = max(_maxDuration, _lastDurations[_i]);
     _minDuration = min(_minDuration, _lastDurations[_i]);    
   }
-  if (_minDuration < 0 || (_minDuration + 10) <= _maxDuration) return false;
+  if (_minDuration < 0) return false;
+  if (_minDuration + 10 <= _maxDuration) return false;
   return true;
 }
 
 void BubbleCounter::_onTheBubble() {
   if (++_iLastDuration == 5) _iLastDuration = 0;
   if (_checkErrorBubble()) _lastDurations[_iLastDuration] = -1;
-  if (_checkErrorNoBubble()) _lastDurations[_iLastDuration] = -2;
+  else if (_checkErrorNoBubble()) _lastDurations[_iLastDuration] = -2;
   else {
     _lastDurations[_iLastDuration] = _durationBubble + _durationNoBubble;
     _bubbleCounter++;
@@ -250,6 +251,7 @@ void BubbleCounter::tick() {
     // событие ошибки сигнала - раз в секунду если есть ошибка
     if (_checkErrorBubble() || _checkErrorNoBubble()) {
       _events = _events | 0b00010000;
+      _onTheBubble();
     }
   }
   else _countSensor++;
