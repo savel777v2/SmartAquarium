@@ -75,7 +75,7 @@ void conditionControl() {
     _needingStatus = EEPROM.read(26);
   }
   BubbleSpeedControl.set_currStatus(_needingStatus);
-  BubbleSpeedControl.set_bubblesIn10Second(_needingBubbleSpeed);
+  BubbleSpeedControl.set_bubblesIn100Second(_needingBubbleSpeed);
 
   // starting alarm
   if (currSettings.alarmStartSound == 0) {

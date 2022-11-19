@@ -9,8 +9,8 @@ class BubbleControl {
     void set_currStatus(byte currStatus);
     byte get_currStatus();
     void get_condition(char* _strValue);
-    void set_bubblesIn10Second(byte bubbleIn10Second);
-    byte get_bubblesIn10Second();
+    void set_bubblesIn100Second(byte bubblesIn100Second);
+    byte get_bubblesIn100Second();
     int get_minBubbleDuration();
     int get_maxBubbleDuration();
     void clearError();
@@ -29,7 +29,7 @@ class BubbleControl {
     int _moveOneWay = 0;
     int _minBubbleDuration = 0;
     int _maxBubbleDuration = 0;
-    byte _bubblesIn10Second = 0;
+    byte _bubblesIn100Second = 0;
 
 };
 
@@ -76,24 +76,24 @@ void BubbleControl::get_condition(char* _strValue) {
   }
 }
 
-void BubbleControl::set_bubblesIn10Second(byte bubblesIn10Second) {
+void BubbleControl::set_bubblesIn100Second(byte bubblesIn100Second) {
   byte _delta;
-  if (_currStatus != 0 && _bubblesIn10Second != bubblesIn10Second) {
-    if (bubblesIn10Second < 3) _delta = 0;
-    else if (bubblesIn10Second < 6) _delta = 1;
-    else if (bubblesIn10Second < 10) _delta = 2;
-    else if (bubblesIn10Second < 15) _delta = 5;
+  if (_currStatus != 0 && _bubblesIn100Second != bubblesIn100Second) {
+    if (bubblesIn100Second < 30) _delta = 0;
+    else if (bubblesIn100Second < 60) _delta = 1;
+    else if (bubblesIn100Second < 100) _delta = 2;
+    else if (bubblesIn100Second < 150) _delta = 5;
     else _delta = 10;
     _checkReturnPosition();
     _currStatus = 1;
-    _bubblesIn10Second = bubblesIn10Second;
-    _minBubbleDuration = 100000 / ((int)_bubblesIn10Second * 10 + 1 + _delta) + 1;
-    _maxBubbleDuration = 100000 / ((int)_bubblesIn10Second * 10 - _delta);
+    _bubblesIn100Second = bubblesIn100Second;
+    _minBubbleDuration = 100000 / ((int)_bubblesIn100Second + 1 + _delta) + 1;
+    _maxBubbleDuration = 100000 / ((int)_bubblesIn100Second - _delta);
   }
 }
 
-byte BubbleControl::get_bubblesIn10Second() {
-  return _bubblesIn10Second;
+byte BubbleControl::get_bubblesIn100Second() {
+  return _bubblesIn100Second;
 }
 
 int BubbleControl::get_minBubbleDuration() {

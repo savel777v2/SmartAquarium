@@ -1,4 +1,4 @@
- /* Описатели шаблона:
+/* Описатели шаблона:
   % - начало шаблона
   С - выводимая символьная вличина (не редактируется) номер величины между % и знаком
   H - текущее кол-во часов (редактируется)
@@ -14,17 +14,17 @@
   L - информация по логам температуры из heaterTempLog
   b - счетчик пузырьков абсалютный
   B - информация с счетчика пузырьков в 4-х значном формате, где адрес:
-    1 - минимальный уровень сенсора,
-    2 - максимальный уровень сенсора,
-    3 - продолжительность пузыря,
-    4 - продолжительность между пузырями,
-    5 - скорость пузырьков в секунду
-    6 - скорость пузырьков в минуту
-    7 - считываний сенсора в секунду
+   1 - минимальный уровень сенсора,
+   2 - максимальный уровень сенсора,
+   3 - продолжительность пузыря,
+   4 - продолжительность между пузырями,
+   5 - скорость пузырьков в секунду
+   6 - скорость пузырьков в минуту
+   7 - считываний сенсора в секунду
   R - информация о контроле пузырьков bubbleControl в 4-х значном формате, где адрес:
-    1 - текущее состояние контроля ()
-    2 - отладка minBubbleDuration
-    3 - отладка maxBubbleDuration
+   1 - текущее состояние контроля ()
+   2 - отладка minBubbleDuration
+   3 - отладка maxBubbleDuration
   N - настройка необходимая скорости пузырька в секунду, адрес - номер настройки в EEPROM
   v - уровень вибрации пузырька в мс.
   V - уровень отсечки сигнала пузырька
@@ -251,13 +251,7 @@ void MenuItemPart::initialize(char _charMode[10], CurrSettings* _currSettingsPtr
       edited = true;
       lengthValue = 4;
     }
-    else if (typeOfPart == 'P') {
-      maxValue = 250;
-      edited = true;
-      lengthValue = 4;
-    }
-    else if (typeOfPart == 'N') {
-      minValue = 2;
+    else if (typeOfPart == 'P' || typeOfPart == 'N') {
       maxValue = 250;
       edited = true;
       lengthValue = 4;
@@ -431,9 +425,9 @@ void MenuItemPart::valueToDisplay(char* charDisplay, CurrSettings* _currSettings
   else if (typeOfPart == 'R') {
 
     switch (adress) {
-      case 1: BubbleSpeedControl.get_condition(_strValue); break;      
+      case 1: BubbleSpeedControl.get_condition(_strValue); break;
       case 2: sprintf(_strValue, "%4d", BubbleSpeedControl.get_minBubbleDuration()); break;
-      case 3: sprintf(_strValue, "%4d", BubbleSpeedControl.get_maxBubbleDuration()); break;      
+      case 3: sprintf(_strValue, "%4d", BubbleSpeedControl.get_maxBubbleDuration()); break;
     }
     _addSybstring(charDisplay, _indexOut, _strValue);
   }
@@ -477,15 +471,14 @@ void MenuItemPart::valueToDisplay(char* charDisplay, CurrSettings* _currSettings
     sprintf(_strValue, "%4d", value - 125);
     _addSybstring(charDisplay, _indexOut, _strValue);
   }
-  else if (typeOfPart == 'N') {
-    sprintf(_strValue, "%4d", value * 10);
-    _addSybstring(charDisplay, _indexOut, _strValue);
-  }
   else {
-    if (lengthValue == 1) sprintf(_strValue, "%01d", value);
-    else if (lengthValue == 2) sprintf(_strValue, "%02d", value);
-    else if (lengthValue == 3) sprintf(_strValue, "%3d", value);
-    else if (lengthValue == 6) sprintf(_strValue, "%6d", value);
+    switch (lengthValue) {
+      case 1: sprintf(_strValue, "%01d", value); break;
+      case 2: sprintf(_strValue, "%02d", value); break;
+      case 3: sprintf(_strValue, "%3d", value); break;
+      case 4: sprintf(_strValue, "%4d", value); break;
+      case 6: sprintf(_strValue, "%6d", value); break;
+    }
     _addSybstring(charDisplay, _indexOut, _strValue);
   }
   charDisplay[_indexOut] = '\0';
