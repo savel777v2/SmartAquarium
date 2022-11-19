@@ -27,21 +27,19 @@ void setup() {
   if (_value4 != 4294967295) CounterForBubbles.set_bubbleCounter(_value4);
   byte _value1;
   _value1 = EEPROM.read(20);
-  /*Serial.print("get_bubbleVibration: ");
-  Serial.println(_value1);*/
+  // bubbleVibration
   if (_value1 == 255) {
     _value1 = CounterForBubbles.get_bubbleVibration();
     EEPROM.update(20, _value1);
   }
   else CounterForBubbles.set_bubbleVibration(_value1);
+  // minBubbleLevel
   _value1 = EEPROM.read(21);  
-  /*Serial.print("get_bubbleVibration: ");
-  Serial.println(_value1);*/
   if (_value1 == 255) {
     _value1 = CounterForBubbles.get_minBubbleLevel();
-    EEPROM.update(21, _value1);
+    EEPROM.update(21, _value1 - 100);
   }
-  else CounterForBubbles.set_minBubbleLevel(_value1);
+  else CounterForBubbles.set_minBubbleLevel(_value1 + 100);
 
 }
 

@@ -112,6 +112,9 @@ void BubbleControl::clearError() {
 
 void BubbleControl::control(int bubbleDuration) {
 
+  // пока не нужно контролировать
+  if (StepMotorBubbles.get_isActive() || !CounterForBubbles.get_itsRegularBubbles()) return;
+
   // если не работаем или ошибка - ничего не нужно
   if (_currStatus == 0 || _currStatus >= 4) return;
 

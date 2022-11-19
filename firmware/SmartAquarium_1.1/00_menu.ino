@@ -240,7 +240,6 @@ void MenuItemPart::initialize(char _charMode[10], CurrSettings* _currSettingsPtr
       lengthValue = 3;
     }
     else if (typeOfPart == 'V') {
-      minValue = 100;
       maxValue = 250;
       edited = true;
       lengthValue = 3;
@@ -329,7 +328,7 @@ void MenuItemPart::writeValue(CurrSettings* _currSettingsPtr) {
   }
   else if (typeOfPart == 'V') {
     EEPROM.update(adress, value);
-    CounterForBubbles.set_minBubbleLevel(value);
+    CounterForBubbles.set_minBubbleLevel(value + 100);
   }
   else if (typeOfPart == 'L') {
     value = 95;
@@ -416,10 +415,10 @@ void MenuItemPart::valueToDisplay(char* charDisplay, CurrSettings* _currSettings
       case 7: _intValue = CounterForBubbles.get_sensorInSecond(); break;
     }
 
-    if (_intValue == -1) _addSybstring(charDisplay, _indexOut, " Err");
-    else {
-      sprintf(_strValue, "%4d", _intValue);
-      _addSybstring(charDisplay, _indexOut, _strValue);
+    switch (_intValue) {
+      case -1: _addSybstring(charDisplay, _indexOut, "Err1"); break;
+      case -2: _addSybstring(charDisplay, _indexOut, "Err2"); break;
+      default: sprintf(_strValue, "%4d", _intValue); _addSybstring(charDisplay, _indexOut, _strValue); break;
     }
   }
   else if (typeOfPart == 'R') {
@@ -469,6 +468,10 @@ void MenuItemPart::valueToDisplay(char* charDisplay, CurrSettings* _currSettings
   }
   else if (typeOfPart == 'P') {
     sprintf(_strValue, "%4d", value - 125);
+    _addSybstring(charDisplay, _indexOut, _strValue);
+  }
+  else if (typeOfPart == 'V') {
+    sprintf(_strValue, "%3d", value + 100);
     _addSybstring(charDisplay, _indexOut, _strValue);
   }
   else {

@@ -4,8 +4,8 @@ class BubbleCounter {
   public:
 
     BubbleCounter(int laserPin, int analogPin, void (*function)(byte _events));
-    void set_minBubbleLevel(byte minBubbleLevel);
-    byte get_minBubbleLevel();
+    void set_minBubbleLevel(int minBubbleLevel);
+    int get_minBubbleLevel();
     void set_bubbleVibration(byte bubbleVibration);
     byte get_bubbleVibration();
     int get_sensorInSecond();
@@ -31,7 +31,7 @@ class BubbleCounter {
 
     int _laserPin, _analogPin;
     void (*_externalOnTheBubble)(byte _events); // значения _events:
-    byte _minBubbleLevel = 200; // мин уровень срабатывания пузырька
+    int _minBubbleLevel = 200; // мин уровень срабатывания пузырька
     byte _bubbleVibration = 5; // дребезг срабатывания пузырька в мс
     int _sensorInSecond = 0; // считываний сенсора в секунду
     unsigned long _bubbleCounter = 0; // счетчик пузырьков
@@ -56,11 +56,11 @@ BubbleCounter::BubbleCounter(int laserPin, int analogPin, void (*function)(byte 
   digitalWrite(_laserPin, HIGH);
 }
 
-void BubbleCounter::set_minBubbleLevel(byte minBubbleLevel) {
+void BubbleCounter::set_minBubbleLevel(int minBubbleLevel) {
   _minBubbleLevel = minBubbleLevel;
 }
 
-byte BubbleCounter::get_minBubbleLevel() {
+int BubbleCounter::get_minBubbleLevel() {
   return _minBubbleLevel;
 }
 
@@ -103,13 +103,15 @@ bool BubbleCounter::_checkErrorNoBubble() {
 }
 
 int BubbleCounter::get_bubbleIn100Second() {
-  if (_checkErrorBubble() || _checkErrorNoBubble()) return -1;
+  if (_checkErrorBubble()) return -1;
+  if (_checkErrorNoBubble()) return -2;
   if ((_durationBubble + _durationNoBubble) == 0) return 0;
   return 100000 / (_durationBubble + _durationNoBubble);
 }
 
 int BubbleCounter::get_bubbleInMinute() {
-  if (_checkErrorBubble() || _checkErrorNoBubble()) return -1;
+  if (_checkErrorBubble()) return -1;
+  if (_checkErrorNoBubble()) return -2;  
   if ((_durationBubble + _durationNoBubble) == 0) return 0;
   return 60000 / (_durationBubble + _durationNoBubble);
 }
@@ -128,7 +130,7 @@ int BubbleCounter::get_durationBubble() {
 }
 
 int BubbleCounter::get_durationNoBubble() {
-  if (_checkErrorNoBubble()) return -1;
+  if (_checkErrorNoBubble()) return -2;
   return _durationNoBubble;
 }
 
@@ -155,13 +157,14 @@ bool BubbleCounter::get_itsRegularBubbles() {
     _maxDuration = max(_maxDuration, _lastDurations[_i]);
     _minDuration = min(_minDuration, _lastDurations[_i]);    
   }
-  if (_minDuration == -1 || (_minDuration + 10) <= _maxDuration) return false;
+  if (_minDuration < 0 || (_minDuration + 10) <= _maxDuration) return false;
   return true;
 }
 
 void BubbleCounter::_onTheBubble() {
   if (++_iLastDuration == 5) _iLastDuration = 0;
-  if (_checkErrorBubble() || _checkErrorNoBubble()) _lastDurations[_iLastDuration] = -1;
+  if (_checkErrorBubble()) _lastDurations[_iLastDuration] = -1;
+  if (_checkErrorNoBubble()) _lastDurations[_iLastDuration] = -2;
   else {
     _lastDurations[_iLastDuration] = _durationBubble + _durationNoBubble;
     _bubbleCounter++;
