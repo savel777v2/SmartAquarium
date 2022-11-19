@@ -25,28 +25,30 @@
    1 - текущее состояние контроля ()
    2 - отладка minBubbleDuration
    3 - отладка maxBubbleDuration
+   4 - отладка minBubblesIn100Second
+   5 - отладка maxBubblesIn100Second
   N - настройка необходимая скорости пузырька в секунду, адрес - номер настройки в EEPROM
-  v - уровень вибрации пузырька в мс.
-  V - уровень отсечки сигнала пузырька
+  v - уровень вибрации пузырька в мс., адрес - номер настройки в EEPROM
+  V - уровень отсечки сигнала пузырька, адрес - номер настройки в EEPROM
   S - пользовательская скорость мотора
-  P - нужная позиция мотора
+  P - нужная позиция мотора, адрес - номер настройки в EEPROM
 */
 
 BubbleControl BubbleSpeedControl;
 
-char *menuItems[][8] = {
+char *menuItems[][9] = {
   {"%1C %H%M%2C%3C", "St%7n%8a %t", "Sd%0h%1m  ", "Sn%2h%3m  ", "Sb%4h%5m %6c", "Sdn %9m %10c", ""},
   {"i%1Qo%2Q", "%L", "Td%11q  %12c", "Tn%13q  %14c", "dt %15w   ", ""},
-  {"%5B%1R", "%5B%22P", "%1B%2B", " %20v %21V", "Bd%23N %24c", "Bn%25N %26c", ""},
-  {"moto%S", "C%b", "Min %6B", "Loop%7B", "%3B%4B", "%2R%3R", ""},
+  {"%5B%1R", "%4R%5R", "%1B%2B", " %20v %21V", "Bd%23N %24c", "Bn%25N %26c", ""},
+  {"SP  %S", "POS %22P", "C%b", "Min %6B", "Loop%7B", "%3B%4B", "%2R%3R", ""},
   {""}
 };
 
-byte menuPointer[][8] = {
-  {B00010000, B00010000, B00010000, B00010000, B00010000, B00000000, B00000000, 0},
-  {B00100010, B01000010, B00010000, B00010000, B00010000, B00000000, B00000000, 0},
-  {B01000000, B01000000, B00000000, B00000000, B00010000, B00010000, B00000000, 0},
-  {B00000000, B00000000, B00000000, B00000000, B00000000, B00000000, B00000000, 0}
+byte menuPointer[][9] = {
+  {B00010000, B00010000, B00010000, B00010000, B00010000, B00000000, B00000000, B00000000, 0},
+  {B00100010, B01000010, B00010000, B00010000, B00010000, B00000000, B00000000, B00000000, 0},
+  {B01000000, B01000100, B00000000, B00000000, B00010000, B00010000, B00000000, B00000000, 0},
+  {B00000000, B00000000, B00000000, B00000000, B00000000, B00000000, B00000000, B00000000, 0}
 };
 
 char partsOfMenuItem[8][10];
@@ -250,9 +252,16 @@ void MenuItemPart::initialize(char _charMode[10], CurrSettings* _currSettingsPtr
       edited = true;
       lengthValue = 4;
     }
-    else if (typeOfPart == 'P' || typeOfPart == 'N') {
+    else if (typeOfPart == 'P') {
       maxValue = 250;
       edited = true;
+      lengthValue = 4;
+    }
+    else if (typeOfPart == 'N') {
+      minValue = 19;
+      maxValue = 250;
+      edited = true;
+      circleEdit = false;
       lengthValue = 4;
     }
   }
@@ -427,6 +436,8 @@ void MenuItemPart::valueToDisplay(char* charDisplay, CurrSettings* _currSettings
       case 1: BubbleSpeedControl.get_condition(_strValue); break;
       case 2: sprintf(_strValue, "%4d", BubbleSpeedControl.get_minBubbleDuration()); break;
       case 3: sprintf(_strValue, "%4d", BubbleSpeedControl.get_maxBubbleDuration()); break;
+      case 4: sprintf(_strValue, "%4d", BubbleSpeedControl.get_minBubblesIn100Second()); break;
+      case 5: sprintf(_strValue, "%4d", BubbleSpeedControl.get_maxBubblesIn100Second()); break;
     }
     _addSybstring(charDisplay, _indexOut, _strValue);
   }
@@ -469,6 +480,13 @@ void MenuItemPart::valueToDisplay(char* charDisplay, CurrSettings* _currSettings
   else if (typeOfPart == 'P') {
     sprintf(_strValue, "%4d", value - 125);
     _addSybstring(charDisplay, _indexOut, _strValue);
+  }
+  else if (typeOfPart == 'N') {
+    if (value == 19) _addSybstring(charDisplay, _indexOut, "Lock");
+    else {
+      sprintf(_strValue, "%4d", value);
+      _addSybstring(charDisplay, _indexOut, _strValue);
+    }
   }
   else if (typeOfPart == 'V') {
     sprintf(_strValue, "%3d", value + 100);

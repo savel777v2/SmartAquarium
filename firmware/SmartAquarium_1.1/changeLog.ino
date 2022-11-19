@@ -19,6 +19,7 @@
     Переделал на класс и объект BubbleControl
   17.11.2022 Новый функционал в BubbleControl
   19.11.2022 BubbleControl: переделал настройку bubblesIn10Second на bubblesIn100Second
-    BubbleCounter: переделал настройку minBubbleLevel, исправил ошибки    
+    BubbleCounter: переделал настройку minBubbleLevel, исправил ошибки
+    BubbleControl: новые функции в меню
 
  */

@@ -10,9 +10,11 @@ class BubbleControl {
     byte get_currStatus();
     void get_condition(char* _strValue);
     void set_bubblesIn100Second(byte bubblesIn100Second);
-    byte get_bubblesIn100Second();
+    byte get_bubblesIn100Second();    
     int get_minBubbleDuration();
     int get_maxBubbleDuration();
+    word get_maxBubblesIn100Second();
+    word get_minBubblesIn100Second();
     void clearError();
     void control(int bubbleDuration);
 
@@ -36,7 +38,7 @@ class BubbleControl {
 // local functions
 void BubbleControl::_checkReturnPosition() {
   // return to position before NoResult
-  if (_currStatus == 4 && _moveNoResult != 0) StepMotorBubbles.set_positionMove(_moveNoResult * -1);  
+  if (_currStatus == 4 && _moveNoResult != 0) StepMotorBubbles.set_positionMove(_moveNoResult * -1);
 }
 
 void BubbleControl::_addSybstring(char* _str1, char* _str2) {
@@ -104,6 +106,14 @@ int BubbleControl::get_maxBubbleDuration() {
   return _maxBubbleDuration;
 }
 
+word BubbleControl::get_maxBubblesIn100Second() {
+  return 100000 / _minBubbleDuration;
+}
+
+word BubbleControl::get_minBubblesIn100Second() {
+  return 100000 / _maxBubbleDuration;
+}
+
 void BubbleControl::clearError() {
   if (_currStatus >= 4) {
     _currStatus = 1;
@@ -116,13 +126,18 @@ void BubbleControl::control(int bubbleDuration) {
   if (StepMotorBubbles.get_isActive() || !CounterForBubbles.get_itsRegularBubbles()) return;
 
   // если не работаем или ошибка - ничего не нужно
-  if (_currStatus == 0 || _currStatus >= 4) return;
+  if (_currStatus == 0 || _currStatus == 6) return;
 
   // проверим может и так все хорошо
   if (bubbleDuration <= _maxBubbleDuration && bubbleDuration >= _minBubbleDuration) {
     // ура все срослось
     _currStatus = 3;
     return;
+  }
+
+  // критерий продолжения ошибки 4, 5
+  if (_currStatus == 4 || _currStatus == 5) {
+    if ((bubbleDuration > _maxBubbleDuration && _lastPositionMove > 0) || (bubbleDuration < _minBubbleDuration && _lastPositionMove < 0)) return;
   }
 
   if (_currStatus == 2) {
@@ -156,8 +171,8 @@ void BubbleControl::control(int bubbleDuration) {
       _moveOneWay = 0;
     }
     else {
-       _moveOneWay = _moveOneWay + _lastPositionMove;
-       if (_moveOneWay >= 2000 || _moveNoResult <= -2000) {
+      _moveOneWay = _moveOneWay + _lastPositionMove;
+      if (_moveOneWay >= 2000 || _moveNoResult <= -2000) {
         tone(PIEZO_PIN, 2500, 3000);
         _currStatus = 5;
         return;
@@ -165,18 +180,14 @@ void BubbleControl::control(int bubbleDuration) {
     }
   }
   else {
-    // новое движение или показатель сам ушел
+    // новое движение если показатель сам ушел за нужные пределы
     if (bubbleDuration < _minBubbleDuration) {
-      switch (_currStatus) {
-        case 1: _lastPositionMove = -100; break;
-        case 3: _lastPositionMove = -5; break;
-      }
+      if (_currStatus == 1) _lastPositionMove = -100;
+      else _lastPositionMove = -5;
     }
-    if (bubbleDuration > _maxBubbleDuration) {
-      switch (_currStatus) {
-        case 1: _lastPositionMove = 100; break;
-        case 3: _lastPositionMove = 5; break;
-      }
+    else {
+      if (_currStatus == 1) _lastPositionMove = 100;
+      else _lastPositionMove = 5;
     }
     _currStatus = 2;
     _lastBubbleDuration = bubbleDuration;
