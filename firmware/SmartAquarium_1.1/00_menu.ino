@@ -435,6 +435,7 @@ void MenuItemPart::valueToDisplay(char* charDisplay, CurrSettings* _currSettings
     switch (_intValue) {
       case -1: _addSybstring(charDisplay, _indexOut, "Err1"); break;
       case -2: _addSybstring(charDisplay, _indexOut, "Err2"); break;
+      case -3: _addSybstring(charDisplay, _indexOut, " 000"); break;
       default:
         switch (adress) {
           case 3: sprintf(_strValue, "%3d", _intValue); break;
@@ -497,7 +498,7 @@ void MenuItemPart::valueToDisplay(char* charDisplay, CurrSettings* _currSettings
     _addSybstring(charDisplay, _indexOut, _strValue);
   }
   else if (typeOfPart == 'N') {
-    if (value == 19) _addSybstring(charDisplay, _indexOut, "Lock");
+    if (value == 19) _addSybstring(charDisplay, _indexOut, " 000");
     else {
       sprintf(_strValue, "%4d", value);
       _addSybstring(charDisplay, _indexOut, _strValue);

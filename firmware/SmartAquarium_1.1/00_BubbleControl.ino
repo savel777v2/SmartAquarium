@@ -79,18 +79,26 @@ void BubbleControl::get_condition(char* _strValue) {
 }
 
 void BubbleControl::set_bubblesIn100Second(byte bubblesIn100Second) {
-  byte _delta;
+  // минимальное значение настройки
+  if (bubblesIn100Second <= 19) bubblesIn100Second = 0;
   if (_currStatus != 0 && _bubblesIn100Second != bubblesIn100Second) {
-    if (bubblesIn100Second < 30) _delta = 0;
-    else if (bubblesIn100Second < 60) _delta = 1;
-    else if (bubblesIn100Second < 100) _delta = 2;
-    else if (bubblesIn100Second < 150) _delta = 5;
-    else _delta = 10;
     _checkReturnPosition();
     _currStatus = 1;
     _bubblesIn100Second = bubblesIn100Second;
-    _minBubbleDuration = 100000 / ((int)_bubblesIn100Second + 1 + _delta) + 1;
-    _maxBubbleDuration = 100000 / ((int)_bubblesIn100Second - _delta);
+    if (_bubblesIn100Second == 0) {
+      _minBubbleDuration = 10000;
+      _maxBubbleDuration = 10000;
+    }
+    else {
+      byte _delta;
+      if (_bubblesIn100Second < 30) _delta = 0;
+      else if (_bubblesIn100Second < 60) _delta = 1;
+      else if (_bubblesIn100Second < 100) _delta = 2;
+      else if (_bubblesIn100Second < 150) _delta = 5;
+      else _delta = 10;
+      _minBubbleDuration = 100000 / ((int)_bubblesIn100Second + 1 + _delta) + 1;
+      _maxBubbleDuration = 100000 / ((int)_bubblesIn100Second - _delta);
+    }
   }
 }
 
@@ -107,10 +115,12 @@ int BubbleControl::get_maxBubbleDuration() {
 }
 
 word BubbleControl::get_maxBubblesIn100Second() {
+  if (_minBubbleDuration == 0 || _minBubbleDuration == 10000) return 0;
   return 100000 / _minBubbleDuration;
 }
 
 word BubbleControl::get_minBubblesIn100Second() {
+  if (_maxBubbleDuration == 0 || _maxBubbleDuration == 10000) return 0;
   return 100000 / _maxBubbleDuration;
 }
 
@@ -120,13 +130,16 @@ void BubbleControl::clearError() {
   }
 }
 
-void BubbleControl::control(int bubbleDuration) {  
+void BubbleControl::control(int bubbleDuration) {
 
   // пока не нужно контролировать
   if (StepMotorBubbles.get_isActive() || !CounterForBubbles.get_itsRegularBubbles()) return;
 
   // если не работаем или ошибка - ничего не нужно
   if (_currStatus == 0 || _currStatus == 6) return;
+
+  // если кран перекрыт, то перекрыт
+  if (bubbleDuration == -3) bubbleDuration = 10000;
 
   // проверим может и так все хорошо
   if (bubbleDuration <= _maxBubbleDuration && bubbleDuration >= _minBubbleDuration) {

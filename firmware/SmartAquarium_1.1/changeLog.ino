@@ -23,6 +23,6 @@
     BubbleControl: новые функции в меню
   20.11.2022 Motor: индикация теперь без делителя
     BubbleCounter: рефакторинг _checkErrorBubble(), _checkErrorNoBubble()
-    BubbleControl: теперь звук отключается
+    BubbleControl: теперь звук отключается, настройка нулевого уровня пузырька доступна
     
  */

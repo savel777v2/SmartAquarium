@@ -97,8 +97,12 @@ int BubbleCounter::_checkErrorBubble() {
 
 int BubbleCounter::_checkErrorNoBubble() {
   // выход показателй за предельные значения
-  if (_durationNoBubble > 10000 || _durationNoBubble < 30) return -2;
-  else if (!_itsBubble && (millis() - _beginNoBubble) > 10000) return -2;
+  if (_durationNoBubble < 30) return -2;
+  else if (_durationNoBubble > 10000) return -3;
+  else if (!_itsBubble && (millis() - _beginNoBubble) > 10000) {
+    if (_durationNoBubble > 10000) return -3;
+    else return -2;
+  }
   else return 0;
 }
 
@@ -141,7 +145,7 @@ int BubbleCounter::get_durationNoBubble() {
 long BubbleCounter::get_minDurationLastBubbles() {
   long _minDuration = _lastDurations[0];
   for (int _i = 1; _i < 5; _i++) _minDuration = min(_minDuration, _lastDurations[_i]);
-  return _minDuration;  
+  return _minDuration;
 }
 
 long BubbleCounter::get_maxDurationLastBubbles() {
@@ -159,14 +163,18 @@ bool BubbleCounter::get_itsRegularBubbles() {
   long _maxDuration = _lastDurations[0];
   for (int _i = 1; _i < 5; _i++) {
     _maxDuration = max(_maxDuration, _lastDurations[_i]);
-    _minDuration = min(_minDuration, _lastDurations[_i]);    
+    _minDuration = min(_minDuration, _lastDurations[_i]);
   }
+  if (_minDuration == -3 && _maxDuration == -3) return true;
   if (_minDuration < 0) return false;
-  if (_minDuration + 10 <= _maxDuration) return false;
+  byte _delta;
+  if (_minDuration > 5000) _delta = 20;
+  else _delta = 10;
+  if (_minDuration + _delta <= _maxDuration) return false;
   return true;
 }
 
-void BubbleCounter::_onTheBubble() {  
+void BubbleCounter::_onTheBubble() {
   if (++_iLastDuration == 5) _iLastDuration = 0;
   int _checkError1 = _checkErrorBubble();
   int _checkError2 = _checkErrorNoBubble();
