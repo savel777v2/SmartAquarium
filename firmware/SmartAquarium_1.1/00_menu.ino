@@ -16,8 +16,8 @@
   B - информация с счетчика пузырьков в 4-х значном формате, где адрес:
    1 - минимальный уровень сенсора,
    2 - максимальный уровень сенсора,
-   3 - продолжительность пузыря,
-   4 - продолжительность между пузырями,
+   3 - продолжительность пузыря (3 знака)
+   4 - продолжительность между пузырями (5 знаков)
    5 - скорость пузырьков в секунду
    6 - скорость пузырьков в минуту
    7 - считываний сенсора в секунду
@@ -39,7 +39,7 @@ BubbleControl BubbleSpeedControl;
 char *menuItems[][9] = {
   {"%1C %H%M%2C%3C", "St%7n%8a %t", "Sd%0h%1m  ", "Sn%2h%3m  ", "Sb%4h%5m %6c", "Sdn %9m %10c", ""},
   {"i%1Qo%2Q", "%L", "Td%11q  %12c", "Tn%13q  %14c", "dt %15w   ", ""},
-  {"%5B%1R", "%4R%5R", "%1B%2B", " %20v %21V", "Bd%23N %24c", "Bn%25N %26c", ""},
+  {"%5B%1R", "%4R%5R", "%1B%2B", " %20v %21V", "Bd%23N %24c", "Bn%25N %26c", "Sound  %27c", ""},
   {"SP  %S", "POS %22P", "C%b", "Min %6B", "Loop%7B", "%3B%4B", "%2R%3R", ""},
   {""}
 };
@@ -231,7 +231,15 @@ void MenuItemPart::initialize(char _charMode[10], CurrSettings* _currSettingsPtr
       edited = false;
       lengthValue = 7;
     }
-    else if (typeOfPart == 'B' || typeOfPart == 'R') {
+    else if (typeOfPart == 'B') {
+      edited = false;
+      switch (adress) {
+        case 3: lengthValue = 3; break;
+        case 4: lengthValue = 5; break;
+        default: lengthValue = 4; break;
+      }
+    }
+    else if (typeOfPart == 'R') {
       edited = false;
       lengthValue = 4;
     }
@@ -427,7 +435,14 @@ void MenuItemPart::valueToDisplay(char* charDisplay, CurrSettings* _currSettings
     switch (_intValue) {
       case -1: _addSybstring(charDisplay, _indexOut, "Err1"); break;
       case -2: _addSybstring(charDisplay, _indexOut, "Err2"); break;
-      default: sprintf(_strValue, "%4d", _intValue); _addSybstring(charDisplay, _indexOut, _strValue); break;
+      default:
+        switch (adress) {
+          case 3: sprintf(_strValue, "%3d", _intValue); break;
+          case 4: sprintf(_strValue, "%5d", _intValue); break;
+          default: sprintf(_strValue, "%4d", _intValue); break;
+        }
+        _addSybstring(charDisplay, _indexOut, _strValue);
+        break;
     }
   }
   else if (typeOfPart == 'R') {

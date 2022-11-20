@@ -10,7 +10,7 @@ class BubbleControl {
     byte get_currStatus();
     void get_condition(char* _strValue);
     void set_bubblesIn100Second(byte bubblesIn100Second);
-    byte get_bubblesIn100Second();    
+    byte get_bubblesIn100Second();
     int get_minBubbleDuration();
     int get_maxBubbleDuration();
     word get_maxBubblesIn100Second();
@@ -120,7 +120,7 @@ void BubbleControl::clearError() {
   }
 }
 
-void BubbleControl::control(int bubbleDuration) {
+void BubbleControl::control(int bubbleDuration) {  
 
   // пока не нужно контролировать
   if (StepMotorBubbles.get_isActive() || !CounterForBubbles.get_itsRegularBubbles()) return;
@@ -196,7 +196,7 @@ void BubbleControl::control(int bubbleDuration) {
   }
 
   // движение мотора собственно
-  tone(PIEZO_PIN, 2500, 500);
+  if (EEPROM.read(27) == 1) tone(PIEZO_PIN, 2500, 500);
   StepMotorBubbles.set_positionMove(_lastPositionMove);
 
 }

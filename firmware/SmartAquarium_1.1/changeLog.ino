@@ -21,5 +21,8 @@
   19.11.2022 BubbleControl: переделал настройку bubblesIn10Second на bubblesIn100Second
     BubbleCounter: переделал настройку minBubbleLevel, исправил ошибки
     BubbleControl: новые функции в меню
-
+  20.11.2022 Motor: индикация теперь без делителя
+    BubbleCounter: рефакторинг _checkErrorBubble(), _checkErrorNoBubble()
+    BubbleControl: теперь звук отключается
+    
  */
