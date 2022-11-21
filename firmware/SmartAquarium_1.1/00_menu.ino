@@ -27,6 +27,7 @@
    3 - отладка maxBubbleDuration
    4 - отладка minBubblesIn100Second
    5 - отладка maxBubblesIn100Second
+  W - включать скорость пузырька как днем за указонное число минут до рассвета, адрес - номер настройки в EEPROM
   N - настройка необходимая скорости пузырька в секунду, адрес - номер настройки в EEPROM
   v - уровень вибрации пузырька в мс., адрес - номер настройки в EEPROM
   V - уровень отсечки сигнала пузырька, адрес - номер настройки в EEPROM
@@ -39,7 +40,7 @@ BubbleControl BubbleSpeedControl;
 char *menuItems[][9] = {
   {"%1C %H%M%2C%3C", "St%7n%8a %t", "Sd%0h%1m  ", "Sn%2h%3m  ", "Sb%4h%5m %6c", "Sdn %9m %10c", ""},
   {"i%1Qo%2Q", "%L", "Td%11q  %12c", "Tn%13q  %14c", "dt %15w   ", ""},
-  {"%5B%1R", "%4R%5R", "%1B%2B", " %20v %21V", "Bd%23N %24c", "Bn%25N %26c", "Sound  %27c", ""},
+  {"%5B%1R", "%4R%5R", "%1B%2B", " %20v %21V", "Bd%23N %24c", "Bn%25N %26c", "bd%27W  ", "Sound  %28c", ""},
   {"SP  %S", "POS %22P", "C%b", "Min %6B", "Loop%7B", "%3B%4B", "%2R%3R", ""},
   {""}
 };
@@ -260,7 +261,7 @@ void MenuItemPart::initialize(char _charMode[10], CurrSettings* _currSettingsPtr
       edited = true;
       lengthValue = 4;
     }
-    else if (typeOfPart == 'P') {
+    else if (typeOfPart == 'P' || typeOfPart == 'W') {
       maxValue = 250;
       edited = true;
       lengthValue = 4;

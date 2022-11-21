@@ -29,8 +29,8 @@ class BubbleControl {
     int _lastBubbleDuration = 0;
     int _moveNoResult = 0;
     int _moveOneWay = 0;
-    int _minBubbleDuration = 0;
-    int _maxBubbleDuration = 0;
+    int _minBubbleDuration = 10000;
+    int _maxBubbleDuration = 10000;
     byte _bubblesIn100Second = 0;
 
 };
@@ -55,8 +55,6 @@ void BubbleControl::set_currStatus(byte currStatus) {
   if (_currStatus != 0 && currStatus == 0) {
     _checkReturnPosition();
     _currStatus = 0;
-    _minBubbleDuration = 0;
-    _maxBubbleDuration = 0;
   }
 }
 
@@ -209,7 +207,7 @@ void BubbleControl::control(int bubbleDuration) {
   }
 
   // движение мотора собственно
-  if (EEPROM.read(27) == 1) tone(PIEZO_PIN, 2500, 500);
+  if (EEPROM.read(28) == 1) tone(PIEZO_PIN, 2500, 500);
   StepMotorBubbles.set_positionMove(_lastPositionMove);
 
 }

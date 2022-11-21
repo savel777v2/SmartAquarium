@@ -34,7 +34,7 @@ void setup() {
   }
   else CounterForBubbles.set_bubbleVibration(_value1);
   // minBubbleLevel
-  _value1 = EEPROM.read(21);  
+  _value1 = EEPROM.read(21);
   if (_value1 == 255) {
     _value1 = CounterForBubbles.get_minBubbleLevel();
     EEPROM.update(21, _value1 - 100);
@@ -50,21 +50,28 @@ void loop() {
   StepMotorBubbles.tick();
 }
 
+// return it's day or nigth based on Morning and Evening
+bool itsDay(int _nowInMinutes, int _morningInMinutes, int _eveningInMinutes) {
+  if (_eveningInMinutes > _morningInMinutes) return (_nowInMinutes >= _morningInMinutes && _nowInMinutes < _eveningInMinutes);
+  else return (_nowInMinutes >= _morningInMinutes || _nowInMinutes < _eveningInMinutes);
+}
+
 // all options control
 void conditionControl() {
   static unsigned long _manualLampTime = 0;
 
   // it's day or nigth
+  int _nowInMinutes = (int)currSettings.now.hour * 60 + currSettings.now.minute;
   int _morningInMinutes = (int)EEPROM.read(0) * 60 + EEPROM.read(1);
   int _eveningInMinutes = (int)EEPROM.read(2) * 60 + EEPROM.read(3);
-  int _nowInMinutes = (int)currSettings.now.hour * 60 + currSettings.now.minute;
-  if (_eveningInMinutes > _morningInMinutes) currSettings.nowDay = (_nowInMinutes >= _morningInMinutes && _nowInMinutes < _eveningInMinutes);
-  else currSettings.nowDay = (_nowInMinutes >= _morningInMinutes || _nowInMinutes < _eveningInMinutes);
+  currSettings.nowDay = itsDay(_nowInMinutes, _morningInMinutes, _eveningInMinutes);
 
-  // settings of a bubble speed
+  // settings of a bubble speed  
+  int _morningBubbles = _morningInMinutes - EEPROM.read(27);
+  if (_morningBubbles < 0) _morningBubbles = _morningBubbles + 1440;
   byte _needingBubbleSpeed;
   byte _needingStatus;
-  if (currSettings.nowDay) {    
+  if (itsDay(_nowInMinutes, _morningBubbles, _eveningInMinutes)) {
     _needingBubbleSpeed = EEPROM.read(23);
     _needingStatus = EEPROM.read(24);
   }
