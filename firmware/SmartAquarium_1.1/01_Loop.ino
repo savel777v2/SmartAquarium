@@ -16,6 +16,9 @@ void setup() {
   pinMode(HEATER_PIN, OUTPUT);
   digitalWrite(HEATER_PIN, HIGH); // false - off
 
+  pinMode(EATING_PIN, OUTPUT);
+  digitalWrite(EATING_PIN, LOW); // off
+
   currSettings.aquaTempErr = !sensor.begin();
   if (!currSettings.aquaTempErr) sensor.setResolution(12);
 
@@ -66,7 +69,7 @@ void conditionControl() {
   int _eveningInMinutes = (int)EEPROM.read(2) * 60 + EEPROM.read(3);
   currSettings.nowDay = itsDay(_nowInMinutes, _morningInMinutes, _eveningInMinutes);
 
-  // settings of a bubble speed  
+  // settings of a bubble speed
   int _morningBubbles = _morningInMinutes - EEPROM.read(27);
   if (_morningBubbles < 0) _morningBubbles = _morningBubbles + 1440;
   byte _needingBubbleSpeed;
@@ -195,6 +198,7 @@ void loopTime() {
   static unsigned long _intWaitingTemp = 0;
   static unsigned long _lastTimerTime = 0;
   static unsigned long _nextNoteTime = 0;
+  static unsigned long _lastEatingTime = 0;  
   static byte _iNote = 0;
   bool _needDisplay = false;
 
@@ -223,6 +227,34 @@ void loopTime() {
   else if (_nextNoteTime != 0) {
     _nextNoteTime = 0;
     noTone(PIEZO_PIN);
+  }
+
+  // Eating loop
+  if (currSettings.eatingLoop != 0) {
+    bool holdOnEating = false;
+    unsigned long _endTime;
+    if (_lastEatingTime == 0) holdOnEating = true;
+    else if (currSettings.eatingOn) {
+      _endTime = EEPROM.read(29) * 1000;
+      if ((millis() - _lastEatingTime) > _endTime) {
+        digitalWrite(EATING_PIN, LOW);
+        Module.setLED(0, 5);
+        currSettings.eatingOn = false;
+        if (--currSettings.eatingLoop == 0) _lastEatingTime = 0;
+        else _lastEatingTime = millis();
+        _needDisplay = true;
+      }
+    }
+    else {
+      _endTime = EEPROM.read(30) * 1000;
+      if ((millis() - _lastEatingTime) > _endTime) holdOnEating = true;
+    }
+    if (holdOnEating) {
+      digitalWrite(EATING_PIN, HIGH);
+      Module.setLED(1, 5);
+      currSettings.eatingOn = true;
+      _lastEatingTime = millis();
+    }
   }
 
   // request temperature

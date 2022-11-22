@@ -20,6 +20,7 @@ MicroDS3231 Rtc; // A4 - SDA, A% - SCL
 #define DS18B20_PIN 7
 #define TEMP_RENEW_INTERVAL 200
 #define HEATER_PIN A0
+#define EATING_PIN 12
 
 byte lampPinsLevel[][2] = {{A1, 0}, {A2, 0}, {A3, 0}}; // Pin from left to right, Level
 
@@ -42,6 +43,8 @@ struct CurrSettings {
   float aquaTemp;
   bool aquaTempErr;
   bool heaterOn = false;
+  byte eatingLoop;
+  bool eatingOn = false;
 };
 
 struct {

@@ -33,6 +33,8 @@
   V - уровень отсечки сигнала пузырька, адрес - номер настройки в EEPROM
   S - пользовательская скорость мотора
   P - нужная позиция мотора, адрес - номер настройки в EEPROM
+  E - счетчик оставшихся циклов еды
+  e - настройка цикла еды (еда/простой) в секундах, адрес - номер настройки в EEPROM
 */
 
 BubbleControl BubbleSpeedControl;
@@ -41,6 +43,7 @@ char *menuItems[][9] = {
   {"%1C %H%M%2C%3C", "St%7n%8a %t", "Sd%0h%1m  ", "Sn%2h%3m  ", "Sb%4h%5m %6c", "Sdn %9m %10c", ""},
   {"i%1Qo%2Q", "%L", "Td%11q  %12c", "Tn%13q  %14c", "dt %15w   ", ""},
   {"%5B%1R", "%4R%5R", "%1B%2B", " %20v %21V", "Bd%23N %24c", "Bn%25N %26c", "bd%27W  ", "Sound  %28c", ""},
+  {"Eat %E", "%29e%30e", "", "", "", "", "", ""},
   {"SP  %S", "POS %22P", "C%b", "Min %6B", "Loop%7B", "%3B%4B", "%2R%3R", ""},
   {""}
 };
@@ -49,6 +52,7 @@ byte menuPointer[][9] = {
   {B00010000, B00010000, B00010000, B00010000, B00010000, B00000000, B00000000, B00000000, 0},
   {B00100010, B01000010, B00010000, B00010000, B00010000, B00000000, B00000000, B00000000, 0},
   {B01000000, B01000100, B00000000, B00000000, B00010000, B00010000, B00000000, B00000000, 0},
+  {B00000000, B00000000, B00000000, B00000000, B00000000, B00000000, B00000000, B00000000, 0},
   {B00000000, B00000000, B00000000, B00000000, B00000000, B00000000, B00000000, B00000000, 0}
 };
 
@@ -149,7 +153,7 @@ void MenuItemPart::set_value(byte _value) {
 void MenuItemPart::initialize(char _charMode[10], CurrSettings* _currSettingsPtr) {
   char _charAdress[10];
 
-  typeOfPart = 'E';
+  typeOfPart = '_';
   value = 0;
   isNull = 0;
   charValue[0] = '\0';
@@ -261,7 +265,7 @@ void MenuItemPart::initialize(char _charMode[10], CurrSettings* _currSettingsPtr
       edited = true;
       lengthValue = 4;
     }
-    else if (typeOfPart == 'P' || typeOfPart == 'W') {
+    else if (typeOfPart == 'P' || typeOfPart == 'W' || typeOfPart == 'e') {
       maxValue = 250;
       edited = true;
       lengthValue = 4;
@@ -273,6 +277,11 @@ void MenuItemPart::initialize(char _charMode[10], CurrSettings* _currSettingsPtr
       circleEdit = false;
       lengthValue = 4;
     }
+    else if (typeOfPart == 'E') {
+      maxValue = 10;
+      edited = true;
+      lengthValue = 4;
+    }    
   }
 }
 
@@ -283,19 +292,16 @@ void MenuItemPart::readValue(CurrSettings* _currSettingsPtr) {
   if (typeOfPart == 'H') value = _currSettingsPtr->now.hour;
   else if (typeOfPart == 'M') value = _currSettingsPtr->now.minute;
   else if (typeOfPart == 'L') value = 95;
-  else if (typeOfPart == 'b' || typeOfPart == 'B' || typeOfPart == 'R') value = 0;
+  else if (typeOfPart == 'b' || typeOfPart == 'B' || typeOfPart == 'R' || typeOfPart == 'C') value = 0;
   else if (typeOfPart == 't') {
     if (_currSettingsPtr->timerOn) value = 1;
     else value = 0;
   }
-  else if (typeOfPart == 'C' && adress == 3) {
-    value = EEPROM.read(6);
-    checkFromEEPROM = true;
-  }
-  else if (typeOfPart == 'E' || typeOfPart == 'C' || typeOfPart == 'T' || typeOfPart == 'Q') value = 0;
+  else if (typeOfPart == '_' || typeOfPart == 'C' || typeOfPart == 'T' || typeOfPart == 'Q') value = 0;
   else if (typeOfPart == 'n' && _currSettingsPtr->timerOn) value = _currSettingsPtr->timerMinute;
   else if (typeOfPart == 'a' && _currSettingsPtr->timerOn) value = _currSettingsPtr->timerSecond;
   else if (typeOfPart == 'S') value = StepMotorBubbles.get_userSpeed() + 100;
+  else if (typeOfPart == 'E') value = _currSettingsPtr->eatingLoop;
   else {
     value = EEPROM.read(adress);
     checkFromEEPROM = true;
@@ -358,6 +364,9 @@ void MenuItemPart::writeValue(CurrSettings* _currSettingsPtr) {
     EEPROM.update(adress, value);
     StepMotorBubbles.set_positionMove(value - 125);
   }
+  else if (typeOfPart == 'E') {
+    _currSettingsPtr->eatingLoop = value;
+  }
   else if (edited) {
     EEPROM.update(adress, value);
   }
@@ -388,7 +397,7 @@ void MenuItemPart::valueToDisplay(char* charDisplay, CurrSettings* _currSettings
       else _addSybstring(charDisplay, _indexOut, " ");
     }
     else if (adress == 3) {
-      if (value == 1) _addSybstring(charDisplay, _indexOut, "b");
+      if (EEPROM.read(6) == 1) _addSybstring(charDisplay, _indexOut, "b");
       else _addSybstring(charDisplay, _indexOut, " ");
     }
     else _addSybstring(charDisplay, _indexOut, "E");
