@@ -59,22 +59,38 @@ bool itsDay(int _nowInMinutes, int _morningInMinutes, int _eveningInMinutes) {
   else return (_nowInMinutes >= _morningInMinutes || _nowInMinutes < _eveningInMinutes);
 }
 
+// return it's day or nigth based on Morning and Evening
+void checkingEatingLoop(byte needEatingLoop, int nowInMinutes, byte needHour, byte needMinute) {
+  if (needEatingLoop == 0 || needEatingLoop == 255 || currSettings.eatingLoop > 0) return;
+  if (((int)needHour * 60 + needMinute) != nowInMinutes) return;
+  currSettings.eatingLoop = needEatingLoop;
+}
+
 // all options control
 void conditionControl() {
   static unsigned long _manualLampTime = 0;
-
-  // it's day or nigth
+  
+  // general values
   int _nowInMinutes = (int)currSettings.now.hour * 60 + currSettings.now.minute;
   int _morningInMinutes = (int)EEPROM.read(0) * 60 + EEPROM.read(1);
   int _eveningInMinutes = (int)EEPROM.read(2) * 60 + EEPROM.read(3);
+  int _minutesBetweenLamps = EEPROM.read(9);
+
+  // it's day or nigth
   currSettings.nowDay = itsDay(_nowInMinutes, _morningInMinutes, _eveningInMinutes);
 
-  // settings of a bubble speed
+  // starting eating loop
+  checkingEatingLoop(EEPROM.read(33), _nowInMinutes, EEPROM.read(31), EEPROM.read(32));
+  checkingEatingLoop(EEPROM.read(36), _nowInMinutes, EEPROM.read(34), EEPROM.read(35));
+
+  // settings of a bubble speed  
   int _morningBubbles = _morningInMinutes - EEPROM.read(27);
   if (_morningBubbles < 0) _morningBubbles = _morningBubbles + 1440;
+  int _eveningBubbles = _eveningInMinutes - _minutesBetweenLamps * 2;
+  if (_eveningBubbles < 0) _eveningBubbles = _eveningBubbles + 1440;
   byte _needingBubbleSpeed;
   byte _needingStatus;
-  if (itsDay(_nowInMinutes, _morningBubbles, _eveningInMinutes)) {
+  if (itsDay(_nowInMinutes, _morningBubbles, _eveningBubbles)) {
     _needingBubbleSpeed = EEPROM.read(23);
     _needingStatus = EEPROM.read(24);
   }
@@ -138,8 +154,7 @@ void conditionControl() {
     else if (EEPROM.read(10) == 0) {
       for (int i = 0; i < 3; i++) lampPinsLevel[i][1] = 1;
     }
-    else {
-      int _minutesBetweenLamps = EEPROM.read(9);
+    else {      
       for (int i = 0; i < 3; i++) {
         // after morning
         int _minutesLamp = _morningInMinutes + _minutesBetweenLamps * i;

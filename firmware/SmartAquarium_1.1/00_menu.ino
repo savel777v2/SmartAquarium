@@ -35,6 +35,7 @@
   P - нужная позиция мотора, адрес - номер настройки в EEPROM
   E - счетчик оставшихся циклов еды
   e - настройка цикла еды (еда/простой) в секундах, адрес - номер настройки в EEPROM
+  i - настройка счетчика оставшихся циклов еды, адрес - номер настройки в EEPROM
 */
 
 BubbleControl BubbleSpeedControl;
@@ -43,7 +44,7 @@ char *menuItems[][9] = {
   {"%1C %H%M%2C%3C", "St%7n%8a %t", "Sd%0h%1m  ", "Sn%2h%3m  ", "Sb%4h%5m %6c", "Sdn %9m %10c", ""},
   {"i%1Qo%2Q", "%L", "Td%11q  %12c", "Tn%13q  %14c", "dt %15w   ", ""},
   {"%5B%1R", "%4R%5R", "%1B%2B", " %20v %21V", "Bd%23N %24c", "Bn%25N %26c", "bd%27W  ", "Sound  %28c", ""},
-  {"Eat %E", "%29e%30e", "", "", "", "", "", ""},
+  {"Eat %E", "Ed%31h%32m%33i", "En%34h%35m%36i", "%29e%30e", "", "", "", ""},
   {"SP  %S", "POS %22P", "C%b", "Min %6B", "Loop%7B", "%3B%4B", "%2R%3R", ""},
   {""}
 };
@@ -52,7 +53,7 @@ byte menuPointer[][9] = {
   {B00010000, B00010000, B00010000, B00010000, B00010000, B00000000, B00000000, B00000000, 0},
   {B00100010, B01000010, B00010000, B00010000, B00010000, B00000000, B00000000, B00000000, 0},
   {B01000000, B01000100, B00000000, B00000000, B00010000, B00010000, B00000000, B00000000, 0},
-  {B00000000, B00000000, B00000000, B00000000, B00000000, B00000000, B00000000, B00000000, 0},
+  {B00000000, B00010000, B00010000, B00000000, B00000000, B00000000, B00000000, B00000000, 0},
   {B00000000, B00000000, B00000000, B00000000, B00000000, B00000000, B00000000, B00000000, 0}
 };
 
@@ -281,7 +282,13 @@ void MenuItemPart::initialize(char _charMode[10], CurrSettings* _currSettingsPtr
       maxValue = 10;
       edited = true;
       lengthValue = 4;
-    }    
+    }
+    else if (typeOfPart == 'i') {
+      maxValue = 20;
+      edited = true;
+      circleEdit = false;
+      lengthValue = 2;
+    }
   }
 }
 
@@ -516,6 +523,10 @@ void MenuItemPart::valueToDisplay(char* charDisplay, CurrSettings* _currSettings
   }
   else if (typeOfPart == 'V') {
     sprintf(_strValue, "%3d", value + 100);
+    _addSybstring(charDisplay, _indexOut, _strValue);
+  }
+  else if (typeOfPart == 'i') {
+    sprintf(_strValue, "%2d", value);
     _addSybstring(charDisplay, _indexOut, _strValue);
   }
   else {

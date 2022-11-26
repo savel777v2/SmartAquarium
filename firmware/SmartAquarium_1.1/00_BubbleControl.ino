@@ -89,8 +89,7 @@ void BubbleControl::set_bubblesIn100Second(byte bubblesIn100Second) {
     }
     else {
       byte _delta;
-      if (_bubblesIn100Second < 30) _delta = 0;
-      else if (_bubblesIn100Second < 60) _delta = 1;
+      if (_bubblesIn100Second < 60) _delta = 1;
       else if (_bubblesIn100Second < 100) _delta = 2;
       else if (_bubblesIn100Second < 150) _delta = 5;
       else _delta = 10;
@@ -169,8 +168,8 @@ void BubbleControl::control(int bubbleDuration) {
     // перелетели нужный результат
     if ((bubbleDuration < _minBubbleDuration && _lastPositionMove > 0) || (bubbleDuration > _maxBubbleDuration && _lastPositionMove < 0)) {
       switch (_lastPositionMove) {
-        case 100: _lastPositionMove = -10; break;
-        case -100: _lastPositionMove = 10; break;
+        case 50: _lastPositionMove = -10; break;
+        case -50: _lastPositionMove = 10; break;
         case 10: _lastPositionMove = -5; break;
         case -10: _lastPositionMove = 5; break;
         default:
@@ -193,11 +192,11 @@ void BubbleControl::control(int bubbleDuration) {
   else {
     // новое движение если показатель сам ушел за нужные пределы
     if (bubbleDuration < _minBubbleDuration) {
-      if (_currStatus == 1) _lastPositionMove = -100;
+      if (_currStatus == 1) _lastPositionMove = -50;
       else _lastPositionMove = -5;
     }
     else {
-      if (_currStatus == 1) _lastPositionMove = 100;
+      if (_currStatus == 1) _lastPositionMove = 50;
       else _lastPositionMove = 5;
     }
     _currStatus = 2;
