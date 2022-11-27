@@ -359,7 +359,7 @@ void MenuItemPart::writeValue(CurrSettings* _currSettingsPtr) {
   }
   else if (typeOfPart == 'V') {
     EEPROM.update(adress, value);
-    CounterForBubbles.set_minBubbleLevel(value + 100);
+    CounterForBubbles.set_minBubbleLevel(value + 50);
   }
   else if (typeOfPart == 'L') {
     value = 95;
@@ -522,7 +522,7 @@ void MenuItemPart::valueToDisplay(char* charDisplay, CurrSettings* _currSettings
     }
   }
   else if (typeOfPart == 'V') {
-    sprintf(_strValue, "%3d", value + 100);
+    sprintf(_strValue, "%3d", value + 50);
     _addSybstring(charDisplay, _indexOut, _strValue);
   }
   else if (typeOfPart == 'i') {

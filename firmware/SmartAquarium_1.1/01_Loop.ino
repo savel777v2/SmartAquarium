@@ -40,9 +40,9 @@ void setup() {
   _value1 = EEPROM.read(21);
   if (_value1 == 255) {
     _value1 = CounterForBubbles.get_minBubbleLevel();
-    EEPROM.update(21, _value1 - 100);
+    EEPROM.update(21, _value1 - 50);
   }
-  else CounterForBubbles.set_minBubbleLevel(_value1 + 100);
+  else CounterForBubbles.set_minBubbleLevel(_value1 + 50);
 
 }
 
