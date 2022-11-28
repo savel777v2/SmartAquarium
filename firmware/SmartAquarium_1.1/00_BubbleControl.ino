@@ -128,9 +128,19 @@ void BubbleControl::clearError() {
 }
 
 void BubbleControl::control(int bubbleDuration) {
+  static unsigned long _lastMotorMove = 0;
 
   // пока не нужно контролировать
-  if (StepMotorBubbles.get_isActive() || !CounterForBubbles.get_itsRegularBubbles()) return;
+  if (StepMotorBubbles.get_isActive()) {
+    _lastMotorMove = millis();
+     return;
+  }
+
+  // после последнего движения делаем паузу 1 сек. на обратную связь по скорости пузырька
+  if ((millis() - _lastMotorMove) < 1000) return;
+
+  // теперь проверяем дабы пузырьки стабилизировались
+  if (!CounterForBubbles.get_itsRegularBubbles()) return;
 
   // если не работаем или ошибка - ничего не нужно
   if (_currStatus == 0 || _currStatus == 6) return;
