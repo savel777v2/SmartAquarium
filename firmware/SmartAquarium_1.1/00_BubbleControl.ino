@@ -128,16 +128,19 @@ void BubbleControl::clearError() {
 }
 
 void BubbleControl::control(int bubbleDuration) {
-  static unsigned long _lastMotorMove = 0;
+  static byte _bubblesAfterMotor;  
 
   // пока не нужно контролировать
   if (StepMotorBubbles.get_isActive()) {
-    _lastMotorMove = millis();
+    _bubblesAfterMotor = 0;
      return;
   }
 
-  // после последнего движения делаем паузу 1 сек. на обратную связь по скорости пузырька
-  if ((millis() - _lastMotorMove) < 1000) return;
+  // после последнего движения ждем 5 пузырей на обратную связь по скорости пузырька
+  if (_bubblesAfterMotor < 5) {
+    _bubblesAfterMotor++;
+    return;
+  }
 
   // теперь проверяем дабы пузырьки стабилизировались
   if (!CounterForBubbles.get_itsRegularBubbles()) return;
@@ -217,6 +220,7 @@ void BubbleControl::control(int bubbleDuration) {
 
   // движение мотора собственно
   if (EEPROM.read(28) == 1) tone(PIEZO_PIN, 2500, 500);
+  _bubblesAfterMotor = 0;
   StepMotorBubbles.set_positionMove(_lastPositionMove);
 
 }
