@@ -5,6 +5,7 @@ void setup() {
 #if (DEBUG_MODE == 1)
   Serial.begin(9600);
   Serial.println("debugging");
+  debugCounterTick();
 #endif
 
   pinMode(PIEZO_PIN, OUTPUT); // настраиваем вывод 2 на выход
@@ -43,14 +44,14 @@ void setup() {
     EEPROM.update(21, _value1);
   }
   else CounterForBubbles.set_changeLevelBubble(_value1);
-
+  
 }
 
 void loop() {
-  loopTime();
+  /*loopTime();
   readKeyboard();
   CounterForBubbles.tick();
-  StepMotorBubbles.tick();
+  StepMotorBubbles.tick();*/
 }
 
 // return it's day or nigth based on Morning and Evening
@@ -186,19 +187,14 @@ void conditionControl() {
     else digitalWrite(lampPinsLevel[i][0], HIGH);
   }
 
-  // heaterTempLog each 15 minutes
-  if (currSettings.now.minute % 15 == 0) {
+  // heaterTempLog each our
+  if (currSettings.now.minute == 0) {
 
-    byte _indexOfLog = currSettings.now.hour * 4;
-    if (currSettings.now.minute >= 45) _indexOfLog = _indexOfLog + 3;
-    else if (currSettings.now.minute >= 30) _indexOfLog = _indexOfLog + 2;
-    else if (currSettings.now.minute >= 15) _indexOfLog = _indexOfLog + 1;
-
+    byte _indexOfLog = currSettings.now.hour;
     word _logValue;
     if (currSettings.aquaTempErr) _logValue = 0;
     else _logValue = (float)currSettings.aquaTemp * 10 + 1000;
     if (currSettings.heaterOn) _logValue = _logValue + 10000;
-
     heaterTempLog[_indexOfLog] = _logValue;
 
   }

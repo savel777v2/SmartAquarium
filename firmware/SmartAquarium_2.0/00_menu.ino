@@ -21,6 +21,9 @@
    5 - скорость пузырьков в секунду
    6 - скорость пузырьков в минуту
    7 - считываний сенсора в секунду
+   8 - ошибок 0 алгоритма в секунду
+   9 - ошибок 1 алгоритма в секунду
+   10 - ошибок 2 алгоритма в секунду
   R - информация о контроле пузырьков bubbleControl в 4-х значном формате, где адрес:
    1 - текущее состояние контроля ()
    2 - отладка minBubbleDuration
@@ -29,13 +32,14 @@
    5 - отладка maxBubblesIn100Second
   W - включать скорость пузырька как днем за указонное число минут до рассвета, адрес - номер настройки в EEPROM
   N - настройка необходимая скорости пузырька в секунду, адрес - номер настройки в EEPROM
-  v - уровень вибрации пузырька в мс., адрес - номер настройки в EEPROM
-  V - уровень отсечки сигнала пузырька, адрес - номер настройки в EEPROM
+  v - _changeTimeBubble макс время изменения уровня пузырька в мс., адрес - номер настройки в EEPROM
+  V - _changeLevelBubble мин. уровень изменения сигнала пузырька, адрес - номер настройки в EEPROM
   S - пользовательская скорость мотора
   P - нужная позиция мотора, адрес - номер настройки в EEPROM
   E - счетчик оставшихся циклов еды
   e - настройка цикла еды (еда/простой) в секундах, адрес - номер настройки в EEPROM
   i - настройка счетчика оставшихся циклов еды, адрес - номер настройки в EEPROM
+  X - просмотр датчика фотоэлемента, временно
 */
 
 BubbleControl BubbleSpeedControl;
@@ -45,7 +49,7 @@ char *menuItems[][9] = {
   {"i%1Qo%2Q", "%L", "Td%11q  %12c", "Tn%13q  %14c", "dt %15w   ", ""},
   {"%5B%1R", "%4R%5R", "%1B%2B", " %20v %21V", "Bd%23N %24c", "Bn%25N %26c", "bd%27W  ", "Sound  %28c", ""},
   {"Eat %E", "Ed%31h%32m%33i", "En%34h%35m%36i", "%29e%30e", "", "", "", ""},
-  {"SP  %S", "POS %22P", "C%b", "Min %6B", "Loop%7B", "%3B%4B", "%2R%3R", ""},
+  {"POS %22P", "SP  %S", "%3B%4B", "C%b", "Min %6B", "%8B%7B", "%9B%10B", "%X", ""},
   {""}
 };
 
@@ -228,7 +232,14 @@ void MenuItemPart::initialize(char _charMode[10], CurrSettings* _currSettingsPtr
       lengthValue = 1;
     }
     else if (typeOfPart == 'L') {
-      maxValue = 95;
+      maxValue = 23;
+      edited = true;
+      circleEdit = false;
+      lengthValue = 8;
+    }
+    else if (typeOfPart == 'X') {
+      minValue = 1;
+      maxValue = BUFFER_SENSOR_SIZE;
       edited = true;
       circleEdit = false;
       lengthValue = 8;
@@ -251,7 +262,7 @@ void MenuItemPart::initialize(char _charMode[10], CurrSettings* _currSettingsPtr
     }
     else if (typeOfPart == 'v') {
       minValue = 1;
-      maxValue = 10;
+      maxValue = 20;
       edited = true;
       lengthValue = 3;
     }
@@ -298,7 +309,8 @@ void MenuItemPart::readValue(CurrSettings* _currSettingsPtr) {
 
   if (typeOfPart == 'H') value = _currSettingsPtr->now.hour;
   else if (typeOfPart == 'M') value = _currSettingsPtr->now.minute;
-  else if (typeOfPart == 'L') value = 95;
+  else if (typeOfPart == 'L') value = 23;
+  else if (typeOfPart == 'X') value = BUFFER_SENSOR_SIZE;
   else if (typeOfPart == 'b' || typeOfPart == 'B' || typeOfPart == 'R' || typeOfPart == 'C') value = 0;
   else if (typeOfPart == 't') {
     if (_currSettingsPtr->timerOn) value = 1;
@@ -362,7 +374,10 @@ void MenuItemPart::writeValue(CurrSettings* _currSettingsPtr) {
     CounterForBubbles.set_changeLevelBubble(value);
   }
   else if (typeOfPart == 'L') {
-    value = 95;
+    value = 23;
+  }
+  else if (typeOfPart == 'X') {
+    value = BUFFER_SENSOR_SIZE;
   }
   else if (typeOfPart == 'S') {
     StepMotorBubbles.set_userSpeed(value - 100);
@@ -447,6 +462,9 @@ void MenuItemPart::valueToDisplay(char* charDisplay, CurrSettings* _currSettings
       case 5: _intValue = CounterForBubbles.get_bubbleIn100Second(); break;
       case 6: _intValue = CounterForBubbles.get_bubbleInMinute(); break;
       case 7: _intValue = CounterForBubbles.get_sensorInSecond(); break;
+      case 8: _intValue = CounterForBubbles.get_error0InSecond(); break;
+      case 9: _intValue = CounterForBubbles.get_error1InSecond(); break;
+      case 10: _intValue = CounterForBubbles.get_error2InSecond(); break;
     }
 
     switch (_intValue) {
@@ -475,23 +493,13 @@ void MenuItemPart::valueToDisplay(char* charDisplay, CurrSettings* _currSettings
     _addSybstring(charDisplay, _indexOut, _strValue);
   }
   else if (typeOfPart == 'L') {
-    byte _indexOfNow = _currSettingsPtr->now.hour * 4;
-    if (_currSettingsPtr->now.minute >= 45) _indexOfNow = _indexOfNow + 3;
-    else if (_currSettingsPtr->now.minute >= 30) _indexOfNow = _indexOfNow + 2;
-    else if (_currSettingsPtr->now.minute >= 15) _indexOfNow = _indexOfNow + 1;
-
+    byte _indexOfNow = _currSettingsPtr->now.hour;
     byte _indexOfLog;
-    if ((95 - value) > _indexOfNow) _indexOfLog = _indexOfNow + value + 1;
-    else _indexOfLog = _indexOfNow + value - 95;
-
-    // печатаем на экран
-    byte _toPrint;
-    _toPrint = _indexOfLog / 4;
-    sprintf(_strValue, "%02d", _toPrint);
+    if ((23 - value) > _indexOfNow) _indexOfLog = _indexOfNow + value + 1;
+    else _indexOfLog = _indexOfNow + value - 23;
+    sprintf(_strValue, "%02d00", _indexOfLog);
     _addSybstring(charDisplay, _indexOut, _strValue);
-    _toPrint = _indexOfLog % 4 * 15;
-    sprintf(_strValue, "%02d", _toPrint);
-    _addSybstring(charDisplay, _indexOut, _strValue);
+    
     word _valueOfLog = heaterTempLog[_indexOfLog];
     if (_valueOfLog > 10000) {
       charDisplay[_indexOut] = 'o';
@@ -505,6 +513,22 @@ void MenuItemPart::valueToDisplay(char* charDisplay, CurrSettings* _currSettings
       sprintf(_strValue, "%03d", _valueOfLog);
       _addSybstring(charDisplay, _indexOut, _strValue);
     }
+  }
+  else if (typeOfPart == 'X') {    
+    byte _indexOfLog;
+    int _TempValue;
+    if ((BUFFER_SENSOR_SIZE - value) > _curIndex) _indexOfLog = _curIndex + value;
+    else _indexOfLog = _curIndex + value - BUFFER_SENSOR_SIZE;
+    sprintf(_strValue, "%02d", value);
+    _addSybstring(charDisplay, _indexOut, _strValue);
+    
+    _TempValue = _changeTime[_indexOfLog];
+    sprintf(_strValue, "%2d", _TempValue);
+    _addSybstring(charDisplay, _indexOut, _strValue);
+    
+    _TempValue = _changeLevel[_indexOfLog] - 125;
+    sprintf(_strValue, "%4d", _TempValue);
+    _addSybstring(charDisplay, _indexOut, _strValue);    
   }
   else if (typeOfPart == 'S') {
     sprintf(_strValue, "%4d", value - 100);
