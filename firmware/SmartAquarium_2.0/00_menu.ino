@@ -40,6 +40,7 @@
   e - настройка цикла еды (еда/простой) в секундах, адрес - номер настройки в EEPROM
   i - настройка счетчика оставшихся циклов еды, адрес - номер настройки в EEPROM
   X - просмотр датчика фотоэлемента, временно
+  Y - вывод продолжительности кода (4-ре счетчика)
 */
 
 BubbleControl BubbleSpeedControl;
@@ -48,7 +49,7 @@ char *menuItems[][9] = {
   {"%1C %H%M%2C%3C", "St%7n%8a %t", "Sd%0h%1m  ", "Sn%2h%3m  ", "Sb%4h%5m %6c", "Sdn %9m %10c", ""},
   {"i%1Qo%2Q", "%L", "Td%11q  %12c", "Tn%13q  %14c", "dt %15w   ", ""},
   {"%5B%1R", "%4R%5R", "%1B%2B", " %20v %21V", "Bd%23N %24c", "Bn%25N %26c", "bd%27W  ", "Sound  %28c", ""},
-  {"Eat %E", "Ed%31h%32m%33i", "En%34h%35m%36i", "%29e%30e", "", "", "", ""},
+  {"Eat %E", "Ed%31h%32m%33i", "En%34h%35m%36i", "%29e%30e", "%Y", ""},
   {"POS %22P", "SP  %S", "%3B%4B", "C%b", "Min %6B", "%8B%7B", "%9B    ", "%X", ""},
   {""}
 };
@@ -294,6 +295,10 @@ void MenuItemPart::initialize(char _charMode[10], CurrSettings* _currSettingsPtr
       circleEdit = false;
       lengthValue = 2;
     }
+    else if (typeOfPart == 'Y') {
+      edited = false;
+      lengthValue = 8;
+    }
   }
 }
 
@@ -310,7 +315,7 @@ void MenuItemPart::readValue(CurrSettings* _currSettingsPtr) {
     if (_currSettingsPtr->timerOn) value = 1;
     else value = 0;
   }
-  else if (typeOfPart == '_' || typeOfPart == 'C' || typeOfPart == 'T' || typeOfPart == 'Q') value = 0;
+  else if (typeOfPart == '_' || typeOfPart == 'C' || typeOfPart == 'T' || typeOfPart == 'Q' || typeOfPart == 'Y') value = 0;
   else if (typeOfPart == 'n' && _currSettingsPtr->timerOn) value = _currSettingsPtr->timerMinute;
   else if (typeOfPart == 'a' && _currSettingsPtr->timerOn) value = _currSettingsPtr->timerSecond;
   else if (typeOfPart == 'S') value = StepMotorBubbles.get_userSpeed() + 100;
@@ -457,7 +462,7 @@ void MenuItemPart::valueToDisplay(char* charDisplay, CurrSettings* _currSettings
       case 6: _intValue = CounterForBubbles.get_bubbleInMinute(); break;
       case 7: _intValue = CounterForBubbles.get_sensorInSecond(); break;
       case 8: _intValue = CounterForBubbles.get_error0InSecond(); break;
-      case 9: _intValue = CounterForBubbles.get_error1InSecond(); break;      
+      case 9: _intValue = CounterForBubbles.get_error1InSecond(); break;
     }
 
     switch (_intValue) {
@@ -492,7 +497,7 @@ void MenuItemPart::valueToDisplay(char* charDisplay, CurrSettings* _currSettings
     else _indexOfLog = _indexOfNow + value - 23;
     sprintf(_strValue, "%02d00", _indexOfLog);
     _addSybstring(charDisplay, _indexOut, _strValue);
-    
+
     word _valueOfLog = heaterTempLog[_indexOfLog];
     if (_valueOfLog > 10000) {
       charDisplay[_indexOut] = 'o';
@@ -507,7 +512,7 @@ void MenuItemPart::valueToDisplay(char* charDisplay, CurrSettings* _currSettings
       _addSybstring(charDisplay, _indexOut, _strValue);
     }
   }
-  else if (typeOfPart == 'X') {    
+  else if (typeOfPart == 'X') {
     byte _indexOfLog;
     int _TempValue;
     byte _curIndex = CounterForBubbles.get_curIndex();
@@ -515,14 +520,14 @@ void MenuItemPart::valueToDisplay(char* charDisplay, CurrSettings* _currSettings
     else _indexOfLog = _curIndex + value - BUFFER_SENSOR_SIZE;
     sprintf(_strValue, "%02d", value);
     _addSybstring(charDisplay, _indexOut, _strValue);
-    
+
     _TempValue = CounterForBubbles.get_changeTime(_indexOfLog);
     sprintf(_strValue, "%2d", _TempValue);
     _addSybstring(charDisplay, _indexOut, _strValue);
-    
+
     _TempValue = CounterForBubbles.get_changeLevel(_indexOfLog) - 125;
     sprintf(_strValue, "%4d", _TempValue);
-    _addSybstring(charDisplay, _indexOut, _strValue);    
+    _addSybstring(charDisplay, _indexOut, _strValue);
   }
   else if (typeOfPart == 'S') {
     sprintf(_strValue, "%4d", value - 100);
@@ -542,6 +547,17 @@ void MenuItemPart::valueToDisplay(char* charDisplay, CurrSettings* _currSettings
   else if (typeOfPart == 'i') {
     sprintf(_strValue, "%2d", value);
     _addSybstring(charDisplay, _indexOut, _strValue);
+  }
+  else if (typeOfPart == 'Y') {
+    sprintf(_strValue, "%2d", durations.printMax1);
+    _addSybstring(charDisplay, _indexOut, _strValue);
+    sprintf(_strValue, "%2d", durations.printMax2);
+    _addSybstring(charDisplay, _indexOut, _strValue);
+    sprintf(_strValue, "%2d", durations.printMax3);
+    _addSybstring(charDisplay, _indexOut, _strValue);
+    sprintf(_strValue, "%2d", durations.printMax4);
+    _addSybstring(charDisplay, _indexOut, _strValue);
+
   }
   else {
     switch (lengthValue) {

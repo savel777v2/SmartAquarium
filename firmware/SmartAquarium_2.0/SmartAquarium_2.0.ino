@@ -5,7 +5,7 @@
 */
 // Версия 2.0
 
-#define DEBUG_MODE 1 // Отладка по COM порту
+#define DEBUG_MODE 0 // Отладка по COM порту
 
 #include <TM1638.h>
 #include <EEPROM.h>
@@ -56,6 +56,17 @@ struct {
   bool blinkOff;
   unsigned long lastBlinkTime = 0;
 } settMode;
+
+struct {  
+  byte max1 = 0;
+  byte max2 = 0;
+  byte max3 = 0;
+  byte max4 = 0;
+  byte printMax1 = 0;
+  byte printMax2 = 0;
+  byte printMax3 = 0;
+  byte printMax4 = 0;
+} durations;
 
 CurrSettings currSettings;
 

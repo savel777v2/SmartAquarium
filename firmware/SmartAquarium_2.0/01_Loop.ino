@@ -44,14 +44,46 @@ void setup() {
     EEPROM.update(21, _value1);
   }
   else CounterForBubbles.set_minLevelBubble(_value1);
-  
+
+}
+
+void startEndDurations(byte toDo) {
+  static unsigned long _beginTime;
+
+  if (toDo == 0) {
+    _beginTime = millis();
+    return;
+  }
+
+  unsigned long _endTime = millis();
+  byte _duration = _endTime - _beginTime;
+
+  switch (toDo) {
+    case 1: if (_duration > durations.max1) durations.max1 = _duration; break;
+    case 2: if (_duration > durations.max2) durations.max2 = _duration; break;
+    case 3: if (_duration > durations.max3) durations.max3 = _duration; break;
+    case 4: if (_duration > durations.max4) durations.max4 = _duration; break;
+  }
 }
 
 void loop() {
+
+  startEndDurations(0);
   loopTime();
+  startEndDurations(1);
+
+  startEndDurations(0);
   readKeyboard();
-  CounterForBubbles.tick();
+  startEndDurations(2);
+
+  startEndDurations(0);
   StepMotorBubbles.tick();
+  startEndDurations(3);
+
+  startEndDurations(0);
+  CounterForBubbles.tick();
+  startEndDurations(4);
+
 }
 
 // return it's day or nigth based on Morning and Evening
@@ -70,7 +102,7 @@ void checkingEatingLoop(byte needEatingLoop, int nowInMinutes, byte needHour, by
 // all options control
 void conditionControl() {
   static unsigned long _manualLampTime = 0;
-  
+
   // general values
   int _nowInMinutes = (int)currSettings.now.hour * 60 + currSettings.now.minute;
   int _morningInMinutes = (int)EEPROM.read(0) * 60 + EEPROM.read(1);
@@ -84,7 +116,7 @@ void conditionControl() {
   checkingEatingLoop(EEPROM.read(33), _nowInMinutes, EEPROM.read(31), EEPROM.read(32));
   checkingEatingLoop(EEPROM.read(36), _nowInMinutes, EEPROM.read(34), EEPROM.read(35));
 
-  // settings of a bubble speed  
+  // settings of a bubble speed
   int _morningBubbles = _morningInMinutes - EEPROM.read(27);
   if (_morningBubbles < 0) _morningBubbles = _morningBubbles + 1440;
   int _eveningBubbles = _eveningInMinutes - _minutesBetweenLamps * 2;
@@ -155,7 +187,7 @@ void conditionControl() {
     else if (EEPROM.read(10) == 0) {
       for (int i = 0; i < 3; i++) lampPinsLevel[i][1] = 1;
     }
-    else {      
+    else {
       for (int i = 0; i < 3; i++) {
         // after morning
         int _minutesLamp = _morningInMinutes + _minutesBetweenLamps * i;
@@ -209,7 +241,7 @@ void loopTime() {
   static unsigned long _intWaitingTemp = 0;
   static unsigned long _lastTimerTime = 0;
   static unsigned long _nextNoteTime = 0;
-  static unsigned long _lastEatingTime = 0;  
+  static unsigned long _lastEatingTime = 0;
   static byte _iNote = 0;
   bool _needDisplay = false;
 
@@ -320,6 +352,18 @@ void loopTime() {
 
   // Loop increment local time
   if ((millis() - _lastLoopTime) > 1000) {
+
+    // print duration
+    durations.printMax1 = durations.max1;
+    durations.printMax2 = durations.max2;
+    durations.printMax3 = durations.max3;
+    durations.printMax4 = durations.max4;
+    durations.max1 = 0;
+    durations.max2 = 0;
+    durations.max3 = 0;
+    durations.max4 = 0;
+    if ((currMode.main == 3) && (currMode.secondary == 4)) _needDisplay = true;
+
     // секунда оттикала
     _lastLoopTime  = millis();
     currSettings.now.second++;
