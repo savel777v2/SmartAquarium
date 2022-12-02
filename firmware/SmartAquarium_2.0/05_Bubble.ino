@@ -6,13 +6,13 @@ void onTheBubble(byte _events) {
   if ((_events & 0b00001000) == 0b00001000) Module.setLED(0, 7); // конец пузырька
 
   // индикация регулярность пузырьков
-  if (_events >= 0b00001000 && !StepMotorBubbles.get_isActive()) {
+  if ((_events & 0b00010000) == 0b00010000 && !StepMotorBubbles.get_isActive()) {
     if (CounterForBubbles.get_itsRegularBubbles()) Module.setLED(0, 6);
     else Module.setLED(1, 6);
   }
 
   // контроль пузырьеков
-  if (_events >= 0b00001000) BubbleSpeedControl.control(CounterForBubbles.get_lastDuration());
+  if ((_events & 0b00010000) == 0b00010000) BubbleSpeedControl.control(CounterForBubbles.get_lastDuration());
 
   // обновляем меню если в нужном режиме
   if (currMode.main == 2 && currMode.secondary == 2) {
@@ -25,7 +25,7 @@ void onTheBubble(byte _events) {
   }
   else if ((currMode.main == 2 && currMode.secondary == 0) || (currMode.main == 4 && currMode.secondary != 0 && currMode.secondary != 1)) {
     // прочие режимы от пузырька в составе 2 и 3 на конец пузырька или ошибка
-    if (_events >= 0b00001000) _needDisplay = true;
+    if ((_events & 0b00010000) == 0b00010000) _needDisplay = true;
   }
 
   if (_needDisplay) printDisplay();

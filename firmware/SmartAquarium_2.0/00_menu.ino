@@ -32,8 +32,8 @@
    5 - отладка maxBubblesIn100Second
   W - включать скорость пузырька как днем за указонное число минут до рассвета, адрес - номер настройки в EEPROM
   N - настройка необходимая скорости пузырька в секунду, адрес - номер настройки в EEPROM
-  v - _changeTimeBubble макс время изменения уровня пузырька в мс., адрес - номер настройки в EEPROM
-  V - _changeLevelBubble мин. уровень изменения сигнала пузырька, адрес - номер настройки в EEPROM
+  v - _maxDurationBubble макс. длительность пузырька
+  V - _minLevelBubble мин. уровень пузырька
   S - пользовательская скорость мотора
   P - нужная позиция мотора, адрес - номер настройки в EEPROM
   E - счетчик оставшихся циклов еды
@@ -49,7 +49,7 @@ char *menuItems[][9] = {
   {"i%1Qo%2Q", "%L", "Td%11q  %12c", "Tn%13q  %14c", "dt %15w   ", ""},
   {"%5B%1R", "%4R%5R", "%1B%2B", " %20v %21V", "Bd%23N %24c", "Bn%25N %26c", "bd%27W  ", "Sound  %28c", ""},
   {"Eat %E", "Ed%31h%32m%33i", "En%34h%35m%36i", "%29e%30e", "", "", "", ""},
-  {"POS %22P", "SP  %S", "%3B%4B", "C%b", "Min %6B", "%8B%7B", "%9B%10B", "%X", ""},
+  {"POS %22P", "SP  %S", "%3B%4B", "C%b", "Min %6B", "%8B%7B", "%9B    ", "%X", ""},
   {""}
 };
 
@@ -260,13 +260,7 @@ void MenuItemPart::initialize(char _charMode[10], CurrSettings* _currSettingsPtr
       edited = false;
       lengthValue = 4;
     }
-    else if (typeOfPart == 'v') {
-      minValue = 1;
-      maxValue = 20;
-      edited = true;
-      lengthValue = 3;
-    }
-    else if (typeOfPart == 'V') {
+    else if (typeOfPart == 'v' || typeOfPart == 'V') {
       maxValue = 250;
       edited = true;
       lengthValue = 3;
@@ -367,11 +361,11 @@ void MenuItemPart::writeValue(CurrSettings* _currSettingsPtr) {
   }
   else if (typeOfPart == 'v') {
     EEPROM.update(adress, value);
-    CounterForBubbles.set_changeTimeBubble(value);
+    CounterForBubbles.set_maxDurationBubble(value);
   }
   else if (typeOfPart == 'V') {
     EEPROM.update(adress, value);
-    CounterForBubbles.set_changeLevelBubble(value);
+    CounterForBubbles.set_minLevelBubble(value);
   }
   else if (typeOfPart == 'L') {
     value = 23;
@@ -463,8 +457,7 @@ void MenuItemPart::valueToDisplay(char* charDisplay, CurrSettings* _currSettings
       case 6: _intValue = CounterForBubbles.get_bubbleInMinute(); break;
       case 7: _intValue = CounterForBubbles.get_sensorInSecond(); break;
       case 8: _intValue = CounterForBubbles.get_error0InSecond(); break;
-      case 9: _intValue = CounterForBubbles.get_error1InSecond(); break;
-      case 10: _intValue = CounterForBubbles.get_error2InSecond(); break;
+      case 9: _intValue = CounterForBubbles.get_error1InSecond(); break;      
     }
 
     switch (_intValue) {
@@ -517,16 +510,17 @@ void MenuItemPart::valueToDisplay(char* charDisplay, CurrSettings* _currSettings
   else if (typeOfPart == 'X') {    
     byte _indexOfLog;
     int _TempValue;
+    byte _curIndex = CounterForBubbles.get_curIndex();
     if ((BUFFER_SENSOR_SIZE - value) > _curIndex) _indexOfLog = _curIndex + value;
     else _indexOfLog = _curIndex + value - BUFFER_SENSOR_SIZE;
     sprintf(_strValue, "%02d", value);
     _addSybstring(charDisplay, _indexOut, _strValue);
     
-    _TempValue = _changeTime[_indexOfLog];
+    _TempValue = CounterForBubbles.get_changeTime(_indexOfLog);
     sprintf(_strValue, "%2d", _TempValue);
     _addSybstring(charDisplay, _indexOut, _strValue);
     
-    _TempValue = _changeLevel[_indexOfLog] - 125;
+    _TempValue = CounterForBubbles.get_changeLevel(_indexOfLog) - 125;
     sprintf(_strValue, "%4d", _TempValue);
     _addSybstring(charDisplay, _indexOut, _strValue);    
   }

@@ -5,7 +5,7 @@ void setup() {
 #if (DEBUG_MODE == 1)
   Serial.begin(9600);
   Serial.println("debugging");
-  debugCounterTick();
+  //debugCounterTick();
 #endif
 
   pinMode(PIEZO_PIN, OUTPUT); // настраиваем вывод 2 на выход
@@ -31,27 +31,27 @@ void setup() {
   if (_value4 != 4294967295) CounterForBubbles.set_bubbleCounter(_value4);
   byte _value1;
   _value1 = EEPROM.read(20);
-  // bubbleVibration
+  // _maxDurationBubble
   if (_value1 == 255) {
-    _value1 = CounterForBubbles.get_changeTimeBubble();
+    _value1 = CounterForBubbles.get_maxDurationBubble();
     EEPROM.update(20, _value1);
   }
-  else CounterForBubbles.set_changeTimeBubble(_value1);
-  // minBubbleLevel
+  else CounterForBubbles.set_maxDurationBubble(_value1);
+  // _maxDurationBubble
   _value1 = EEPROM.read(21);
   if (_value1 == 255) {
-    _value1 = CounterForBubbles.get_changeLevelBubble();
+    _value1 = CounterForBubbles.get_minLevelBubble();
     EEPROM.update(21, _value1);
   }
-  else CounterForBubbles.set_changeLevelBubble(_value1);
+  else CounterForBubbles.set_minLevelBubble(_value1);
   
 }
 
 void loop() {
-  /*loopTime();
+  loopTime();
   readKeyboard();
   CounterForBubbles.tick();
-  StepMotorBubbles.tick();*/
+  StepMotorBubbles.tick();
 }
 
 // return it's day or nigth based on Morning and Evening

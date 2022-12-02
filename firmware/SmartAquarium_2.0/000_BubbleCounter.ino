@@ -1,54 +1,53 @@
 // universal class for bubble counting
 
-//#define BUFFER_SENSOR_SIZE 50
+#define BUFFER_SENSOR_SIZE 50
 
 class BubbleCounter {
   public:
 
     BubbleCounter(int laserPin, int analogPin, void (*function)(byte _events));
-    void set_changeLevelBubble(int changeLevelBubble);
-    int get_changeLevelBubble();
-    void set_changeTimeBubble(byte changeTimeBubble);
-    byte get_changeTimeBubble();
+    void set_maxDurationBubble(byte maxDurationBubble);
+    byte get_maxDurationBubble();
+    void set_minLevelBubble(byte minLevelBubble);
+    byte get_minLevelBubble();
+    byte get_curIndex();
+    byte get_changeLevel(byte index);
+    byte get_changeTime(byte index);
     int get_sensorInSecond();
     int get_error0InSecond();
     int get_error1InSecond();
-    int get_error2InSecond();
     void set_bubbleCounter(unsigned long bubbleCounter);
     unsigned long get_bubbleCounter();
-    bool get_itsBubble();
     int get_bubbleIn100Second();
     int get_bubbleInMinute();
     int get_MinLevel();
     int get_MaxLevel();
     int get_durationBubble();
     int get_durationNoBubble();
-    long get_minDurationLastBubbles();
-    long get_maxDurationLastBubbles();
     long get_lastDuration();
     bool get_itsRegularBubbles();
     void tick();
 
   private:
-    int _checkErrorBubble();
-    int _checkErrorNoBubble();
-    void _onTheBubble();
+    void writeLastDuration(long lastDuration, byte& _events);
+    void endingBubbleInterval(word& __durationBubble, int& __levelBubble, int& __maxLevelBubble, byte& __countSmoothLevel, byte& _events);
 
     int _laserPin, _analogPin;
     void (*_externalOnTheBubble)(byte _events); // значения _events:
 
     // изменение уровня с последнего измерения 0 - мин. уровень 255 - макс. уровень. 125 - уровень 0
-    /*static byte _changeLevel[BUFFER_SENSOR_SIZE];
-      static byte _changeTime[BUFFER_SENSOR_SIZE];  // прирост мс. с последнего измерения, 255 - макс. уровень
-      static byte _curIndex = 0;    // тек. индекс записи
-      static byte _intervalIndex = 0; // индекс начала интервала*/
+    byte _changeLevel[BUFFER_SENSOR_SIZE];
+    byte _changeTime[BUFFER_SENSOR_SIZE];  // прирост мс. с последнего измерения, 255 - макс. уровень
+    byte _curIndex = 0;    // тек. индекс записи
+    byte _intervalIndex = 0; // индекс начала интервала
 
-    byte _changeTimeBubble = 10; // мин. время изменений для диагностики пузырька
-    byte _changeLevelBubble = 50; // изменение уровня для диагностики пузырька
-    unsigned long _beginBubble = 0; // начало регистрации пузырька
-    unsigned long _beginNoBubble = 0; // начало регистрации без пузырька
+    // параметры диагностики пузырька
+    byte _changeTimeBubble = 5; // подъем\спуск пузырька (макс. длительность в мс.)
+    byte _changeLevelBubble = 10; // подъем\спуск пузырька (мин. изменение уровня)
+    byte _maxDurationBubble = 30; // макс. длительность пузырька
+    byte _minLevelBubble = 30; // мин. уровень пузырька
 
-    int _sensorInSecond = 0, _error0InSecond = 0, _error1InSecond = 0, _error2InSecond = 0;
+    int _sensorInSecond = 0, _error0InSecond = 0, _error1InSecond = 0;
     int _MinLevel, _MaxLevel; // мин. и макс. уровни сигналов
 
     unsigned long _bubbleCounter = 0; // счетчик пузырьков
@@ -69,20 +68,32 @@ BubbleCounter::BubbleCounter(int laserPin, int analogPin, void (*function)(byte 
   for (int _i = 0; _i < BUFFER_SENSOR_SIZE; _i++) _changeLevel[_i] = 125;
 }
 
-void BubbleCounter::set_changeLevelBubble(int changeLevelBubble) {
-  _changeLevelBubble = changeLevelBubble;
+void BubbleCounter::set_maxDurationBubble(byte maxDurationBubble) {
+  _maxDurationBubble = maxDurationBubble;
 }
 
-int BubbleCounter::get_changeLevelBubble() {
-  return _changeLevelBubble;
+byte BubbleCounter::get_maxDurationBubble() {
+  return _maxDurationBubble;
 }
 
-void BubbleCounter::set_changeTimeBubble(byte changeTimeBubble) {
-  _changeTimeBubble = changeTimeBubble;
+void BubbleCounter::set_minLevelBubble(byte minLevelBubble) {
+  _minLevelBubble = minLevelBubble;
 }
 
-byte BubbleCounter::get_changeTimeBubble() {
-  return _changeTimeBubble;
+byte BubbleCounter::get_minLevelBubble() {
+  return _minLevelBubble;
+}
+
+byte BubbleCounter::get_curIndex() {
+  return _curIndex;
+}
+
+byte BubbleCounter::get_changeLevel(byte index) {
+  return _changeLevel[index];
+}
+
+byte BubbleCounter::get_changeTime(byte index) {
+  return _changeTime[index];
 }
 
 int BubbleCounter::get_sensorInSecond() {
@@ -97,10 +108,6 @@ int BubbleCounter::get_error1InSecond() {
   return _error1InSecond;
 }
 
-int BubbleCounter::get_error2InSecond() {
-  return _error2InSecond;
-}
-
 void BubbleCounter::set_bubbleCounter(unsigned long bubbleCounter) {
   _bubbleCounter = bubbleCounter;
 }
@@ -109,46 +116,14 @@ unsigned long BubbleCounter::get_bubbleCounter() {
   return _bubbleCounter;
 }
 
-bool BubbleCounter::get_itsBubble() {
-  return (_beginBubble != 0);
-}
-
-int BubbleCounter::_checkErrorBubble() {
-  // выход показателя за предельные значения
-  if (_durationBubble > 50) return -1;
-  else if (_beginBubble != 0 && (millis() - _beginBubble) > 50) return -1;
-  else return 0;
-}
-
-int BubbleCounter::_checkErrorNoBubble() {
-  // выход показателй за предельные значения
-  if (_durationNoBubble < 30) return -2;
-  else if (_durationNoBubble > 10000) return -3;
-  else if (_beginNoBubble != 0 && (millis() - _beginNoBubble) > 10000) {
-    if (_durationNoBubble > 10000) return -3;
-    else return -2;
-  }
-  else return 0;
-}
-
 int BubbleCounter::get_bubbleIn100Second() {
-  int _checkError;
-  _checkError = _checkErrorBubble();
-  if (_checkError < 0) return _checkError;
-  _checkError = _checkErrorNoBubble();
-  if (_checkError < 0) return _checkError;
-  if ((_durationBubble + _durationNoBubble) == 0) return 0;
-  return 100000 / (_durationBubble + _durationNoBubble);
+  if (_lastDurations[_iLastDuration] <= 0) return _lastDurations[_iLastDuration];
+  else return 100000 / _lastDurations[_iLastDuration];
 }
 
 int BubbleCounter::get_bubbleInMinute() {
-  int _checkError;
-  _checkError = _checkErrorBubble();
-  if (_checkError < 0) return _checkError;
-  _checkError = _checkErrorNoBubble();
-  if (_checkError < 0) return _checkError;
-  if ((_durationBubble + _durationNoBubble) == 0) return 0;
-  return 60000 / (_durationBubble + _durationNoBubble);
+  if (_lastDurations[_iLastDuration] <= 0) return _lastDurations[_iLastDuration];
+  else return 60000 / _lastDurations[_iLastDuration];
 }
 
 int BubbleCounter::get_MinLevel() {
@@ -165,18 +140,6 @@ int BubbleCounter::get_durationBubble() {
 
 int BubbleCounter::get_durationNoBubble() {
   return _durationNoBubble;
-}
-
-long BubbleCounter::get_minDurationLastBubbles() {
-  long _minDuration = _lastDurations[0];
-  for (int _i = 1; _i < 5; _i++) _minDuration = min(_minDuration, _lastDurations[_i]);
-  return _minDuration;
-}
-
-long BubbleCounter::get_maxDurationLastBubbles() {
-  long _maxDuration = _lastDurations[0];
-  for (int _i = 1; _i < 5; _i++) _maxDuration = max(_maxDuration, _lastDurations[_i]);
-  return _maxDuration;
 }
 
 long BubbleCounter::get_lastDuration() {
@@ -199,16 +162,20 @@ bool BubbleCounter::get_itsRegularBubbles() {
   return true;
 }
 
-void BubbleCounter::_onTheBubble() {
+void BubbleCounter::writeLastDuration(long lastDuration, byte& _events) {
+  // ошибка или пузырек
+  _events = _events | 0b00010000;
   if (++_iLastDuration == 5) _iLastDuration = 0;
-  int _checkError1 = _checkErrorBubble();
-  int _checkError2 = _checkErrorNoBubble();
-  if (_checkError1 < 0) _lastDurations[_iLastDuration] = _checkError1;
-  else if (_checkError2 < 0) _lastDurations[_iLastDuration] = _checkError2;
-  else {
-    _lastDurations[_iLastDuration] = _durationBubble + _durationNoBubble;
-    _bubbleCounter++;
-  }
+  _lastDurations[_iLastDuration] = lastDuration;
+}
+
+void BubbleCounter::endingBubbleInterval(word& __durationBubble, int& __levelBubble, int& __maxLevelBubble, byte& __countSmoothLevel, byte& _events) {
+  __durationBubble = 0;
+  __levelBubble = 0;
+  __maxLevelBubble = 0;
+  __countSmoothLevel = 0;
+  // погасить инидикатор
+  _events = _events | 0b00001000;
 }
 
 // функция подсчета пузырьков
@@ -219,15 +186,22 @@ void BubbleCounter::tick() {
   static unsigned long _lastTimeError; // последнее время цикла ошибки
   static unsigned long _lastTimeSecond; // последнее время цикла секунды
 
+  // диагностика пузырька
+  static word __durationBubble = 0; // продолжительность интервала пузыря
+  static word __durationNoBubble = 0; // продолжительность интервала простоя
+  static int __levelBubble = 0; // уровень пузыря
+  static int __maxLevelBubble = 0; // уровень пузыря
+  static byte __countSmoothLevel = 0; // счетчик ровного уровня
+
   static int _lastLevel = 0;    // последний уровень датчика
   static int _intervalTime = 0;   // время оцениваемого интервала
   static int _intervalLevel = 0;  // изменение уровня оцениваемого интервала
   static int _countLoop = 0;    // счетчик циклов
   static int _countError0 = 0;  // счетчик ошибок "провалов" считывания
   static int _countError1 = 0;  // счетчик ошибок нехватки буфера обсчета
-  static int _countError2 = 0;  // счетчик ошибок нулевого времени
   static int _tempMinLevel, _tempMaxLevel; // обсчет мин. и макс. уровней сигналов
 
+  // needing to refactoring
   if (currMode.main == 4 && currMode.secondary == 7) return;
 
   // it's a first loop
@@ -243,7 +217,7 @@ void BubbleCounter::tick() {
 
   // local values
   int _newLevel = analogRead(_analogPin);
-  // поразрядно: 0 - обсчет Min\Max, 1 - обсчет _sensorInSecond, 2 - начало пузырька, 3 - конец пузырька, 4 - ошибка сигнала
+  // поразрядно: 0 - обсчет Min\Max, 1 - обсчет _InSecond, 2 - начало индикации, 3 - конец индикации, 4 - пузырек или ошибка
   byte _events = 0;
 
   // min max level four times in second
@@ -271,6 +245,7 @@ void BubbleCounter::tick() {
   // increament interval
   _intervalTime = _intervalTime + _changeTime[_curIndex];
   _intervalLevel = _intervalLevel + _changeLevel[_curIndex] - 125;
+  __durationNoBubble = __durationNoBubble + _changeTime[_curIndex];
 
   // changing the interval while it is longer that _changeTimeBubble
   while (_intervalTime > _changeTimeBubble && _intervalIndex != _curIndex) {
@@ -281,33 +256,50 @@ void BubbleCounter::tick() {
 
   // checking Errors
   if (_intervalTime > _changeTimeBubble) ++_countError0;
-  if (_changeTime[_curIndex] == 0) _countError2++;
 
-  // checking level up to bubble
-  if (_intervalLevel > _changeLevelBubble) {
-    // starting Bubble interval
-    _beginBubble = _currentTime;
-    _events = _events | 0b00000100;
-    // ending NoBubble interval
-    if (_beginNoBubble != 0) {
-      _durationNoBubble = _currentTime - _beginNoBubble;
-      _beginNoBubble = 0;
+  if (__durationBubble == 0) {
+    if (_intervalLevel > _changeLevelBubble) {
+      // maybe Bubble interval
+      __durationBubble = _intervalTime;
+      __levelBubble = _intervalLevel;
+      __maxLevelBubble = _intervalLevel;
+      // зажечь инидикатор
+      _events = _events | 0b00000100;
     }
   }
-
-  // checking level down from the bubble
-  if (_intervalLevel < _changeLevelBubble * (-1)) {
-    // starting NoBubble interval
-    _beginNoBubble = _currentTime;
-    _events = _events | 0b00001000;
-    // ending Bubble interval
-    if (_beginBubble != 0) {
-      _durationBubble = _currentTime - _beginBubble;
-      _beginBubble = 0;
-      // counting
-      _lastTimeError = _currentTime;
-      _onTheBubble();
+  else {
+    // increament maybe Bubble interval
+    __durationBubble = __durationBubble + _changeTime[_curIndex];
+    __levelBubble = __levelBubble + _changeLevel[_curIndex] - 125;
+    if (__levelBubble > __maxLevelBubble) __maxLevelBubble = __levelBubble;
+    if (__durationBubble > _maxDurationBubble) {
+      // Bubble too long
+      writeLastDuration(-1, _events);
+      endingBubbleInterval(__durationBubble, __levelBubble, __maxLevelBubble, __countSmoothLevel, _events);
     }
+    else if (_intervalLevel >= _changeLevelBubble * (-1) && _intervalLevel <= _changeLevelBubble) {
+      // maybe end of s Bubble interval
+      if (++__countSmoothLevel > 1) {
+        if (__maxLevelBubble > _minLevelBubble) {
+          _durationBubble = __durationBubble;
+          _durationNoBubble = __durationNoBubble - __durationBubble;
+          __durationNoBubble = 0;
+          // counting          
+          _bubbleCounter++;
+          _lastTimeError = _currentTime; 
+          long __writeDuration;
+          if (_durationNoBubble > 10000) __writeDuration = -3;
+          else __writeDuration = _durationBubble + _durationNoBubble;
+          writeLastDuration(__writeDuration, _events);
+        }
+        else {
+          // Bubble too small
+          writeLastDuration(-2, _events);
+        }        
+        endingBubbleInterval(__durationBubble, __levelBubble, __maxLevelBubble, __countSmoothLevel, _events);
+      }
+    }
+    else __countSmoothLevel = 0;
   }
 
   // increament current index
@@ -323,10 +315,7 @@ void BubbleCounter::tick() {
   // loop longer durations errors
   if ((_currentTime - _lastTimeError) > 10000) {
     _lastTimeError = _currentTime;
-    if (_checkErrorBubble() < 0 || _checkErrorNoBubble() < 0) {
-      _events = _events | 0b00010000;
-      _onTheBubble();
-    }
+    if (__durationNoBubble > 10000) writeLastDuration(-3, _events);
   }
 
   // counting values for the next loop
@@ -339,12 +328,10 @@ void BubbleCounter::tick() {
     _sensorInSecond = _countLoop;
     _error0InSecond = _countError0;
     _error1InSecond = _countError1;
-    _error2InSecond = _countError2;
     _events = _events | 0b00000010;
     _countLoop = 0;
     _countError0 = 0;
     _countError1 = 0;
-    _countError2 = 0;
   }
   else _countLoop++;
 
