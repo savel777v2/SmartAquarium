@@ -5,7 +5,6 @@ void setup() {
 #if (DEBUG_MODE == 1)
   Serial.begin(9600);
   Serial.println("debugging");
-  //debugCounterTick();
 #endif
 
   pinMode(PIEZO_PIN, OUTPUT); // настраиваем вывод 2 на выход
@@ -21,7 +20,6 @@ void setup() {
   digitalWrite(EATING_PIN, LOW); // off
 
   currSettings.aquaTempErr = !sensor.begin();
-  if (!currSettings.aquaTempErr) sensor.setResolution(12);
 
   initPartsOfMenuItem(menuItems[currMode.main][currMode.secondary]);
   EditingMenuItemPart.set_isNull(1);
@@ -67,24 +65,26 @@ void startEndDurations(byte toDo) {
 }
 
 void loop() {
+  bool _needDisplay = false;
 
-  startEndDurations(0);
-  loopTime();
-  startEndDurations(1);
-
-  startEndDurations(0);
-  readKeyboard();
-  startEndDurations(2);
-
-  startEndDurations(0);
-  StepMotorBubbles.tick();
-  startEndDurations(3);
-
-  startEndDurations(0);
+  _needDisplay = _needDisplay || loopTimeNeedDisplay();
   CounterForBubbles.tick();
-  startEndDurations(4);
+  
+  _needDisplay = _needDisplay || readTemperatureNeedDisplay();
+  CounterForBubbles.tick();
+  
+  if (_needDisplay) {
+    printDisplay();
+    CounterForBubbles.tick();
+  }
+  
+  readKeyboard();
+  CounterForBubbles.tick();
 
+  StepMotorBubbles.tick();
+  CounterForBubbles.tick();
 }
+
 
 // return it's day or nigth based on Morning and Evening
 bool itsDay(int _nowInMinutes, int _morningInMinutes, int _eveningInMinutes) {
@@ -234,11 +234,8 @@ void conditionControl() {
 }
 
 // main procedure for control time
-void loopTime() {
+bool loopTimeNeedDisplay() {
   static unsigned long _lastLoopTime = 0;
-  static unsigned long _lastTempTime = 0;
-  static bool _waitingTemp = false;
-  static unsigned long _intWaitingTemp = 0;
   static unsigned long _lastTimerTime = 0;
   static unsigned long _nextNoteTime = 0;
   static unsigned long _lastEatingTime = 0;
@@ -300,29 +297,6 @@ void loopTime() {
     }
   }
 
-  // request temperature
-  if (!currSettings.aquaTempErr && !_waitingTemp && (millis() - _lastTempTime) > TEMP_RENEW_INTERVAL) {
-    _lastTempTime = millis();
-    sensor.requestTemperatures();
-    _intWaitingTemp = 0;
-    _waitingTemp = true;
-  }
-
-  // Renew temperature
-  if (_waitingTemp && (millis() - _lastTempTime) > 10) {
-    _lastTempTime = millis();
-    if (sensor.isConversionComplete()) {
-      currSettings.aquaTempErr = false;
-      currSettings.aquaTemp = sensor.getTempC();
-      _waitingTemp = false;
-      if (currMode.main == 1 && currMode.secondary == 0) _needDisplay = true;
-    }
-    else if (_intWaitingTemp++ > 10) {
-      currSettings.aquaTempErr = true;
-      if (currMode.main == 1 && currMode.secondary == 0) _needDisplay = true;
-    }
-  }
-
   // Loop decrement timer
   if (currSettings.timerOn && ((millis() - _lastTimerTime) > 1000)) {
     if (_lastTimerTime == 0) currSettings.timerSecond++; // first second compensation
@@ -379,6 +353,6 @@ void loopTime() {
     }
   }
 
-  if (_needDisplay) printDisplay();
+  return _needDisplay;
 
 }

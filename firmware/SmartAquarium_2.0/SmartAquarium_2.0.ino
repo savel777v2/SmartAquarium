@@ -18,7 +18,6 @@ MicroDS3231 Rtc; // A4 - SDA, A% - SCL
 #define PIEZO_PIN 3 // + ground
 #define TURN_OFF_MANUAL_LAMP 120000 // at least on change minute
 #define DS18B20_PIN 7
-#define TEMP_RENEW_INTERVAL 200
 #define HEATER_PIN A0
 #define EATING_PIN 12
 
