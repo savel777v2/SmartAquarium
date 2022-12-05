@@ -19,8 +19,6 @@ void setup() {
   pinMode(EATING_PIN, OUTPUT);
   digitalWrite(EATING_PIN, LOW); // off
 
-  currSettings.aquaTempErr = !sensor.begin();
-
   initPartsOfMenuItem(menuItems[currMode.main][currMode.secondary]);
   EditingMenuItemPart.set_isNull(1);
 
@@ -143,29 +141,7 @@ void conditionControl() {
   }
 
   // control off heater
-  byte needingTemp;
-  bool heaterAlwaysOff = false;
-  if (currSettings.nowDay) {
-    needingTemp = EEPROM.read(11);
-    if (EEPROM.read(12) == 0) heaterAlwaysOff = true;
-  }
-  else {
-    needingTemp = EEPROM.read(13);
-    if (EEPROM.read(14) == 0) heaterAlwaysOff = true;
-  }
-  byte deltaTemp = EEPROM.read(15);
-  float minTemp = needingTemp - (float)deltaTemp / 10;
-  float maxTemp = needingTemp + (float)deltaTemp / 10;
-  if (currSettings.heaterOn && (heaterAlwaysOff || currSettings.aquaTempErr || currSettings.aquaTemp >= maxTemp)) {
-    currSettings.heaterOn = false;
-    Module.setLED(0, 4);
-    digitalWrite(HEATER_PIN, HIGH);
-  }
-  else if (!currSettings.heaterOn && !heaterAlwaysOff && currSettings.aquaTemp <= minTemp) {
-    currSettings.heaterOn = true;
-    Module.setLED(1, 4);
-    digitalWrite(HEATER_PIN, LOW);
-  }
+  heaterOnOff();
 
   // turn off manual lamp
   if (currSettings.manualLamp > 0) {
@@ -217,19 +193,7 @@ void conditionControl() {
   for (int i = 0; i < 3; i++) {
     if (lampPinsLevel[i][1] == 1) digitalWrite(lampPinsLevel[i][0], LOW);
     else digitalWrite(lampPinsLevel[i][0], HIGH);
-  }
-
-  // heaterTempLog each our
-  if (currSettings.now.minute == 0) {
-
-    byte _indexOfLog = currSettings.now.hour;
-    word _logValue;
-    if (currSettings.aquaTempErr) _logValue = 0;
-    else _logValue = (float)currSettings.aquaTemp * 10 + 1000;
-    if (currSettings.heaterOn) _logValue = _logValue + 10000;
-    heaterTempLog[_indexOfLog] = _logValue;
-
-  }
+  } 
 
 }
 

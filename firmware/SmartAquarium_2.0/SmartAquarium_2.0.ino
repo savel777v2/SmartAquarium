@@ -40,7 +40,8 @@ struct CurrSettings {
   unsigned long alarmStartSound;
   byte manualLamp;
   float aquaTemp;
-  bool aquaTempErr;
+  // 0 - not begin, 1 - read temp, 2 - normal
+  byte aquaTempStatus = 0;
   bool heaterOn = false;
   byte eatingLoop;
   bool eatingOn = false;

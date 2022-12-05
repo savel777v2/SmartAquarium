@@ -426,7 +426,7 @@ void MenuItemPart::valueToDisplay(char* charDisplay, CurrSettings* _currSettings
   else if (typeOfPart == 'T') _addSybstring(charDisplay, _indexOut, charValue);
   else if (typeOfPart == 'Q') {
     float _floatValue;
-    if (adress == 2 & _currSettingsPtr->aquaTempErr) _addSybstring(charDisplay, _indexOut, "Err");
+    if (adress == 2 & _currSettingsPtr->aquaTempStatus != 2) _addSybstring(charDisplay, _indexOut, "Err");
     else {
       if (adress == 1) _floatValue = Rtc.getTemperatureFloat();
       else _floatValue = _currSettingsPtr->aquaTemp;
