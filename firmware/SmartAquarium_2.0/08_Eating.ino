@@ -22,6 +22,7 @@ void eatingInitialize() {
 // turn on or turn off eating motor depending on the schedule or the button pressed
 bool eatingLoopNeedDisplay() {
   static unsigned long _lastEatingTime = 0;
+  static unsigned long _lastButtonTime = 0;
   static bool _eatingOn = false;
   static byte _lastButton = 0;
 
@@ -46,12 +47,15 @@ bool eatingLoopNeedDisplay() {
     }
   }
 
-  /*byte _pressButton = digitalRead(EATING_BUTTON);
-  if (_pressButton != _lastButton) {
-    digitalWrite(EATING_PIN, _pressButton);
-    Module.setLED(_pressButton, 5);
+  if ((millis() - _lastButtonTime) > 100) {
+    _lastButtonTime = millis();
+    byte _pressButton = digitalRead(EATING_BUTTON);
+    if (_pressButton != _lastButton) {
+      digitalWrite(EATING_PIN, _pressButton);
+      Module.setLED(_pressButton, 5);
+    }
+    _lastButton = _pressButton;
   }
-  _lastButton = _pressButton;*/
 
   return _needDisplay;
 
