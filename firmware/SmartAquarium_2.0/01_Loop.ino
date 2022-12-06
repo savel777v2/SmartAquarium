@@ -13,11 +13,9 @@ void setup() {
     pinMode(lampPinsLevel[i][0], OUTPUT);
   }
 
-  pinMode(HEATER_PIN, OUTPUT);
-  digitalWrite(HEATER_PIN, HIGH); // false - off
-
-  pinMode(EATING_PIN, OUTPUT);
-  digitalWrite(EATING_PIN, LOW); // off
+  heaterInitialize();
+  
+  eatingInitialize();
 
   initPartsOfMenuItem(menuItems[currMode.main][currMode.secondary]);
   EditingMenuItemPart.set_isNull(1);
@@ -69,6 +67,9 @@ void loop() {
   CounterForBubbles.tick();
   
   _needDisplay = _needDisplay || readTemperatureNeedDisplay();
+  CounterForBubbles.tick();
+
+  _needDisplay = _needDisplay || eatingLoopNeedDisplay();
   CounterForBubbles.tick();
   
   if (_needDisplay) {
@@ -201,8 +202,7 @@ void conditionControl() {
 bool loopTimeNeedDisplay() {
   static unsigned long _lastLoopTime = 0;
   static unsigned long _lastTimerTime = 0;
-  static unsigned long _nextNoteTime = 0;
-  static unsigned long _lastEatingTime = 0;
+  static unsigned long _nextNoteTime = 0;  
   static byte _iNote = 0;
   bool _needDisplay = false;
 
@@ -233,35 +233,7 @@ bool loopTimeNeedDisplay() {
     noTone(PIEZO_PIN);
   }
 
-  // Eating loop
-  if (currSettings.eatingLoop != 0) {
-    bool holdOnEating = false;
-    unsigned long _endTime;
-    if (_lastEatingTime == 0) holdOnEating = true;
-    else if (currSettings.eatingOn) {
-      _endTime = EEPROM.read(29) * 1000;
-      if ((millis() - _lastEatingTime) > _endTime) {
-        digitalWrite(EATING_PIN, LOW);
-        Module.setLED(0, 5);
-        currSettings.eatingOn = false;
-        if (--currSettings.eatingLoop == 0) _lastEatingTime = 0;
-        else _lastEatingTime = millis();
-        _needDisplay = true;
-      }
-    }
-    else {
-      _endTime = EEPROM.read(30) * 1000;
-      if ((millis() - _lastEatingTime) > _endTime) holdOnEating = true;
-    }
-    if (holdOnEating) {
-      digitalWrite(EATING_PIN, HIGH);
-      Module.setLED(1, 5);
-      currSettings.eatingOn = true;
-      _lastEatingTime = millis();
-    }
-  }
-
-  // Loop decrement timer
+    // Loop decrement timer
   if (currSettings.timerOn && ((millis() - _lastTimerTime) > 1000)) {
     if (_lastTimerTime == 0) currSettings.timerSecond++; // first second compensation
     _lastTimerTime  = millis();

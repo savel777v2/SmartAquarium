@@ -1,4 +1,10 @@
 
+// Initialize heater pins
+void heaterInitialize() {
+  pinMode(HEATER_PIN, OUTPUT);
+  digitalWrite(HEATER_PIN, HIGH); // false - off  
+}
+
 // turn on or turn off heater depending on the aqua temperature and settings of it
 void heaterOnOff() {
   byte needingTemp;

@@ -245,8 +245,8 @@ void debugCounterTick() {
 void debugTemp() {
   Serial.print("aquaTemp: ");
   Serial.print(currSettings.aquaTemp);
-  Serial.print(",aquaTempErr: ");
-  Serial.println(currSettings.aquaTempErr);
+  Serial.print(",aquaTempStatus: ");
+  Serial.println(currSettings.aquaTempStatus);
 }
 
 void debugEditingMenuItemPart() {
