@@ -559,6 +559,13 @@ void MenuItemPart::valueToDisplay(char* charDisplay, CurrSettings* _currSettings
     _addSybstring(charDisplay, _indexOut, _strValue);
 
   }
+  else if (typeOfPart == 'e') {
+    switch (adress) {
+      case 29: sprintf(_strValue, "%3d0", value); break;
+      default: sprintf(_strValue, "%4d", value); break;
+    }    
+    _addSybstring(charDisplay, _indexOut, _strValue);
+  }
   else {
     switch (lengthValue) {
       case 1: sprintf(_strValue, "%01d", value); break;

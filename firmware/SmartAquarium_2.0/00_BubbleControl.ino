@@ -168,7 +168,7 @@ void BubbleControl::control(int bubbleDuration) {
     // есть ли результат прошлого действия
     if ((bubbleDuration <= _lastBubbleDuration + 10 && _lastPositionMove < 0) || (bubbleDuration >= _lastBubbleDuration - 10 && _lastPositionMove > 0)) {
       _moveNoResult = _moveNoResult + _lastPositionMove;
-      if (_moveNoResult >= 200 || _moveNoResult <= -200) {
+      if (_moveNoResult >= 300 || _moveNoResult <= -300) {
         tone(PIEZO_PIN, 2500, 3000);
         _currStatus = 4;
         return;

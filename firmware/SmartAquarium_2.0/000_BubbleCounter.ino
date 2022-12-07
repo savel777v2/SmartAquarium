@@ -1,6 +1,8 @@
 // universal class for bubble counting
 
 #define BUFFER_SENSOR_SIZE 50
+#define CHANGE_TIME_BUBBLE 5 // подъем\спуск пузырька (макс. длительность в мс.)
+#define CHANGE_LEVEL_BUBBLE 10 // подъем\спуск пузырька (мин. изменение уровня)
 
 class BubbleCounter {
   public:
@@ -42,8 +44,6 @@ class BubbleCounter {
     byte _intervalIndex = 0; // индекс начала интервала
 
     // параметры диагностики пузырька
-    byte _changeTimeBubble = 5; // подъем\спуск пузырька (макс. длительность в мс.)
-    byte _changeLevelBubble = 10; // подъем\спуск пузырька (мин. изменение уровня)
     byte _maxDurationBubble = 30; // макс. длительность пузырька
     byte _minLevelBubble = 30; // мин. уровень пузырька
 
@@ -247,18 +247,18 @@ void BubbleCounter::tick() {
   _intervalLevel = _intervalLevel + _changeLevel[_curIndex] - 125;
   __durationNoBubble = __durationNoBubble + _changeTime[_curIndex];
 
-  // changing the interval while it is longer that _changeTimeBubble
-  while (_intervalTime > _changeTimeBubble && _intervalIndex != _curIndex) {
+  // changing the interval while it is longer that CHANGE_TIME_BUBBLE
+  while (_intervalTime > CHANGE_TIME_BUBBLE && _intervalIndex != _curIndex) {
     _intervalTime = _intervalTime - _changeTime[_intervalIndex];
     _intervalLevel = _intervalLevel - _changeLevel[_intervalIndex] + 125;
     if (++_intervalIndex == BUFFER_SENSOR_SIZE) _intervalIndex = 0;
   }
 
   // checking Errors
-  if (_intervalTime > _changeTimeBubble) ++_countError0;
+  if (_intervalTime > CHANGE_TIME_BUBBLE) ++_countError0;
 
   if (__durationBubble == 0) {
-    if (_intervalLevel > _changeLevelBubble) {
+    if (_intervalLevel > CHANGE_LEVEL_BUBBLE) {
       // maybe Bubble interval
       __durationBubble = _intervalTime;
       __levelBubble = _intervalLevel;
@@ -277,7 +277,7 @@ void BubbleCounter::tick() {
       writeLastDuration(-1, _events);
       endingBubbleInterval(__durationBubble, __levelBubble, __maxLevelBubble, __countSmoothLevel, _events);
     }
-    else if (_intervalLevel >= _changeLevelBubble * (-1) && _intervalLevel <= _changeLevelBubble) {
+    else if (_intervalLevel >= CHANGE_LEVEL_BUBBLE * (-1) && _intervalLevel <= CHANGE_LEVEL_BUBBLE) {
       // maybe end of s Bubble interval
       if (++__countSmoothLevel > 1) {
         if (__maxLevelBubble > _minLevelBubble) {
