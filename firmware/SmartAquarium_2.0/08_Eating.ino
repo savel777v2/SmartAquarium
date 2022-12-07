@@ -30,14 +30,14 @@ bool eatingLoopNeedDisplay() {
 
   // Eating loop
   if (currSettings.eatingLoop != 0 || _eatingOn) {
-    if (_lastEatingTime == 0 || (millis() - _lastEatingTime) > (unsigned long) EEPROM.read(29) * 10 + EEPROM.read(30) * 60000) {
+    if (_lastEatingTime == 0 || (millis() - _lastEatingTime) > EEPROM.read(29) * 10 + EEPROM.read(30) * 60000) {
       
       digitalWrite(EATING_PIN, HIGH);
       Module.setLED(1, 5);
       _eatingOn = true;
       _lastEatingTime = millis();
     }
-    else if (_eatingOn && (millis() - _lastEatingTime) > (int) EEPROM.read(29) * 10) {
+    else if (_eatingOn && (millis() - _lastEatingTime) > EEPROM.read(29) * 10) {
 
       digitalWrite(EATING_PIN, LOW);
       Module.setLED(0, 5);
