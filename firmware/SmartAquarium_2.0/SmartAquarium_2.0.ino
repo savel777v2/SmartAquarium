@@ -14,7 +14,6 @@ TM1638 Module(4, 5, 6); // DIO, CLK, STB
 #include <microDS3231.h>
 MicroDS3231 Rtc; // A4 - SDA, A% - SCL
 
-#define KEYBOARD_INTERVAL 10
 #define PIEZO_PIN 3 // + ground
 #define TURN_OFF_MANUAL_LAMP 120000 // at least on change minute
 #define DS18B20_PIN 7

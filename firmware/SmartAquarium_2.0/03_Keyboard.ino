@@ -1,3 +1,5 @@
+#define KEYBOARD_INTERVAL 10
+
 void readKeyboard() {
   static unsigned long _LastKeyboardTime = 0; // последнее время считывания клавиатуры
   bool _needDisplay = false; // есть необходимость обновить дисплей
@@ -95,9 +97,6 @@ bool keyDownUpPressed(bool _down) {
 // обработка нажатия клавиши Esc
 bool keyEscPressed() {
 
-  /*Serial.print("Esc 0: ");
-    debugEditingMenuItemPart();*/
-
   if (currSettings.alarmStartSound != 0) {
     currSettings.alarmStartSound = 0;
     return false;
@@ -118,9 +117,6 @@ bool keyEscPressed() {
   }
   else return false;
 
-  /*Serial.print("Esc 1: ");
-   debugEditingMenuItemPart();*/
-
   return true;
 }
 
@@ -129,9 +125,6 @@ bool keyModePressed() {
   bool _nextSetting = true;
   int _indexSetting = 0;
   bool _findSetting = false;
-
-  /*Serial.print("Mode 0: ");
-   debugEditingMenuItemPart();*/
 
   if (EditingMenuItemPart.get_isNull() == 0) {
     EditingMenuItemPart.writeValue(&currSettings);
@@ -159,9 +152,6 @@ bool keyModePressed() {
     EditingMenuItemPart.set_isNull(1);
   }
 
-  /*Serial.print("Mode 1: ");
-   debugEditingMenuItemPart();*/
-
   return true;
 }
 
@@ -172,23 +162,35 @@ bool keyModePressed() {
 //        1 - режим удержания более 1 сек - быстрыее, 5 сек - еще быстрее
 //
 boolean keyPressed(byte _keys, int _key, int _mode) {
-  static unsigned long keyTimePressed[8] = {0, 0, 0, 0, 0, 0, 0, 0}; // нач. время нажатия клавиш
-  static unsigned long keyTimeLoopPressed[8] = {0, 0, 0, 0, 0, 0, 0, 0}; // время счетчика начала удержания клавиши
+  static unsigned long keyTimePressed[8] = {0, 0, 0, 0, 0, 0, 0, 0}; // нач. время нажатия клавиш  
+  static byte countPressed[8] = {0, 0, 0, 0, 0, 0, 0, 0}; // счетчик нажатий при удержании
 
   if ((_keys & (1 << _key)) == (1 << _key)) {
     if (keyTimePressed[_key] == 0) {
       keyTimePressed[_key] = millis();
       return true;
     }
-    else if ((_mode == 1) && ((millis() - keyTimePressed[_key]) > 5000) && ((millis() - keyTimeLoopPressed[_key]) > 100)) {
-      keyTimeLoopPressed[_key] = millis();
-      return true;
-    }
-    else if ((_mode == 1) && ((millis() - keyTimePressed[_key]) > 1000) && ((millis() - keyTimeLoopPressed[_key]) > 200)) {
-      keyTimeLoopPressed[_key] = millis();
-      return true;
-    }
+    else if (_mode == 1) {
+      unsigned long _timeLeft = millis() - keyTimePressed[_key];
+      byte _countPressed = 0;
+      if (_timeLeft > 5000) {
+        _timeLeft = _timeLeft - 5000;
+        _countPressed = 25 + _timeLeft * 0.01;
+      }
+      else if (_timeLeft > 1000) {
+        _timeLeft = _timeLeft - 1000;
+        _countPressed = _timeLeft * 0.005;
+      }
+      if (_countPressed != countPressed[_key]) {
+        countPressed[_key] = _countPressed;
+        return true;
+      }
+    }    
   }
-  else keyTimePressed[_key] = 0;
+  else {
+    keyTimePressed[_key] = 0;
+    countPressed[_key] = 0;
+  }
   return false;
+
 }
