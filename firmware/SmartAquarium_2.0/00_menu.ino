@@ -304,6 +304,7 @@ void MenuItemPart::initialize(char _charMode[10], CurrSettings* _currSettingsPtr
 
 void MenuItemPart::readValue(CurrSettings* _currSettingsPtr) {
 
+  // do not optimization this variable! it's not a mistake
   bool checkFromEEPROM = false;
 
   if (typeOfPart == 'H') value = _currSettingsPtr->now.hour;
