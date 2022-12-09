@@ -1,7 +1,7 @@
 
 // if you want to get statistic of duration executing of the code
 //  add this in the begin of the code: startEndDurations(0)
-//  and this in the end of the code: startEndDurations(numberOfIndex) 
+//  and this in the end of the code: startEndDurations(numberOfIndex)
 // there are four index off the durations (get max duration in second)
 //  which is display on the menu 'Y'
 void startEndDurations(byte toDo) {
@@ -25,8 +25,7 @@ void startEndDurations(byte toDo) {
 
 #if (DEBUG_MODE == 1)
 
-/*
-void addSensorValue(byte& _index, byte _time, byte _level) {
+/*void addSensorValue(byte& _index, byte _time, byte _level) {
   _changeTime[_index] = _time;
   _changeLevel[_index] = _level + 125;
   _index++;
