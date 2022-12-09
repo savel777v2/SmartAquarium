@@ -41,25 +41,6 @@ void setup() {
 
 }
 
-void startEndDurations(byte toDo) {
-  static unsigned long _beginTime;
-
-  if (toDo == 0) {
-    _beginTime = millis();
-    return;
-  }
-
-  unsigned long _endTime = millis();
-  byte _duration = _endTime - _beginTime;
-
-  switch (toDo) {
-    case 1: if (_duration > durations.max1) durations.max1 = _duration; break;
-    case 2: if (_duration > durations.max2) durations.max2 = _duration; break;
-    case 3: if (_duration > durations.max3) durations.max3 = _duration; break;
-    case 4: if (_duration > durations.max4) durations.max4 = _duration; break;
-  }
-}
-
 void loop() {
   bool _needDisplay = false;
 
