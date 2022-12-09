@@ -7,8 +7,10 @@ void setup() {
   Serial.println("debugging");
 #endif
 
-  pinMode(PIEZO_PIN, OUTPUT); // настраиваем вывод 2 на выход
-  tone(PIEZO_PIN, 2500, 100);
+  Module.setDisplayToString("AQUA  21", B00000010, false);
+  delay(2000);
+
+  alarmInitialize();
   
   lampsInitialize();
 

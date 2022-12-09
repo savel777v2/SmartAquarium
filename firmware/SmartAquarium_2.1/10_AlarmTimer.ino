@@ -2,6 +2,12 @@
 // frequency, duration
 unsigned int alarmMelody[14][2] = {{2500, 50}, {0, 100}, {2500, 50}, {0, 100}, {2500, 50}, {0, 100}, {2500, 50}, {0, 100}, {2500, 50}, {0, 3000}};
 
+// Initialize alarm
+void alarmInitialize() {
+  pinMode(PIEZO_PIN, OUTPUT); // настраиваем вывод 2 на выход
+  tone(PIEZO_PIN, 2500, 100);
+}
+
 // play alarm melody if necessary
 void alarmLoop() {
   static unsigned long _nextNoteTime = 0;
