@@ -62,6 +62,29 @@ void onTheBubble(byte _events) {
   // контроль пузырьеков
   if ((_events & 0b00010000) == 0b00010000) BubbleSpeedControl.control(CounterForBubbles.get_lastDuration());
 
+  // ловим пузырьки в специальном режиме
+  if ((_events & 0b00010000) == 0b00010000 && currSettings.waitingBubble != 0) {
+    // waiting bubbles in special mode
+    bool _enterSensorLogs = false;
+    if (currSettings.waitingBubble == 255) {
+      if (CounterForBubbles.get_durationBubble() < 20) _enterSensorLogs = true;
+    }
+    else {
+      if (--currSettings.waitingBubble == 0) _enterSensorLogs = true;
+    }
+    if (_enterSensorLogs) {
+      currSettings.waitingBubble = 0;
+      if (currSettings.setting != 0) keyEscPressed();
+      if (menuItems[currMode.main][currMode.secondary] != "%X") {
+        currMode.main = 4;
+        currMode.secondary = 7;
+        initPartsOfMenuItem(menuItems[currMode.main][currMode.secondary]);
+      }
+      keyModePressed();
+      _needDisplay = true;
+    }
+  }
+
   // обновляем меню если в нужном режиме
   if (currMode.main == 2 && currMode.secondary == 2) {
     // обсчет Min\Max

@@ -8,6 +8,8 @@ class BubbleCounter {
   public:
 
     BubbleCounter(int laserPin, int analogPin, void (*function)(byte _events));
+    void set_working(bool working);
+    bool get_working();    
     void set_maxDurationBubble(byte maxDurationBubble);
     byte get_maxDurationBubble();
     void set_minLevelBubble(byte minLevelBubble);
@@ -28,6 +30,7 @@ class BubbleCounter {
     int get_durationNoBubble();
     long get_lastDuration();
     bool get_itsRegularBubbles();
+    
     void tick();
 
   private:
@@ -42,6 +45,8 @@ class BubbleCounter {
     byte _changeTime[BUFFER_SENSOR_SIZE];  // прирост мс. с последнего измерения, 255 - макс. уровень
     byte _curIndex = 0;    // тек. индекс записи
     byte _intervalIndex = 0; // индекс начала интервала
+
+    bool _working;
 
     // параметры диагностики пузырька
     byte _maxDurationBubble = 30; // макс. длительность пузырька
@@ -63,9 +68,20 @@ BubbleCounter::BubbleCounter(int laserPin, int analogPin, void (*function)(byte 
   _laserPin = laserPin;
   _analogPin = analogPin;
   _externalOnTheBubble = *function;
+  _working = true;
   pinMode(_laserPin, OUTPUT);
   digitalWrite(_laserPin, HIGH);
   for (int _i = 0; _i < BUFFER_SENSOR_SIZE; _i++) _changeLevel[_i] = 125;
+}
+
+void BubbleCounter::set_working(bool working) {
+  _working = working;
+  if (_working) digitalWrite(_laserPin, HIGH);
+  else digitalWrite(_laserPin, LOW);
+}
+
+bool BubbleCounter::get_working() {
+  return _working;
 }
 
 void BubbleCounter::set_maxDurationBubble(byte maxDurationBubble) {
@@ -202,7 +218,7 @@ void BubbleCounter::tick() {
   static int _tempMinLevel, _tempMaxLevel; // обсчет мин. и макс. уровней сигналов
 
   // needing to refactoring
-  if (currMode.main == 4 && currMode.secondary == 7) return;
+  if (!_working) return;  
 
   // it's a first loop
   unsigned long _currentTime = millis();

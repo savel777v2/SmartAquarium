@@ -43,6 +43,7 @@ struct CurrSettings {
   byte aquaTempStatus = 0;
   bool heaterOn = false;
   byte eatingLoop = 0;
+  byte waitingBubble = 0;
 };
 
 struct {

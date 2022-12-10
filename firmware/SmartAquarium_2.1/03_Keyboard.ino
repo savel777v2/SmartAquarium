@@ -65,6 +65,27 @@ bool keyLeftRightPressed(bool _left) {
     return true;
   }
 
+  if (menuItems[currMode.main][currMode.secondary] == "%X") {
+    // special reaction in this mode: editing waitingBubble
+    if (_left) {
+      if (currSettings.waitingBubble != 255) {
+        currSettings.waitingBubble = 255;
+        tone(PIEZO_PIN, 2500, 100);
+      }
+    }
+    else {
+      if (currSettings.waitingBubble == 255) {
+        currSettings.waitingBubble = 1;
+        tone(PIEZO_PIN, 2500, 100);
+      }
+      else if (currSettings.waitingBubble != 2) {
+        currSettings.waitingBubble++;
+        tone(PIEZO_PIN, 2500, 100);
+      }
+    }
+    return false;
+  }
+
   if (currMode.secondary != 0) return false;
   if ((!_left) && (menuItems[currMode.main + 1][currMode.secondary][0] == '\0')) return false;
   if ((_left) && (currMode.main == 0)) return false;
@@ -103,6 +124,7 @@ bool keyEscPressed() {
   }
 
   if (currSettings.setting != 0) {
+    if (EditingMenuItemPart.get_typeOfPart() == 'X') CounterForBubbles.set_working(true);
     EditingMenuItemPart.set_isNull(1);
     currSettings.setting = 0;
     settMode.blinkOff = false;
@@ -128,6 +150,7 @@ bool keyModePressed() {
 
   if (EditingMenuItemPart.get_isNull() == 0) {
     EditingMenuItemPart.writeValue(&currSettings);
+    if (EditingMenuItemPart.get_typeOfPart() == 'X') CounterForBubbles.set_working(true);
     EditingMenuItemPart.set_isNull(1);
     // settings change - all need to control
     minuteControl();
@@ -139,13 +162,14 @@ bool keyModePressed() {
     EditingMenuItemPart.initialize(partsOfMenuItem[_i], &currSettings);
     if (EditingMenuItemPart.get_edited()) {
       _indexSetting++;
-      if (currSettings.setting == _indexSetting) {
-        _findSetting  = true;
-      }
+      if (currSettings.setting == _indexSetting) _findSetting  = true;
     }
   }
 
-  if (_findSetting) EditingMenuItemPart.readValue(&currSettings);
+  if (_findSetting) {
+    EditingMenuItemPart.readValue(&currSettings);
+    if (EditingMenuItemPart.get_typeOfPart() == 'X') CounterForBubbles.set_working(false);
+  }
   else {
     currSettings.setting = 0;
     settMode.blinkOff = false;
@@ -162,7 +186,7 @@ bool keyModePressed() {
 //        1 - режим удержания более 1 сек - быстрыее, 5 сек - еще быстрее
 //
 boolean keyPressed(byte _keys, int _key, int _mode) {
-  static unsigned long keyTimePressed[8] = {0, 0, 0, 0, 0, 0, 0, 0}; // нач. время нажатия клавиш  
+  static unsigned long keyTimePressed[8] = {0, 0, 0, 0, 0, 0, 0, 0}; // нач. время нажатия клавиш
   static byte countPressed[8] = {0, 0, 0, 0, 0, 0, 0, 0}; // счетчик нажатий при удержании
 
   if ((_keys & (1 << _key)) == (1 << _key)) {
@@ -185,7 +209,7 @@ boolean keyPressed(byte _keys, int _key, int _mode) {
         countPressed[_key] = _countPressed;
         return true;
       }
-    }    
+    }
   }
   else {
     keyTimePressed[_key] = 0;
