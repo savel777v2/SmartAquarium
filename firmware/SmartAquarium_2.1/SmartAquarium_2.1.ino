@@ -3,7 +3,7 @@
   Исходники на GitHub: https://github.com/savel777v2/SmartAquarium
   Автор: Савельев Евгений, 2022
 */
-// Версия 2.0
+// Версия 2.1
 
 #define DEBUG_MODE 0 // Отладка по COM порту
 
