@@ -11,6 +11,7 @@ class StepMotor {
     void set_positionMove(long positionMove);
     long get_positionMove();
     bool get_isActive();
+    unsigned long get_lastSeekMotor();
     void tick();
 
   private:
@@ -23,6 +24,8 @@ class StepMotor {
     void motorPositionDown(byte& phaseMotor); // шаг мотора вниз
 
     int _pin1, _pin2,  _pin3, _pin4;
+    unsigned long _lastSeekMotor = 0; // время последнего шага мотора
+    bool _isActive = false; // мотор активен
     long _positionMotor = 0; // относительная позиция мотора
     long _positionMove = 0; // изменение позиции мотора
     int _userSpeed = 0; // нужное направление и скорость текущего движения мотора
@@ -131,20 +134,23 @@ long StepMotor::get_positionMove() {
 }
 
 bool StepMotor::get_isActive() {
-  if (_userSpeed != 0 || _directionMotor != 0 || _positionMove != 0) return true;
-  else return false;
+  return _isActive;
 }
 
-void StepMotor::tick() {
-  static unsigned long _lastSeekMotor = 0; // время последнего шага мотора
+unsigned long StepMotor::get_lastSeekMotor() {
+  return _lastSeekMotor;
+}
+
+void StepMotor::tick() {  
   static int _stepDelay = _maxDelay; // текущая задержка шага мотора
   static byte _phaseMotor = 0; // фаза мотора 0-3
 
-  if (((_lastSeekMotor != 0) || (_userSpeed != 0) || (_directionMotor != 0) || (_positionMove != 0)) && ((millis() - _lastSeekMotor) > _stepDelay)) {
+  if (((_isActive) || (_userSpeed != 0) || (_directionMotor != 0) || (_positionMove != 0)) && ((millis() - _lastSeekMotor) > _stepDelay)) {
+    _lastSeekMotor = millis();
     if ((_userSpeed == 0) && (_positionMove == 0) && (_directionMotor == 0)) {
       // остановка мотора в текущей фазе
       _onTheStepMotor(0);
-      _lastSeekMotor = 0;
+      _isActive = false;      
       _stepDelay = _maxDelay;
       digitalWrite(_pin1, LOW);
       digitalWrite(_pin2, LOW);
@@ -152,7 +158,7 @@ void StepMotor::tick() {
       digitalWrite(_pin4, LOW);
     }
     else {
-      _lastSeekMotor = millis();
+      _isActive = true;      
       // двигаем мотор
       if (_directionMotor  > 0) motorPositionUp(_phaseMotor);
       else if (_directionMotor < 0) motorPositionDown(_phaseMotor);

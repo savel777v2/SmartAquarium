@@ -2,7 +2,8 @@
 
 #define BUFFER_SENSOR_SIZE 50
 #define CHANGE_TIME_BUBBLE 5 // подъем\спуск пузырька (макс. длительность в мс.)
-#define CHANGE_LEVEL_BUBBLE 15 // подъем\спуск пузырька (мин. изменение уровня)
+#define CHANGE_LEVEL_BUBBLE 10 // подъем\спуск пузырька (мин. изменение уровня)
+#define BUFFER_LAST_DURATIONS 5
 
 
 class BubbleCounter {
@@ -56,11 +57,11 @@ class BubbleCounter {
     int _sensorInSecond = 0, _error0InSecond = 0, _error1InSecond = 0;
     int _MinLevel, _MaxLevel; // мин. и макс. уровни сигналов
 
-    unsigned long _bubbleCounter = 0; // счетчик пузырьков
+    unsigned long _bubbleCounter; // счетчик пузырьков
     word _durationBubble = 0; // продолжительность интервала пузыря
     word _durationNoBubble = 0; // продолжительность интервала простоя
 
-    long _lastDurations[5] = { -1, -1, -1, -1, -1};
+    long _lastDurations[BUFFER_LAST_DURATIONS];
     byte _iLastDuration = 0;
 
 };
@@ -69,10 +70,12 @@ BubbleCounter::BubbleCounter(int laserPin, int analogPin, void (*function)(byte 
   _laserPin = laserPin;
   _analogPin = analogPin;
   _externalOnTheBubble = *function;
-  _working = true;
+  _working = true; 
+  _bubbleCounter = 0;
   pinMode(_laserPin, OUTPUT);
   digitalWrite(_laserPin, HIGH);
   for (int _i = 0; _i < BUFFER_SENSOR_SIZE; _i++) _changeLevel[_i] = 125;
+  for (int _i = 0; _i < BUFFER_LAST_DURATIONS; _i++) _lastDurations[_i] = -1;
 }
 
 void BubbleCounter::set_working(bool working) {
@@ -166,7 +169,7 @@ long BubbleCounter::get_lastDuration() {
 bool BubbleCounter::get_itsRegularBubbles() {
   long _minDuration = _lastDurations[0];
   long _maxDuration = _lastDurations[0];
-  for (int _i = 1; _i < 5; _i++) {
+  for (int _i = 1; _i < BUFFER_LAST_DURATIONS; _i++) {
     _maxDuration = max(_maxDuration, _lastDurations[_i]);
     _minDuration = min(_minDuration, _lastDurations[_i]);
   }
@@ -182,7 +185,7 @@ bool BubbleCounter::get_itsRegularBubbles() {
 void BubbleCounter::writeLastDuration(long lastDuration, byte& _events) {
   // ошибка или пузырек
   _events = _events | 0b00010000;
-  if (++_iLastDuration == 5) _iLastDuration = 0;
+  if (++_iLastDuration == BUFFER_LAST_DURATIONS) _iLastDuration = 0;
   _lastDurations[_iLastDuration] = lastDuration;
 }
 

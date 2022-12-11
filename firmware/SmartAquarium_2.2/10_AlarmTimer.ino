@@ -1,11 +1,12 @@
 #define NUMBER_OF_NOTES 10
+
 // frequency, duration
-unsigned int alarmMelody[14][2] = {{2500, 50}, {0, 100}, {2500, 50}, {0, 100}, {2500, 50}, {0, 100}, {2500, 50}, {0, 100}, {2500, 50}, {0, 3000}};
+unsigned int alarmMelody[NUMBER_OF_NOTES][2] = {{2500, 50}, {0, 100}, {2500, 50}, {0, 100}, {2500, 50}, {0, 100}, {2500, 50}, {0, 100}, {2500, 50}, {0, 3000}};
 
 // Initialize alarm
-void alarmInitialize() {
+void alarmInitialize() {  
   pinMode(PIEZO_PIN, OUTPUT); // настраиваем вывод 2 на выход
-  tone(PIEZO_PIN, 2500, 100);
+  tone(PIEZO_PIN, 2500, 100);  
 }
 
 // play alarm melody if necessary
