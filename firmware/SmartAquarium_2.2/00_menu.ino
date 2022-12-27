@@ -37,7 +37,10 @@
   S - пользовательская скорость мотора
   P - нужная позиция мотора, адрес - номер настройки в EEPROM
   E - счетчик оставшихся циклов еды
-  e - настройка цикла еды (еда/простой) в секундах, адрес - номер настройки в EEPROM
+  e - настройка цикла еды, адрес - номер настройки в EEPROM, где адрес:
+    29 - продолжительность цикла еды *10 в миллисекундах
+    30 - продолжительность простоя для цикла еды *10 в секундах
+    39 - продолжительность ночной еды *10 в миллисекундах (один цикл)
   i - настройка счетчика оставшихся циклов еды, адрес - номер настройки в EEPROM
   X - просмотр датчика фотоэлемента, временно
   Y - вывод продолжительности кода (4-ре счетчика)
@@ -49,7 +52,7 @@ char *menuItems[][9] = {
   {"%1C %H%M%2C%3C", "St%7n%8a %t", "Sd%0h%1m  ", "Sn%2h%3m  ", "Sb%4h%5m %6c", "Sdn %9m %10c", ""},
   {"i%1Qo%2Q", "%L", "Td%11q  %12c", "Tn%13q  %14c", "dt %15w   ", ""},
   {"%5B%1R", "%4R%5R", "%1B%2B", " %20v %21V", "Bd%23N %24c", "Bn%25N %26c", "bd%27W  ", "Sound  %28c", ""},
-  {"Eat %E", "Ed%31h%32m%33i", "En%34h%35m%36i", "%29e%30e", "%Y", ""},
+  {"Eat %E", "Ed%31h%32m%33i", "En%34h%35m%36i", "%37h%38m%39e", "%29e%30e", "%Y", ""},
   {"POS %22P", "SP  %S", "%3B%4B", "C%b", "Min %6B", "%8B%7B", "%9B    ", "%X", ""},
   {""}
 };
@@ -58,7 +61,7 @@ byte menuPointer[][9] = {
   {B00010000, B00010000, B00010000, B00010000, B00010000, B00000000, B00000000, B00000000, 0},
   {B00100010, B01000010, B00010000, B00010000, B00010000, B00000000, B00000000, B00000000, 0},
   {B01000000, B01000100, B00000000, B00000000, B00010000, B00010000, B00000000, B00000000, 0},
-  {B00000000, B00010000, B00010000, B00000000, B00000000, B00000000, B00000000, B00000000, 0},
+  {B00000000, B00010000, B00010000, B01000000, B00000000, B00000000, B00000000, B00000000, 0},
   {B00000000, B00000000, B00000000, B00000000, B00000000, B00000000, B00000000, B00000000, 0}
 };
 
@@ -320,7 +323,7 @@ void MenuItemPart::readValue(CurrSettings* _currSettingsPtr) {
   else if (typeOfPart == 'n' && _currSettingsPtr->timerOn) value = _currSettingsPtr->timerMinute;
   else if (typeOfPart == 'a' && _currSettingsPtr->timerOn) value = _currSettingsPtr->timerSecond;
   else if (typeOfPart == 'S') value = StepMotorBubbles.get_userSpeed() + 100;
-  else if (typeOfPart == 'E') value = _currSettingsPtr->eatingLoop;
+  else if (typeOfPart == 'E') value = _currSettingsPtr->eatingLoop < 0 ? 0 : _currSettingsPtr->eatingLoop;
   else {
     value = EEPROM.read(adress);
     checkFromEEPROM = true;
@@ -427,7 +430,7 @@ void MenuItemPart::valueToDisplay(char* charDisplay, CurrSettings* _currSettings
   else if (typeOfPart == 'T') _addSybstring(charDisplay, _indexOut, charValue);
   else if (typeOfPart == 'Q') {
     float _floatValue;
-    if (adress == 2 & _currSettingsPtr->aquaTempStatus != 2) _addSybstring(charDisplay, _indexOut, "Err");
+    if (adress == 2 & _currSettingsPtr->aquaTempStatus != normal) _addSybstring(charDisplay, _indexOut, "Err");
     else {
       if (adress == 1) _floatValue = Rtc.getTemperatureFloat();
       else _floatValue = _currSettingsPtr->aquaTemp;
@@ -561,10 +564,7 @@ void MenuItemPart::valueToDisplay(char* charDisplay, CurrSettings* _currSettings
 
   }
   else if (typeOfPart == 'e') {
-    switch (adress) {
-      case 29: sprintf(_strValue, "%3d0", value); break;
-      default: sprintf(_strValue, "%4d", value); break;
-    }    
+    sprintf(_strValue, "%4d", value * 10);
     _addSybstring(charDisplay, _indexOut, _strValue);
   }
   else {

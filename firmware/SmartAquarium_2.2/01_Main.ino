@@ -76,6 +76,7 @@ void minuteControl() {
   // starting eating loop
   controlEatingLoop(EEPROM.read(33), _nowInMinutes, EEPROM.read(31), EEPROM.read(32));
   controlEatingLoop(EEPROM.read(36), _nowInMinutes, EEPROM.read(34), EEPROM.read(35));
+  controlEatingLoop(EEPROM.read(39) * -10, _nowInMinutes, EEPROM.read(37), EEPROM.read(38));
 
   // settings of a bubble speed
   controlBubbleSpeed(_nowInMinutes, _morningInMinutes, _eveningInMinutes);

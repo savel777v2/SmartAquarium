@@ -28,21 +28,21 @@ byte lampPinsLevel[][2] = {{A1, 0}, {A2, 0}, {A3, 0}}; // Pin from left to right
 OneWire oneWire(DS18B20_PIN);
 DS18B20 sensor(&oneWire);
 
+enum tempStatus {notBegin, readTemp, normal};
+
 struct CurrSettings {
-  DateTime now;
-  byte alarmOn;
-  bool nowDay;
-  bool timerOn;
+  DateTime now;  
+  bool nowDay:1;
+  bool timerOn:1;
+  bool heaterOn:1;  
+  tempStatus aquaTempStatus:2;
+  byte setting:3;
   byte timerMinute;
-  byte timerSecond;
-  byte setting;
+  byte timerSecond;  
   unsigned long alarmStartSound;
   byte manualLamp;
-  float aquaTemp;
-  // 0 - not begin, 1 - read temp, 2 - normal
-  byte aquaTempStatus = 0;
-  bool heaterOn = false;
-  byte eatingLoop = 0;
+  float aquaTemp;  
+  int eatingLoop = 0;
   byte waitingBubble = 0;
 };
 

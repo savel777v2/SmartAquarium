@@ -14,13 +14,18 @@ void eatingInitialize() {
   }
   _value = EEPROM.read(30);
   if (_value == 255) {
-    _value = 2;
+    _value = 12;
     EEPROM.update(30, _value);
+  }
+  _value = EEPROM.read(39);
+  if (_value == 255) {
+    _value = 50;
+    EEPROM.update(39, _value);
   }
 }
 
 // start Eating Loop on the schedule if necessary
-void controlEatingLoop(byte needEatingLoop, int nowInMinutes, byte needHour, byte needMinute) {
+void controlEatingLoop(int needEatingLoop, int nowInMinutes, byte needHour, byte needMinute) {
   if (needEatingLoop == 0 || needEatingLoop == 255 || currSettings.eatingLoop > 0) return;
   if (((int)needHour * 60 + needMinute) != nowInMinutes) return;
   currSettings.eatingLoop = needEatingLoop;
@@ -37,24 +42,29 @@ bool eatingLoopNeedDisplay() {
 
   // Eating loop
   if (currSettings.eatingLoop != 0 || _eatingOn) {
-    if (_lastEatingTime == 0 || (millis() - _lastEatingTime) > EEPROM.read(29) * 10 + EEPROM.read(30) * 60000) {
+    if ((millis() - _lastEatingTime) > (unsigned long) EEPROM.read(29) * 10 + (unsigned long) EEPROM.read(30) * 10000) {
       
       digitalWrite(EATING_PIN, HIGH);
       Module.setLED(1, 5);
       _eatingOn = true;
       _lastEatingTime = millis();
     }
-    else if (_eatingOn && (millis() - _lastEatingTime) > EEPROM.read(29) * 10) {
+    else if (_eatingOn && (millis() - _lastEatingTime) > (currSettings.eatingLoop >= 0 ? (unsigned long) EEPROM.read(29) * 10 : -currSettings.eatingLoop)) {
 
       digitalWrite(EATING_PIN, LOW);
       Module.setLED(0, 5);
       _eatingOn = false;
       if (currSettings.eatingLoop == 0) _lastEatingTime = 0;
+      else if (currSettings.eatingLoop < 0) {
+        currSettings.eatingLoop = 0;
+        _lastEatingTime = 0;
+      }
       else if (--currSettings.eatingLoop == 0) _lastEatingTime = 0;
       _needDisplay = true;
     }
   }
 
+  // on button pressed
   if ((millis() - _lastButtonTime) > 100) {
     _lastButtonTime = millis();
     byte _pressButton = digitalRead(EATING_BUTTON);
