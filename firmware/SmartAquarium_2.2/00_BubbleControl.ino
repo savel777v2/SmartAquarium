@@ -25,6 +25,7 @@ class BubbleControl {
 
     // 0 - отключен, 1 - включен, 2 - в процессе, 3 - результат достигнут, 4 - ошибка 1 (ничего не меняется), 5 - ошибка 2 (долго крутим), 6 - ошибка 3 (не попали в длительность)
     byte _currStatus = 0;
+    byte _countError3 = 0; // счетчик повторов для ошибки 3
     int _lastPositionMove = 0;
     int _lastBubbleDuration = 0;
     int _moveNoResult = 0;
@@ -121,9 +122,9 @@ word BubbleControl::get_minBubblesIn100Second() {
   return 100000 / _maxBubbleDuration;
 }
 
-void BubbleControl::clearError() {
+void BubbleControl::clearError() {  
   if (_currStatus >= 4) {
-    _currStatus = 1;
+    _currStatus = 3;
   }
 }
 
@@ -145,8 +146,8 @@ void BubbleControl::control(int bubbleDuration) {
   // теперь проверяем дабы пузырьки стабилизировались
   if (!CounterForBubbles.get_itsRegularBubbles()) return;
 
-  // если не работаем или ошибка - ничего не нужно
-  if (_currStatus == 0 || _currStatus == 6) return;
+  // если не работаем - ничего не нужно
+  if (_currStatus == 0) return;
 
   // если кран перекрыт, то перекрыт
   if (bubbleDuration == -3) bubbleDuration = 10000;
@@ -158,10 +159,11 @@ void BubbleControl::control(int bubbleDuration) {
     return;
   }
 
-  // критерий продолжения ошибки 4, 5
+  // критерий продолжения ошибок
   if (_currStatus == 4 || _currStatus == 5) {
     if ((bubbleDuration > _maxBubbleDuration && _lastPositionMove > 0) || (bubbleDuration < _minBubbleDuration && _lastPositionMove < 0)) return;
-  }
+  }   
+  else if (_currStatus == 6) return;  
 
   if (_currStatus == 2) {
     // если ранее двигались
@@ -186,9 +188,15 @@ void BubbleControl::control(int bubbleDuration) {
         case 10: _lastPositionMove = -5; break;
         case -10: _lastPositionMove = 5; break;
         default:
-          tone(PIEZO_PIN, 2500, 3000);
-          _currStatus = 6;
-          return;
+          if (++_countError3 == 10) {
+            tone(PIEZO_PIN, 2500, 3000);
+            _currStatus = 6;
+            _countError3 = 0;
+            return;
+          }
+          else {
+            _lastPositionMove = -_lastPositionMove;
+          }
           break;
       }
       _moveOneWay = 0;
@@ -203,7 +211,8 @@ void BubbleControl::control(int bubbleDuration) {
     }
   }
   else {
-    // новое движение если показатель сам ушел за нужные пределы
+    // новое движение c 50
+    // если показатель сам ушел или после ошибки с 5
     if (bubbleDuration < _minBubbleDuration) {
       if (_currStatus == 1) _lastPositionMove = -50;
       else _lastPositionMove = -5;
