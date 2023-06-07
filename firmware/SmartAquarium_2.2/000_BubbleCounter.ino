@@ -2,7 +2,7 @@
 
 #define BUFFER_SENSOR_SIZE 50
 #define CHANGE_TIME_BUBBLE 5 // подъем\спуск пузырька (макс. длительность в мс.)
-#define CHANGE_LEVEL_BUBBLE 10 // подъем\спуск пузырька (мин. изменение уровня)
+#define CHANGE_LEVEL_BUBBLE 20 // подъем\спуск пузырька (мин. изменение уровня)
 #define BUFFER_LAST_DURATIONS 5
 
 
