@@ -11,12 +11,13 @@
 class MenuItem {
 
   public:
-    MenuItem () {
+    MenuItem() {
       currSettings = nullptr;
     };
-    MenuItem (CurrSettings* _currSettings) {
+    MenuItem(CurrSettings* _currSettings) {
       currSettings = _currSettings;
     };
+    virtual ~MenuItem() {};
     virtual String display() = 0;
 
   protected:

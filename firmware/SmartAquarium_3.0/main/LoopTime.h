@@ -5,7 +5,6 @@
 */
 #pragma once
 
-#include <TM1638.h>
 #include "CurrSettings.h"
 #include "MenuItem.h"
 
@@ -16,34 +15,35 @@ class LoopTime {
       menu = _menu;
       rtc = _rtc;
       currSettings = _currSettings;
+      lastLoopTime = 0;
     };
     void loop();
 
   private:
     Menu* menu;
     MicroDS3231* rtc;
-    CurrSettings* currSettings;    
+    CurrSettings* currSettings;
+    unsigned long lastLoopTime;
 };
 
-void LoopTime::loop() {  
-  static unsigned long _lastLoopTime = 0;  
+void LoopTime::loop() {
 
   // Loop once First time
-  if (_lastLoopTime == 0) {
+  if (lastLoopTime == 0) {
     //currSettings->now = rtc->getTime();
-    currSettings->now.hour = 10;
-    currSettings->now.minute = 24;
+    currSettings->now.hour = 11;
+    currSettings->now.minute = 41;
     currSettings->now.second = 40;
     //minuteControl();
-    _lastLoopTime = millis();    
-    menu->display();    
+    lastLoopTime = millis();
+    menu->display();
   }
 
   // Loop increment local time
-  if ((millis() - _lastLoopTime) > 1000) {
+  if ((millis() - lastLoopTime) > 1000) {
 
     // секунда оттикала
-    _lastLoopTime  = millis();
+    lastLoopTime  = millis();
 
     if (menu->getSubmenu() == durations) {
       // print durations

@@ -1,5 +1,5 @@
-#include <TM1638.h>
-TM1638 Module(4, 5, 6); // DIO, CLK, STB
+#include "TM1638My.h"
+TM1638My Module(4, 5, 6); // DIO, CLK, STB
 
 #include <microDS3231.h>
 MicroDS3231 rtc; // A4 - SDA, A% - SCL
@@ -16,8 +16,13 @@ LoopTime loopTime(&menu, &rtc, &currSettings);
 void setup() {
   currSettings.nowDay = false;
   currSettings.timerOn = true;
+#if (DEBUG_MODE == 1)
+  Serial.begin(9600);
+  Serial.println("debugging");
+#endif
 }
 
 void loop() {
   loopTime.loop();
+  menu.readKeyboard();
 }

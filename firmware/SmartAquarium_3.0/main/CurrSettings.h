@@ -7,17 +7,17 @@
 
 #include <microDS3231.h>
 
+#define DEBUG_MODE 0 // Отладка по COM порту
 #define EEPROM_ALARM 6
 
 enum tempStatus {notBegin, readTemp, normal};
-enum submenu {anon, time, timer, durations};
 
 struct CurrSettings {
   DateTime now;
-  
-  bool nowDay:1;
-  bool timerOn:1;
-  bool heaterOn:1;
+
+  bool nowDay: 1;
+  bool timerOn: 1;
+  bool heaterOn: 1;
 
   byte max1 = 0;
   byte max2 = 0;
