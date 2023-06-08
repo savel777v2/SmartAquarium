@@ -3,7 +3,9 @@
 
 
 */
+#pragma once
 
+#include <EEPROM.h>
 #include "CurrSettings.h"
 
 class MenuItem {
@@ -15,11 +17,11 @@ class MenuItem {
     MenuItem (CurrSettings* _currSettings) {
       currSettings = _currSettings;
     };
-    virtual String print() = 0;
+    virtual String display() = 0;
 
   protected:
     CurrSettings* currSettings;
-    String toString(int val, int len) {
+    String valToString(int val, int len) {
       String ans(val);
       int ind = ans.length() - len;
       if (ind > 0) return ans.substring(ind);
@@ -38,7 +40,7 @@ class TextItem: public MenuItem {
     TextItem (String _s) {
       s = _s;
     };
-    String print() {
+    String display() {
       return s;
     };
 
@@ -51,9 +53,30 @@ class DayFlag: public MenuItem {
 
   public:
     DayFlag (CurrSettings* _currSettings) : MenuItem(_currSettings) {};
-    String print() {
+    String display() {
       if (currSettings->nowDay) return "d";
       else return "n";
+    };
+
+};
+
+class TimerFlag: public MenuItem {
+
+  public:
+    TimerFlag (CurrSettings* _currSettings) : MenuItem(_currSettings) {};
+    String display() {
+      if (currSettings->timerOn) return "t";
+      else return " ";
+    };
+
+};
+
+class AlarmFlag: public MenuItem {
+
+  public:
+    String display() {
+      if (EEPROM.read(EEPROM_ALARM) == 1) return "b";
+      else return " ";
     };
 
 };
@@ -62,8 +85,8 @@ class CurHour: public MenuItem {
 
   public:
     CurHour (CurrSettings* _currSettings) : MenuItem(_currSettings) {};
-    String print() {
-      return toString(currSettings->now.hour, 2);
+    String display() {
+      return valToString(currSettings->now.hour, 2);
     };
 
 };
@@ -72,8 +95,8 @@ class CurMinute: public MenuItem {
 
   public:
     CurMinute (CurrSettings* _currSettings) : MenuItem(_currSettings) {};
-    String print() {
-      return toString(currSettings->now.minute, 2);
+    String display() {
+      return valToString(currSettings->now.minute, 2);
     };
 
 };

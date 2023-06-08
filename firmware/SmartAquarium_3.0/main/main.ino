@@ -1,28 +1,23 @@
 #include <TM1638.h>
-#include "MENU.h"
+TM1638 Module(4, 5, 6); // DIO, CLK, STB
+
+#include <microDS3231.h>
+MicroDS3231 rtc; // A4 - SDA, A% - SCL
+
 #include "CurrSettings.h"
+CurrSettings currSettings;
 
-enum tempStatus {notBegin, readTemp, normal};
+#include "Menu.h"
+Menu menu(&Module, &currSettings);
 
-int main() {
+#include "LoopTime.h"
+LoopTime loopTime(&menu, &rtc, &currSettings);
 
-  TM1638 Module(4, 5, 6); // DIO, CLK, STB
-  CurrSettings currSettings;
+void setup() {
   currSettings.nowDay = false;
-  currSettings.now.hour = 18;
-  currSettings.now.minute = 25;
-  Menu Menu(&Module, &currSettings);
-  Menu.display();
+  currSettings.timerOn = true;
 }
 
-
-/*void setup() {
-  // put your setup code here, to run once:
-  Module.setDisplayToString("Check");
-
-  }
-
-  void loop() {
-  // put your main code here, to run repeatedly:
-
-  }*/
+void loop() {
+  loopTime.loop();
+}
