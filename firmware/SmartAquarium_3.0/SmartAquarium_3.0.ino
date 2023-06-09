@@ -24,5 +24,5 @@ void setup() {
 
 void loop() {
   loopTime.loop();
-  menu.readKeyboard();
+  menu.loop();
 }
