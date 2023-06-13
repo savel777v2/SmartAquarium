@@ -83,10 +83,10 @@ void LoopTime::loop() {
       currSettings->now.second = 0;
       currSettings->now.minute++;
       if (currSettings->now.minute == 60) {
+        currSettings->now.minute = 0;
+        currSettings->now.hour++;
         // синхронизация времени раз в час
-        //currSettings->now = rtc->getTime();
-        //currSettings->now.hour = 10;
-        //currSettings->now.minute = 22;
+        //currSettings->now = rtc->getTime();        
       }
       minuteControl();
     }
