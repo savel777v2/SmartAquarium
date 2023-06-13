@@ -24,6 +24,7 @@ class LoopTime {
     MicroDS3231* rtc;
     CurrSettings* currSettings;
     unsigned long lastLoopTime;
+    void minuteControl();
 };
 
 void LoopTime::loop() {
@@ -32,10 +33,25 @@ void LoopTime::loop() {
   if (lastLoopTime == 0) {
     //currSettings->now = rtc->getTime();
     currSettings->now.hour = 11;
-    currSettings->now.minute = 41;
+    currSettings->now.minute = 42;
     currSettings->now.second = 40;
     //minuteControl();
     lastLoopTime = millis();
+    menu->display();
+  }
+
+  // turn off alarm Melody
+  if (currSettings->alarmMelody != nullptr) {
+    currSettings->alarmMelody->loop();
+    if ((millis() - currSettings->alarmMelody->getMelodyStartTime()) >= ALARM_DURATION) {
+      delete currSettings->alarmMelody;
+      currSettings->alarmMelody = nullptr;
+    }
+  }
+
+  // turn off second Led
+  if (currSettings->secondLed && (millis() - lastLoopTime) > SECOND_LED_DURATION) {
+    currSettings->secondLed = false;
     menu->display();
   }
 
@@ -44,6 +60,10 @@ void LoopTime::loop() {
 
     // секунда оттикала
     lastLoopTime  = millis();
+    if (menu->getSubmenu() == time) {
+      currSettings->secondLed = true;
+      menu->display();
+    }
 
     if (menu->getSubmenu() == durations) {
       // print durations
@@ -68,9 +88,18 @@ void LoopTime::loop() {
         //currSettings->now.hour = 10;
         //currSettings->now.minute = 22;
       }
-      if (menu->getSubmenu() == time) menu->display();
-      //minuteControl();
+      minuteControl();
     }
+  }
+}
+
+void LoopTime::minuteControl() {
+
+  int _nowInMinutes = (int)currSettings->now.hour * 60 + currSettings->now.minute;
+
+  if (currSettings->alarmMelody == nullptr && EEPROM.read(EEPROM_ALARM) == 1) {
+    int _alarmInMinutes = (int)EEPROM.read(EEPROM_ALARM_HOUR) * 60 + EEPROM.read(EEPROM_ALARM_MINUTE);
+    if (_nowInMinutes == _alarmInMinutes) currSettings->alarmMelody = new Melody(ALARM_PIN);
   }
 
 }

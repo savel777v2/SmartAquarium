@@ -56,6 +56,13 @@ class MenuItem {
       }
       return pref + ans;
     }
+
+    String emptyString(int len) {
+      String ans;
+      while (len--) ans += ' ';
+      return ans;
+    }
+    
     void changeValue(byte& editValue, const int delta, const byte minValue, const byte maxValue, boolean circleEdit = true) {
       int newValue = editValue + delta;
       if (newValue < minValue) editValue = circleEdit ? maxValue : minValue;
@@ -184,18 +191,19 @@ class CurMinute: public MenuItem {
 class byteEEPROMvalue: public MenuItem {
 
   public:
-    byteEEPROMvalue (int _adressEEPROM, byte _minValue, byte _maxValue) {
+    byteEEPROMvalue (int _adressEEPROM, byte _minValue, byte _maxValue, byte _len) {
       adressEEPROM = _adressEEPROM;
       minValue = _minValue;
       maxValue = _maxValue;
+      len = _len;
     };
     String display() {
       if (currMode.editing) {
-        if (currMode.blinkOn) return valToString(editValue, 2);
-        else return "  ";
+        if (currMode.blinkOn) return valToString(editValue, len);
+        else return emptyString(len);
       }
       else {
-        return valToString(EEPROM.read(adressEEPROM), 2);
+        return valToString(EEPROM.read(adressEEPROM), len);
       }
     };
     boolean editing() {
@@ -219,6 +227,7 @@ class byteEEPROMvalue: public MenuItem {
     };
   private:
     int adressEEPROM;
-    byte minValue, maxValue, editValue;
+    byte editValue;
+    byte minValue, maxValue, len;
 
 };

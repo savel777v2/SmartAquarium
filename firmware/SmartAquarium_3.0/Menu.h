@@ -38,6 +38,7 @@ class Menu {
 
     void initSubmenu(submenu _submenu);
     submenu submenuName(byte _gorInd, byte _verInd);
+    byte getDots(submenu _submenu);
     void readKeyboard();
     void blinkDisplay();
 };
@@ -74,6 +75,11 @@ void Menu::readKeyboard() {
   lastKeyboardTime = millis();
 
   byte keys = Module->keysPressed(B00111111, B00111100);
+  if (Module->keyPressed(0, keys) && currSettings->alarmMelody != nullptr) {
+    // Esc - выход из мелодии
+    delete currSettings->alarmMelody;
+    currSettings->alarmMelody = nullptr;
+  }
   if (numEditItem) {
     if (Module->keyPressed(0, keys)) {
       // Esc - выход из редактирования
@@ -85,10 +91,10 @@ void Menu::readKeyboard() {
       // Enter - сохраняем и к следующему
       subMenu[numEditItem - 1]->saveEditing();
       int i;
-      int sizeSubMenu = sizeof(subMenu)/sizeof(subMenu[0]);      
+      int sizeSubMenu = sizeof(subMenu) / sizeof(subMenu[0]);
       for (i = numEditItem; i < sizeSubMenu; i++) {
         if (subMenu[i] != nullptr && subMenu[i]->editing()) break;
-      }      
+      }
       if (i < sizeSubMenu) {
         numEditItem = i + 1;
         subMenu[numEditItem - 1]->enterEditing();
@@ -127,7 +133,7 @@ void Menu::readKeyboard() {
     if (Module->keyPressed(1, keys)) {
       // Enter - режим редактирования
       int i;
-      int sizeSubMenu = sizeof(subMenu)/sizeof(subMenu[0]);
+      int sizeSubMenu = sizeof(subMenu) / sizeof(subMenu[0]);
       for (i = numEditItem; i < sizeSubMenu; i++) {
         if (subMenu[i] != nullptr && subMenu[i]->editing()) break;
       }
@@ -166,7 +172,7 @@ void Menu::display() {
   while (deltaLen++ < 0) {
     sOut += ' ';
   }
-  Module->setDisplayToString(sOut);
+  Module->setDisplayToString(sOut, getDots(submenuName(gorInd, verInd)));
 }
 
 submenu Menu::submenuName(byte _gorInd, byte _verInd) {
@@ -190,6 +196,23 @@ submenu Menu::submenuName(byte _gorInd, byte _verInd) {
   }
   return anon;
 
+}
+
+byte Menu::getDots(submenu _submenu) {
+  switch (_submenu) {
+    case time: return currSettings->secondLed ? B00010000 : 0; break;
+    case timer: return B00010000; break;
+    case morning: return B00010000; break;
+    case evening: return B00010000; break;
+    case alarm: return B00010000; break;
+    case lampInterval: return 0; break;
+    case curTemp: return B00010000; break;
+    case logTemp: return B00010000; break;
+    case dayTemp: return B00010000; break;
+    case nightTemp: return B00010000; break;
+    case deltaTemp: return B00010000; break;
+  }
+  return 0;
 }
 
 void Menu::initSubmenu(submenu _submenu) {
@@ -217,32 +240,32 @@ void Menu::initSubmenu(submenu _submenu) {
       break;
     case morning:
       subMenu[0] = new TextItem("Sd");
-      subMenu[1] = new byteEEPROMvalue(EEPROM_MORNING_HOUR, 0, 23);
-      subMenu[2] = new byteEEPROMvalue(EEPROM_MORNING_MINUTE, 0, 59);
+      subMenu[1] = new byteEEPROMvalue(EEPROM_MORNING_HOUR, 0, 23, 2);
+      subMenu[2] = new byteEEPROMvalue(EEPROM_MORNING_MINUTE, 0, 59, 2);
       subMenu[3] = nullptr;
       subMenu[4] = nullptr;
       subMenu[5] = nullptr;
       break;
     case evening:
       subMenu[0] = new TextItem("Sn");
-      subMenu[1] = new byteEEPROMvalue(EEPROM_EVENING_HOUR, 0, 23);
-      subMenu[2] = new byteEEPROMvalue(EEPROM_EVENING_MINUTE, 0, 59);
+      subMenu[1] = new byteEEPROMvalue(EEPROM_EVENING_HOUR, 0, 23, 2);
+      subMenu[2] = new byteEEPROMvalue(EEPROM_EVENING_MINUTE, 0, 59, 2);
       subMenu[3] = nullptr;
       subMenu[4] = nullptr;
       subMenu[5] = nullptr;
       break;
     case alarm:
-      subMenu[0] = new TextItem("04");
-      subMenu[1] = nullptr;
-      subMenu[2] = nullptr;
-      subMenu[3] = nullptr;
-      subMenu[4] = nullptr;
+      subMenu[0] = new TextItem("Sb");
+      subMenu[1] = new byteEEPROMvalue(EEPROM_ALARM_HOUR, 0, 23, 2);
+      subMenu[2] = new byteEEPROMvalue(EEPROM_ALARM_MINUTE, 0, 59, 2);
+      subMenu[3] = new TextItem(" ");
+      subMenu[4] = new byteEEPROMvalue(EEPROM_ALARM, 0, 1, 1);
       subMenu[5] = nullptr;
       break;
     case lampInterval:
-      subMenu[0] = new TextItem("05");
-      subMenu[1] = nullptr;
-      subMenu[2] = nullptr;
+      subMenu[0] = new TextItem("Sdn");
+      subMenu[1] = new TextItem(" ");
+      subMenu[2] = new byteEEPROMvalue(EEPROM_LAMP_INTERVAL, 0, 30, 2);
       subMenu[3] = nullptr;
       subMenu[4] = nullptr;
       subMenu[5] = nullptr;

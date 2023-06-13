@@ -16,6 +16,7 @@ LoopTime loopTime(&menu, &rtc, &currSettings);
 void setup() {
   currSettings.nowDay = false;
   currSettings.timerOn = true;
+  currSettings.alarmMelody = nullptr;
 #if (DEBUG_MODE == 1)
   Serial.begin(9600);
   Serial.println("debugging");
