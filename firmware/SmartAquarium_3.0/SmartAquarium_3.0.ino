@@ -10,13 +10,15 @@ CurrSettings currSettings;
 #include "Menu.h"
 Menu menu(&Module, &currSettings);
 
-#include "LoopTime.h"
-LoopTime loopTime(&menu, &rtc, &currSettings);
+#include "Lamps.h"
+Lamps lamps(&currSettings);
 
-void setup() {
-  currSettings.nowDay = false;
-  currSettings.timerOn = true;
+#include "LoopTime.h"
+LoopTime loopTime(&Module, &menu, &lamps, &rtc, &currSettings);
+
+void setup() {  
   currSettings.alarmMelody = nullptr;
+  currSettings.timer = nullptr;  
 #if (DEBUG_MODE == 1)
   Serial.begin(9600);
   Serial.println("debugging");
@@ -24,6 +26,7 @@ void setup() {
 }
 
 void loop() {
+  if (menu.loopNeedControl()) loopTime.minuteControl();
+  loopTime.readKeyboard();
   loopTime.loop();
-  menu.loop();
 }

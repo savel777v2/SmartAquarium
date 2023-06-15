@@ -10,7 +10,8 @@ class Melody {
   public:
     Melody (int _piezo_pin);
     ~Melody();
-    unsigned long getMelodyStartTime();
+    void restart();
+    unsigned long getMelodyStartTime();    
     void loop();
 
   private:
@@ -23,10 +24,14 @@ class Melody {
 
 Melody::Melody (int _piezo_pin) {
   piezo_pin = _piezo_pin;
+  pinMode(piezo_pin, OUTPUT);
+  restart();
+};
+
+void Melody::restart() {
   note = 0;
   nextNoteTime = 0;
   melodyStartTime = millis();
-  pinMode(piezo_pin, OUTPUT);
 };
 
 unsigned long Melody::getMelodyStartTime() {

@@ -5,7 +5,6 @@
 */
 #pragma once
 
-#define KEYBOARD_INTERVAL 100
 #define BLINK_INTERVAL 500
 
 #include "TM1638My.h"
@@ -25,7 +24,7 @@ class Menu {
   public:
     Menu (TM1638My* _Module, CurrSettings* _currSettings);
     void display();
-    void loop();
+    bool loopNeedControl();
     submenu getSubmenu();
 
   private:
@@ -33,13 +32,13 @@ class Menu {
     MenuItem* subMenu[6];
     CurrSettings* currSettings;
     byte gorInd, verInd;
-    unsigned long lastKeyboardTime, lastBlinkTime;
+    unsigned long nextKeyboardTime, lastBlinkTime;
     byte numEditItem;
 
     void initSubmenu(submenu _submenu);
     submenu submenuName(byte _gorInd, byte _verInd);
     byte getDots(submenu _submenu);
-    void readKeyboard();
+    bool readKeyboardNeedControl();
     void blinkDisplay();
 };
 
@@ -50,13 +49,13 @@ Menu::Menu (TM1638My* _Module, CurrSettings* _currSettings) {
   verInd = 0;
   numEditItem = 0;
   initSubmenu(submenuName(gorInd, verInd));
-  lastKeyboardTime = 0;
+  nextKeyboardTime = millis() + KEYBOARD_INTERVAL;
   lastBlinkTime = 0;
 };
 
-void Menu::loop() {
-  readKeyboard();
+bool Menu::loopNeedControl() {
   blinkDisplay();
+  return readKeyboardNeedControl();
 }
 
 void Menu::blinkDisplay() {
@@ -69,10 +68,12 @@ void Menu::blinkDisplay() {
 
 }
 
-void Menu::readKeyboard() {
+bool Menu::readKeyboardNeedControl() {
 
-  if ((millis() - lastKeyboardTime) <= KEYBOARD_INTERVAL) return;
-  lastKeyboardTime = millis();
+  if (millis() <= nextKeyboardTime) return false;
+
+  nextKeyboardTime = millis() + KEYBOARD_INTERVAL;
+  bool ans = false;
 
   byte keys = Module->keysPressed(B00111111, B00111100);
   if (Module->keyPressed(0, keys) && currSettings->alarmMelody != nullptr) {
@@ -83,13 +84,14 @@ void Menu::readKeyboard() {
   if (numEditItem) {
     if (Module->keyPressed(0, keys)) {
       // Esc - выход из редактирования
-      subMenu[numEditItem - 1]->exitEditing();
+      subMenu[numEditItem - 1]->exitEditing();      
       numEditItem = 0;
       display();
     }
     if (Module->keyPressed(1, keys)) {
       // Enter - сохраняем и к следующему
       subMenu[numEditItem - 1]->saveEditing();
+      ans = true;
       int i;
       int sizeSubMenu = sizeof(subMenu) / sizeof(subMenu[0]);
       for (i = numEditItem; i < sizeSubMenu; i++) {
@@ -155,6 +157,8 @@ void Menu::readKeyboard() {
       display();
     }
   }
+
+  return ans;
 }
 
 submenu Menu::getSubmenu() {
@@ -231,11 +235,11 @@ void Menu::initSubmenu(submenu _submenu) {
       subMenu[5] = new AlarmFlag();
       break;
     case timer:
-      subMenu[0] = new TextItem("01");
-      subMenu[1] = nullptr;
-      subMenu[2] = nullptr;
-      subMenu[3] = nullptr;
-      subMenu[4] = nullptr;
+      subMenu[0] = new TextItem("St");
+      subMenu[1] = new TimerMinute(currSettings);
+      subMenu[2] = new TimerSecond(currSettings);
+      subMenu[3] = new TextItem(" ");
+      subMenu[4] = new TimerStart(currSettings);
       subMenu[5] = nullptr;
       break;
     case morning:

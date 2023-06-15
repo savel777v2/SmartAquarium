@@ -6,7 +6,7 @@
 #pragma once
 
 #include <EEPROM.h>
-#include "CurrSettings.h"
+//#include "CurrSettings.h"
 
 class MenuItem {
 
@@ -62,7 +62,7 @@ class MenuItem {
       while (len--) ans += ' ';
       return ans;
     }
-    
+
     void changeValue(byte& editValue, const int delta, const byte minValue, const byte maxValue, boolean circleEdit = true) {
       int newValue = editValue + delta;
       if (newValue < minValue) editValue = circleEdit ? maxValue : minValue;
@@ -103,7 +103,7 @@ class TimerFlag: public MenuItem {
   public:
     TimerFlag (CurrSettings* _currSettings) : MenuItem(_currSettings) {};
     String display() {
-      if (currSettings->timerOn) return "t";
+      if (currSettings->timer != nullptr) return "t";
       else return " ";
     };
 
@@ -229,5 +229,129 @@ class byteEEPROMvalue: public MenuItem {
     int adressEEPROM;
     byte editValue;
     byte minValue, maxValue, len;
+
+};
+
+class TimerMinute: public MenuItem {
+
+  public:
+    TimerMinute (CurrSettings* _currSettings) : MenuItem(_currSettings) {};
+    String display() {
+      if (currSettings->timer != nullptr) {
+        return valToString(currSettings->timer->getMinute(), 2);
+      }
+      else if (currMode.editing) {
+        if (currMode.blinkOn) return valToString(editValue, 2);
+        else return "  ";
+      }
+      else {
+        return valToString(EEPROM.read(EEPROM_TIMER_MINUTE), 2);
+      }
+    };
+    boolean editing() {
+      return currSettings->timer == nullptr;
+    };
+    void enterEditing() {
+      currMode.editing = currMode.blinkOn = true;
+      editValue = EEPROM.read(EEPROM_TIMER_MINUTE);
+    };
+    void downValue() {
+      changeValue(editValue, -1, 0, 59);
+      currMode.blinkOn = true;
+    };
+    void upValue() {
+      changeValue(editValue, 1, 0, 59);
+      currMode.blinkOn = true;
+    };
+    void saveEditing() {
+      currMode.editing = false;
+      EEPROM.update(EEPROM_TIMER_MINUTE, editValue);
+    };
+  private:
+    byte editValue;
+
+};
+
+class TimerSecond: public MenuItem {
+
+  public:
+    TimerSecond (CurrSettings* _currSettings) : MenuItem(_currSettings) {};
+    String display() {
+      if (currSettings->timer != nullptr) {
+        return valToString(currSettings->timer->getSecond(), 2);
+      }
+      else if (currMode.editing) {
+        if (currMode.blinkOn) return valToString(editValue, 2);
+        else return "  ";
+      }
+      else {
+        return valToString(EEPROM.read(EEPROM_TIMER_SECOND), 2);
+      }
+    };
+    boolean editing() {
+      return currSettings->timer == nullptr;
+    };
+    void enterEditing() {
+      currMode.editing = currMode.blinkOn = true;
+      editValue = EEPROM.read(EEPROM_TIMER_SECOND);
+    };
+    void downValue() {
+      changeValue(editValue, -1, 0, 59);
+      currMode.blinkOn = true;
+    };
+    void upValue() {
+      changeValue(editValue, 1, 0, 59);
+      currMode.blinkOn = true;
+    };
+    void saveEditing() {
+      currMode.editing = false;
+      EEPROM.update(EEPROM_TIMER_SECOND, editValue);
+    };
+  private:
+    byte editValue;
+
+};
+
+class TimerStart: public MenuItem {
+
+  public:
+    TimerStart (CurrSettings* _currSettings) : MenuItem(_currSettings) {};
+    String display() {
+      if (currMode.editing) {
+        if (currMode.blinkOn) return valToString(editValue, 1);
+        else return " ";
+      }
+      else {
+        return currSettings->timer != nullptr ? "1" : "0";
+      }
+    };
+    boolean editing() {
+      return true;
+    };
+    void enterEditing() {
+      currMode.editing = currMode.blinkOn = true;
+      editValue = currSettings->timer != nullptr;
+    };
+    void downValue() {
+      changeValue(editValue, -1, 0, 1);
+      currMode.blinkOn = true;
+    };
+    void upValue() {
+      changeValue(editValue, 1, 0, 1);
+      currMode.blinkOn = true;
+    };
+    void saveEditing() {
+      currMode.editing = false;
+      if (editValue) {
+        if (currSettings->timer == nullptr) currSettings->timer = new Timer(EEPROM.read(EEPROM_TIMER_MINUTE), EEPROM.read(EEPROM_TIMER_SECOND));
+        else currSettings->timer->restart(EEPROM.read(EEPROM_TIMER_MINUTE), EEPROM.read(EEPROM_TIMER_SECOND));
+      }
+      else if (currSettings->timer != nullptr) {
+        delete currSettings->timer;
+        currSettings->timer = nullptr;
+      }
+    };
+  private:
+    byte editValue;
 
 };
