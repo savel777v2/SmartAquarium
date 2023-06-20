@@ -355,3 +355,37 @@ class TimerStart: public MenuItem {
     byte editValue;
 
 };
+
+class RtsTemp: public MenuItem {
+
+  public:
+    RtsTemp (MicroDS3231* _rtc) {
+      rtc = _rtc;
+    };
+    String display() {
+      return "234";
+      int _intValue = rtc->getTemperatureFloat() * 10;
+      return valToString(_intValue, 3);
+    };
+  private:
+    MicroDS3231* rtc;
+
+};
+
+class AquaTemp: public MenuItem {
+
+  public:
+    AquaTemp (ControlTemp* _controlTemp) {
+      controlTemp = _controlTemp;
+    };
+    String display() {
+      if (controlTemp->getAquaTempStatus() != normal) return "Err";
+      else {
+        int _intValue = controlTemp->getAquaTemp() * 10;
+        return valToString(_intValue, 3);
+      }
+    };
+  private:
+    ControlTemp* controlTemp;
+
+};

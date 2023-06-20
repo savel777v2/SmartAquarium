@@ -7,14 +7,21 @@ MicroDS3231 rtc; // A4 - SDA, A% - SCL
 #include "CurrSettings.h"
 CurrSettings currSettings;
 
+#include "ControlTemp.h"
+
+#define DS18B20_PIN 7
+
+OneWire oneWire(DS18B20_PIN);
+ControlTemp controlTemp(&oneWire, &Module);
+
 #include "Menu.h"
-Menu menu(&Module, &currSettings);
+Menu menu(&Module, &controlTemp, &rtc, &currSettings);
 
 #include "Lamps.h"
 Lamps lamps(&currSettings);
 
 #include "LoopTime.h"
-LoopTime loopTime(&Module, &menu, &lamps, &rtc, &currSettings);
+LoopTime loopTime(&Module, &menu, &lamps, &controlTemp, &rtc, &currSettings);
 
 void setup() {  
   currSettings.alarmMelody = nullptr;

@@ -25,8 +25,11 @@
 #define EEPROM_ALARM_MINUTE 5
 #define EEPROM_ALARM 6
 #define EEPROM_LAMP_INTERVAL 9
-
-enum tempStatus {notBegin, readTemp, normal};
+#define EEPROM_DAY_TEMP 11
+#define EEPROM_DAY_TEMP_ON 12
+#define EEPROM_NIGHT_TEMP 13
+#define EEPROM_NIGHT_TEMP_ON 14
+#define EEPROM_DELTA_TEMP 15
 
 struct CurrSettings {
   DateTime now;

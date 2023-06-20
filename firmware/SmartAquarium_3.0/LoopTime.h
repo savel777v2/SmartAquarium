@@ -11,7 +11,7 @@
 class LoopTime {
 
   public:
-    LoopTime(TM1638My* _module, Menu* _menu, Lamps* _lamps, MicroDS3231* _rtc, CurrSettings* _currSettings);
+    LoopTime(TM1638My* _module, Menu* _menu, Lamps* _lamps, ControlTemp* _controlTemp, MicroDS3231* _rtc, CurrSettings* _currSettings);
     void readKeyboard();
     void loop();    
     void minuteControl();
@@ -20,16 +20,18 @@ class LoopTime {
     TM1638My* module;
     Menu* menu;
     Lamps* lamps;
+    ControlTemp* controlTemp;
     MicroDS3231* rtc;
     CurrSettings* currSettings;
     unsigned long nextKeyboardTime, lastLoopTime;
     bool itsDay(int _nowInMinutes, int _morningInMinutes, int _eveningInMinutes);
 };
 
-LoopTime::LoopTime (TM1638My* _module, Menu* _menu, Lamps* _lamps, MicroDS3231* _rtc, CurrSettings* _currSettings) {
+LoopTime::LoopTime (TM1638My* _module, Menu* _menu, Lamps* _lamps, ControlTemp* _controlTemp, MicroDS3231* _rtc, CurrSettings* _currSettings) {
   module = _module;
   menu = _menu;
   lamps = _lamps;
+  controlTemp = _controlTemp;
   rtc = _rtc;
   currSettings = _currSettings;
   nextKeyboardTime = millis() + KEYBOARD_INTERVAL;
@@ -62,6 +64,9 @@ void LoopTime::loop() {
     minuteControl();
     menu->display();
   }
+
+  // temp reader and display
+  if (controlTemp->readTemperatureNeedDisplay() && menu->getSubmenu() == curTemp) menu->display();
 
   // loop timer
   if (currSettings->timer != nullptr) {
@@ -157,5 +162,8 @@ void LoopTime::minuteControl() {
 
   // control lamps
   lamps->controlLamps();
+
+  // control heater
+  controlTemp->heaterOnOff(currSettings->nowDay, currSettings->now.minute, currSettings->now.hour);
 
 }

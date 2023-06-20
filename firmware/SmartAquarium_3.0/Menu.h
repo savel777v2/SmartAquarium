@@ -22,14 +22,16 @@ enum submenu
 class Menu {
 
   public:
-    Menu (TM1638My* _Module, CurrSettings* _currSettings);
+    Menu (TM1638My* _module, ControlTemp* _controlTemp, MicroDS3231* _rtc, CurrSettings* _currSettings);
     void display();
     bool loopNeedControl();
     submenu getSubmenu();
 
   private:
-    TM1638My* Module;
+    TM1638My* module;
     MenuItem* subMenu[6];
+    ControlTemp* controlTemp;
+    MicroDS3231* rtc;
     CurrSettings* currSettings;
     byte gorInd, verInd;
     unsigned long nextKeyboardTime, lastBlinkTime;
@@ -42,8 +44,10 @@ class Menu {
     void blinkDisplay();
 };
 
-Menu::Menu (TM1638My* _Module, CurrSettings* _currSettings) {
-  Module = _Module;
+Menu::Menu (TM1638My* _module, ControlTemp* _controlTemp, MicroDS3231* _rtc, CurrSettings* _currSettings) {
+  module = _module;
+  controlTemp = _controlTemp;
+  rtc = _rtc;
   currSettings = _currSettings;
   gorInd = 0;
   verInd = 0;
@@ -75,20 +79,20 @@ bool Menu::readKeyboardNeedControl() {
   nextKeyboardTime = millis() + KEYBOARD_INTERVAL;
   bool ans = false;
 
-  byte keys = Module->keysPressed(B00111111, B00111100);
-  if (Module->keyPressed(0, keys) && currSettings->alarmMelody != nullptr) {
+  byte keys = module->keysPressed(B00111111, B00111100);
+  if (module->keyPressed(0, keys) && currSettings->alarmMelody != nullptr) {
     // Esc - выход из мелодии
     delete currSettings->alarmMelody;
     currSettings->alarmMelody = nullptr;
   }
   if (numEditItem) {
-    if (Module->keyPressed(0, keys)) {
+    if (module->keyPressed(0, keys)) {
       // Esc - выход из редактирования
-      subMenu[numEditItem - 1]->exitEditing();      
+      subMenu[numEditItem - 1]->exitEditing();
       numEditItem = 0;
       display();
     }
-    if (Module->keyPressed(1, keys)) {
+    if (module->keyPressed(1, keys)) {
       // Enter - сохраняем и к следующему
       subMenu[numEditItem - 1]->saveEditing();
       ans = true;
@@ -107,19 +111,19 @@ bool Menu::readKeyboardNeedControl() {
         display();
       }
     }
-    if (Module->keyPressed(2, keys)) {
+    if (module->keyPressed(2, keys)) {
       subMenu[numEditItem - 1]->downValue();
       lastBlinkTime = millis();
       display();
     }
-    if (Module->keyPressed(3, keys)) {
+    if (module->keyPressed(3, keys)) {
       subMenu[numEditItem - 1]->upValue();
       lastBlinkTime = millis();
       display();
     }
   }
   else {
-    if (Module->keyPressed(0, keys)) {
+    if (module->keyPressed(0, keys)) {
       // Esc - возврат меню на адрес 0-0
       if (verInd) {
         verInd = 0;
@@ -132,7 +136,7 @@ bool Menu::readKeyboardNeedControl() {
         display();
       }
     }
-    if (Module->keyPressed(1, keys)) {
+    if (module->keyPressed(1, keys)) {
       // Enter - режим редактирования
       int i;
       int sizeSubMenu = sizeof(subMenu) / sizeof(subMenu[0]);
@@ -146,10 +150,10 @@ bool Menu::readKeyboardNeedControl() {
       }
     }
     int dVer = 0, dGor = 0;
-    if (verInd == 0 && Module->keyPressed(2, keys)) dGor--; // left
-    if (verInd == 0 && Module->keyPressed(3, keys)) dGor++; // right
-    if (Module->keyPressed(4, keys)) dVer++; // down
-    if (Module->keyPressed(5, keys)) dVer--; // up
+    if (verInd == 0 && module->keyPressed(2, keys)) dGor--; // left
+    if (verInd == 0 && module->keyPressed(3, keys)) dGor++; // right
+    if (module->keyPressed(4, keys)) dVer++; // down
+    if (module->keyPressed(5, keys)) dVer--; // up
     if ((dGor || dVer) && (submenuName(gorInd + dGor, verInd + dVer) != anon)) {
       gorInd += dGor;
       verInd += dVer;
@@ -176,7 +180,7 @@ void Menu::display() {
   while (deltaLen++ < 0) {
     sOut += ' ';
   }
-  Module->setDisplayToString(sOut, getDots(submenuName(gorInd, verInd)));
+  module->setDisplayToString(sOut, getDots(submenuName(gorInd, verInd)));
 }
 
 submenu Menu::submenuName(byte _gorInd, byte _verInd) {
@@ -210,11 +214,11 @@ byte Menu::getDots(submenu _submenu) {
     case evening: return B00010000; break;
     case alarm: return B00010000; break;
     case lampInterval: return 0; break;
-    case curTemp: return B00010000; break;
+    case curTemp: return controlTemp->getAquaTempStatus() == normal ? B00100010 : B00100000; break;
     case logTemp: return B00010000; break;
-    case dayTemp: return B00010000; break;
-    case nightTemp: return B00010000; break;
-    case deltaTemp: return B00010000; break;
+    case dayTemp: return B00000000; break;
+    case nightTemp: return B00000000; break;
+    case deltaTemp: return B00001000; break;
   }
   return 0;
 }
@@ -275,10 +279,10 @@ void Menu::initSubmenu(submenu _submenu) {
       subMenu[5] = nullptr;
       break;
     case curTemp:
-      subMenu[0] = new TextItem("10");
-      subMenu[1] = nullptr;
-      subMenu[2] = nullptr;
-      subMenu[3] = nullptr;
+      subMenu[0] = new TextItem("i");
+      subMenu[1] = new RtsTemp(rtc);
+      subMenu[2] = new TextItem("o");
+      subMenu[3] = new AquaTemp(controlTemp);
       subMenu[4] = nullptr;
       subMenu[5] = nullptr;
       break;
@@ -291,24 +295,24 @@ void Menu::initSubmenu(submenu _submenu) {
       subMenu[5] = nullptr;
       break;
     case dayTemp:
-      subMenu[0] = new TextItem("123456789");
-      subMenu[1] = nullptr;
-      subMenu[2] = nullptr;
-      subMenu[3] = nullptr;
+      subMenu[0] = new TextItem("Td  ");
+      subMenu[1] = new byteEEPROMvalue(EEPROM_DAY_TEMP, 14, 30, 2);
+      subMenu[2] = new TextItem(" ");
+      subMenu[3] = new byteEEPROMvalue(EEPROM_DAY_TEMP_ON, 0, 1, 1);
       subMenu[4] = nullptr;
       subMenu[5] = nullptr;
       break;
     case nightTemp:
-      subMenu[0] = new TextItem("13");
-      subMenu[1] = nullptr;
-      subMenu[2] = nullptr;
-      subMenu[3] = nullptr;
+      subMenu[0] = new TextItem("Tn  ");
+      subMenu[1] = new byteEEPROMvalue(EEPROM_NIGHT_TEMP, 14, 30, 2);
+      subMenu[2] = new TextItem(" ");
+      subMenu[3] = new byteEEPROMvalue(EEPROM_NIGHT_TEMP_ON, 0, 1, 1);
       subMenu[4] = nullptr;
       subMenu[5] = nullptr;
       break;
     case deltaTemp:
-      subMenu[0] = new TextItem("14");
-      subMenu[1] = nullptr;
+      subMenu[0] = new TextItem("dt  ");
+      subMenu[1] = new byteEEPROMvalue(EEPROM_DELTA_TEMP, 5, 10, 2);
       subMenu[2] = nullptr;
       subMenu[3] = nullptr;
       subMenu[4] = nullptr;
