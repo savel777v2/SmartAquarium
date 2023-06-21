@@ -15,6 +15,7 @@ enum submenu
 {
   time, timer, morning, evening, alarm, lampInterval,
   curTemp, logTemp, dayTemp, nightTemp, deltaTemp,
+  bubbleSpeed, bubbleControl, sensorValue, sensorSettings, bubbleDaySpeed, bubbleNightSpeed, bubbleControlSound,
   durations,
   anon
 };
@@ -193,6 +194,7 @@ submenu Menu::submenuName(byte _gorInd, byte _verInd) {
         case 3: return evening; break;
         case 4: return alarm; break;
         case 5: return lampInterval; break;
+        default: return anon; break;
       }
     case 1: switch (_verInd) {
         case 0: return curTemp; break;
@@ -200,6 +202,17 @@ submenu Menu::submenuName(byte _gorInd, byte _verInd) {
         case 2: return dayTemp; break;
         case 3: return nightTemp; break;
         case 4: return deltaTemp; break;
+        default: return anon; break;
+      }
+    case 2: switch (_verInd) {
+        case 0: return bubbleSpeed; break;
+        case 1: return bubbleControl; break;
+        case 2: return sensorValue; break;
+        case 3: return sensorSettings; break;
+        case 4: return bubbleDaySpeed; break;
+        case 5: return bubbleNightSpeed; break;
+        case 6: return bubbleControlSound; break;
+        default: return anon; break;
       }
   }
   return anon;
@@ -219,6 +232,13 @@ byte Menu::getDots(submenu _submenu) {
     case dayTemp: return B00000000; break;
     case nightTemp: return B00000000; break;
     case deltaTemp: return B00001000; break;
+    case bubbleSpeed: return B00000000; break;
+    case bubbleControl: return B00000000; break;
+    case sensorValue: return B00000000; break;
+    case sensorSettings: return B00000000; break;
+    case bubbleDaySpeed: return B00000000; break;
+    case bubbleNightSpeed: return B00000000; break;
+    case bubbleControlSound: return B00000000; break;
   }
   return 0;
 }
@@ -313,6 +333,62 @@ void Menu::initSubmenu(submenu _submenu) {
     case deltaTemp:
       subMenu[0] = new TextItem("dt  ");
       subMenu[1] = new byteEEPROMvalue(EEPROM_DELTA_TEMP, 5, 10, 2);
+      subMenu[2] = nullptr;
+      subMenu[3] = nullptr;
+      subMenu[4] = nullptr;
+      subMenu[5] = nullptr;
+      break;
+    case bubbleSpeed:
+      subMenu[0] = new TextItem("30");
+      subMenu[1] = nullptr;
+      subMenu[2] = nullptr;
+      subMenu[3] = nullptr;
+      subMenu[4] = nullptr;
+      subMenu[5] = nullptr;
+      break;
+    case bubbleControl:
+      subMenu[0] = new TextItem("31");
+      subMenu[1] = nullptr;
+      subMenu[2] = nullptr;
+      subMenu[3] = nullptr;
+      subMenu[4] = nullptr;
+      subMenu[5] = nullptr;
+      break;
+    case sensorValue:
+      subMenu[0] = new TextItem("32");
+      subMenu[1] = nullptr;
+      subMenu[2] = nullptr;
+      subMenu[3] = nullptr;
+      subMenu[4] = nullptr;
+      subMenu[5] = nullptr;
+      break;
+    case sensorSettings:
+      subMenu[0] = new TextItem("33");
+      subMenu[1] = nullptr;
+      subMenu[2] = nullptr;
+      subMenu[3] = nullptr;
+      subMenu[4] = nullptr;
+      subMenu[5] = nullptr;
+      break;
+    case bubbleDaySpeed:
+      subMenu[0] = new TextItem("34");
+      subMenu[1] = nullptr;
+      subMenu[2] = nullptr;
+      subMenu[3] = nullptr;
+      subMenu[4] = nullptr;
+      subMenu[5] = nullptr;
+      break;
+    case bubbleNightSpeed:
+      subMenu[0] = new TextItem("35");
+      subMenu[1] = nullptr;
+      subMenu[2] = nullptr;
+      subMenu[3] = nullptr;
+      subMenu[4] = nullptr;
+      subMenu[5] = nullptr;
+      break;
+    case bubbleControlSound:
+      subMenu[0] = new TextItem("36");
+      subMenu[1] = nullptr;
       subMenu[2] = nullptr;
       subMenu[3] = nullptr;
       subMenu[4] = nullptr;

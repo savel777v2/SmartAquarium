@@ -23,5 +23,6 @@
     - Menu - выполнил режими curTemp,dayTemp,nightTemp,deltaTemp для submenu (гл.пер.\память 1127\20148)
   21.06.2023
     - Новый наследник TempLog для MenuItem. submenu.logTemp - новое меню (гл.пер.\память 1159\20582)
+    - Эскизы меню для bubbleControl (гл.пер.\память 1193\20652)
     
  */ 
