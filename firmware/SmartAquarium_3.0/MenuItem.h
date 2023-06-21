@@ -6,7 +6,6 @@
 #pragma once
 
 #include <EEPROM.h>
-//#include "CurrSettings.h"
 
 class MenuItem {
 
@@ -387,5 +386,61 @@ class AquaTemp: public MenuItem {
     };
   private:
     ControlTemp* controlTemp;
+
+};
+
+class TempLog: public MenuItem {
+
+  public:
+    TempLog (CurrSettings* _currSettings, ControlTemp* _controlTemp) : MenuItem(_currSettings) {
+      controlTemp = _controlTemp;
+    };
+    String display() {
+      if (currMode.editing) {
+        if (currMode.blinkOn) return logToString(editValue);
+        else return "        ";
+      }
+      else {
+        return logToString(23);
+      }
+    };
+    boolean editing() {
+      return true;
+    };
+    void enterEditing() {
+      currMode.editing = currMode.blinkOn = true;
+      editValue = 23;
+    };
+    void downValue() {
+      changeValue(editValue, -1, 0, 23, false);
+      currMode.blinkOn = true;
+    };
+    void upValue() {
+      changeValue(editValue, 1, 0, 23, false);
+      currMode.blinkOn = true;
+    };
+  private:
+    ControlTemp* controlTemp;
+    byte editValue;
+    String logToString(byte _index) {
+      byte _indexOfNow = currSettings->now.hour;
+      byte _indexOfLog;
+      if ((23 - _index) > _indexOfNow) _indexOfLog = _indexOfNow + _index + 1;
+      else _indexOfLog = _indexOfNow + _index - 23;
+      String ans = valToString(_indexOfLog, 2);
+      ans += "00";
+      word _valueOfLog = controlTemp->getHeaterTempLog(_indexOfLog);
+      if (_valueOfLog > 10000) {
+        ans += "o";
+        _valueOfLog -= 10000;
+      }
+      else ans += " ";
+      if (_valueOfLog == 0) ans += "Err";
+      else {
+        _valueOfLog -= 1000;
+        ans += valToString(_valueOfLog, 3);
+      }
+      return ans;
+    }
 
 };

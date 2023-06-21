@@ -21,5 +21,7 @@
     - ControlTemp.h - новый объект для съема темепратуры и управления нагревателем
     - RtsTemp, AquaTemp - новые объекты наследники MenuItem
     - Menu - выполнил режими curTemp,dayTemp,nightTemp,deltaTemp для submenu (гл.пер.\память 1127\20148)
+  21.06.2023
+    - Новый наследник TempLog для MenuItem. submenu.logTemp - новое меню (гл.пер.\память 1159\20582)
     
  */ 

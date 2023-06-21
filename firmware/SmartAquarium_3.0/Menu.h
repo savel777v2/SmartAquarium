@@ -215,7 +215,7 @@ byte Menu::getDots(submenu _submenu) {
     case alarm: return B00010000; break;
     case lampInterval: return 0; break;
     case curTemp: return controlTemp->getAquaTempStatus() == normal ? B00100010 : B00100000; break;
-    case logTemp: return B00010000; break;
+    case logTemp: return B01000010; break;
     case dayTemp: return B00000000; break;
     case nightTemp: return B00000000; break;
     case deltaTemp: return B00001000; break;
@@ -287,7 +287,7 @@ void Menu::initSubmenu(submenu _submenu) {
       subMenu[5] = nullptr;
       break;
     case logTemp:
-      subMenu[0] = new TextItem("11");
+      subMenu[0] = new TempLog (currSettings, controlTemp);
       subMenu[1] = nullptr;
       subMenu[2] = nullptr;
       subMenu[3] = nullptr;

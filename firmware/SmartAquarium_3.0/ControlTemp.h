@@ -23,6 +23,7 @@ class ControlTemp : public DS18B20 {
     ControlTemp(OneWire* _oneWire, TM1638My* _module);
     tempStatus getAquaTempStatus();
     float getAquaTemp();
+    word getHeaterTempLog(byte _index);
     void heaterOnOff(bool _nowDay, byte _nowMinute, byte _nowHour);
     bool readTemperatureNeedDisplay();
 
@@ -53,6 +54,10 @@ ControlTemp::ControlTemp(OneWire* _oneWire, TM1638My* _module) : DS18B20(_oneWir
 
 tempStatus ControlTemp::getAquaTempStatus() {
   return aquaTempStatus;
+}
+
+word ControlTemp::getHeaterTempLog(byte _index) {
+  return heaterTempLog[_index];
 }
 
 float ControlTemp::getAquaTemp() {
