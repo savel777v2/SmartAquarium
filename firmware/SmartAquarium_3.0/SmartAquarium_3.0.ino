@@ -14,14 +14,17 @@ CurrSettings currSettings;
 OneWire oneWire(DS18B20_PIN);
 ControlTemp controlTemp(&oneWire, &Module);
 
+#include "BubbleCounter.h"
+BubbleCounter bubbleCounter;
+
 #include "Menu.h"
-Menu menu(&Module, &controlTemp, &rtc, &currSettings);
+Menu menu(&Module, &controlTemp, &bubbleCounter, &rtc, &currSettings);
 
 #include "Lamps.h"
 Lamps lamps(&currSettings);
 
 #include "LoopTime.h"
-LoopTime loopTime(&Module, &menu, &lamps, &controlTemp, &rtc, &currSettings);
+LoopTime loopTime(&Module, &menu, &lamps, &controlTemp, &bubbleCounter, &rtc, &currSettings);
 
 void setup() {  
   currSettings.alarmMelody = nullptr;

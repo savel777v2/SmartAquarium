@@ -7,6 +7,11 @@
 
 #include <EEPROM.h>
 
+enum typeBubbleCounterValue
+{
+  bubbleIn100Second,minLevel,maxLevel
+};
+
 class MenuItem {
 
   public:
@@ -45,13 +50,17 @@ class MenuItem {
       boolean blinkOn: 1;
     } currMode;
 
-    String valToString(int val, int len) {
+    String valToString(int val, byte len, byte leadingSpaces = 0) {
       String ans(val);
-      int ind = ans.length() - len;
-      if (ind > 0) return ans.substring(ind);
+      int lenPref = len - ans.length();
+      if (lenPref < 0) return ans.substring(-lenPref);
       String pref = "";
-      while (ind++ < 0) {
-        pref += '0';
+      while (lenPref-- > 0) {        
+        if (leadingSpaces > 0) {
+          leadingSpaces--;
+          pref += ' ';
+        }
+        else pref += '0';
       }
       return pref + ans;
     }
@@ -190,19 +199,20 @@ class CurMinute: public MenuItem {
 class byteEEPROMvalue: public MenuItem {
 
   public:
-    byteEEPROMvalue (int _adressEEPROM, byte _minValue, byte _maxValue, byte _len) {
+    byteEEPROMvalue (int _adressEEPROM, byte _minValue, byte _maxValue, byte _len, byte _leadingSpaces = 0) {
       adressEEPROM = _adressEEPROM;
       minValue = _minValue;
       maxValue = _maxValue;
       len = _len;
+      leadingSpaces = _leadingSpaces;
     };
     String display() {
       if (currMode.editing) {
-        if (currMode.blinkOn) return valToString(editValue, len);
+        if (currMode.blinkOn) return valToString(editValue, len, leadingSpaces);
         else return emptyString(len);
       }
       else {
-        return valToString(EEPROM.read(adressEEPROM), len);
+        return valToString(EEPROM.read(adressEEPROM), len, leadingSpaces);
       }
     };
     boolean editing() {
@@ -227,7 +237,7 @@ class byteEEPROMvalue: public MenuItem {
   private:
     int adressEEPROM;
     byte editValue;
-    byte minValue, maxValue, len;
+    byte minValue, maxValue, len, leadingSpaces;
 
 };
 
@@ -442,5 +452,37 @@ class TempLog: public MenuItem {
       }
       return ans;
     }
+
+};
+
+class bubbleCounterValue: public MenuItem {
+
+  public:
+    bubbleCounterValue (BubbleCounter* _bubbleCounter, typeBubbleCounterValue _typeValue) {
+      bubbleCounter = _bubbleCounter;
+      typeValue = _typeValue;
+    };
+    String display() {
+      int _intValue = 0;
+      switch (typeValue) {
+        case bubbleIn100Second: _intValue = bubbleCounter->getBubbleIn100Second(); break;
+        case minLevel: _intValue = bubbleCounter->getMinLevel(); break;
+        case maxLevel: _intValue = bubbleCounter->getMaxLevel(); break;
+      }
+      switch (_intValue) {
+        case -1: return "Err1"; break;
+        case -2: return "Err2"; break;
+        case -3: return valToString(0, 4, 1); break;
+        default:
+          switch (typeValue) {
+            case bubbleIn100Second: return valToString(_intValue, 4, 1); break;
+            default: return valToString(_intValue, 4, 3); break;
+          }          
+          break;
+      }
+    };
+  private:
+    BubbleCounter* bubbleCounter;
+    typeBubbleCounterValue typeValue;
 
 };

@@ -30,6 +30,8 @@
 #define EEPROM_NIGHT_TEMP 13
 #define EEPROM_NIGHT_TEMP_ON 14
 #define EEPROM_DELTA_TEMP 15
+#define EEPROM_MAX_DURATION_BUBBLE 20
+#define EEPROM_MIN_LEVEL_BUBBLE 21
 
 struct CurrSettings {
   DateTime now;

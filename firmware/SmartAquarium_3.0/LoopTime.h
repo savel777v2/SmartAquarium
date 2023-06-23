@@ -7,11 +7,12 @@
 
 #include "CurrSettings.h"
 #include "MenuItem.h"
+#include "BubbleCounter.h"
 
 class LoopTime {
 
   public:
-    LoopTime(TM1638My* _module, Menu* _menu, Lamps* _lamps, ControlTemp* _controlTemp, MicroDS3231* _rtc, CurrSettings* _currSettings);
+    LoopTime(TM1638My* _module, Menu* _menu, Lamps* _lamps, ControlTemp* _controlTemp, BubbleCounter* _bubbleCounter, MicroDS3231* _rtc, CurrSettings* _currSettings);
     void readKeyboard();
     void loop();    
     void minuteControl();
@@ -21,17 +22,19 @@ class LoopTime {
     Menu* menu;
     Lamps* lamps;
     ControlTemp* controlTemp;
+    BubbleCounter* bubbleCounter;
     MicroDS3231* rtc;
     CurrSettings* currSettings;
     unsigned long nextKeyboardTime, lastLoopTime;
     bool itsDay(int _nowInMinutes, int _morningInMinutes, int _eveningInMinutes);
 };
 
-LoopTime::LoopTime (TM1638My* _module, Menu* _menu, Lamps* _lamps, ControlTemp* _controlTemp, MicroDS3231* _rtc, CurrSettings* _currSettings) {
+LoopTime::LoopTime (TM1638My* _module, Menu* _menu, Lamps* _lamps, ControlTemp* _controlTemp, BubbleCounter* _bubbleCounter, MicroDS3231* _rtc, CurrSettings* _currSettings) {
   module = _module;
   menu = _menu;
   lamps = _lamps;
   controlTemp = _controlTemp;
+  bubbleCounter = _bubbleCounter;
   rtc = _rtc;
   currSettings = _currSettings;
   nextKeyboardTime = millis() + KEYBOARD_INTERVAL;
@@ -68,6 +71,14 @@ void LoopTime::loop() {
   // temp reader and display
   if (controlTemp->readTemperatureNeedDisplay() && menu->getSubmenu() == curTemp) menu->display();
 
+  // loop BubbleCounter and display
+  byte loopResult = bubbleCounter->loop();
+  if ((loopResult & 0b00000001) == 0b00000001 && menu->getSubmenu() == sensorValue) menu->display();
+  if ((loopResult & 0b00000100) == 0b00000100) module->setLED(1, 7); // начало пузырька
+  if ((loopResult & 0b00001000) == 0b00001000) module->setLED(0, 7); // конец пузырька
+  if ((loopResult & 0b00010000) == 0b00010000 && menu->getSubmenu() == bubbleSpeed) menu->display();
+  
+  
   // loop timer
   if (currSettings->timer != nullptr) {
     status curStatus = currSettings->timer->loop();

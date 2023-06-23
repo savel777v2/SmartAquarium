@@ -24,5 +24,8 @@
   21.06.2023
     - Новый наследник TempLog для MenuItem. submenu.logTemp - новое меню (гл.пер.\память 1159\20582)
     - Эскизы меню для bubbleControl (гл.пер.\память 1193\20652)
+  22.06.2023
+    - Новый объект BubbleCounter (гл.пер.\память 1380\23092)
+    - bubbleCounterValue - новый объект наследник MenuItem, bubbleSpeed,sensorValue - новые меню submenu (гл.пер.\память 1408\23312)
     
  */ 

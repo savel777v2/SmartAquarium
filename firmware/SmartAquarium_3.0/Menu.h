@@ -15,7 +15,7 @@ enum submenu
 {
   time, timer, morning, evening, alarm, lampInterval,
   curTemp, logTemp, dayTemp, nightTemp, deltaTemp,
-  bubbleSpeed, bubbleControl, sensorValue, sensorSettings, bubbleDaySpeed, bubbleNightSpeed, bubbleControlSound,
+  bubbleSpeed, bubbleControl, sensorValue, bubbleSettings, bubbleDaySpeed, bubbleNightSpeed, bubbleControlSound,
   durations,
   anon
 };
@@ -23,7 +23,7 @@ enum submenu
 class Menu {
 
   public:
-    Menu (TM1638My* _module, ControlTemp* _controlTemp, MicroDS3231* _rtc, CurrSettings* _currSettings);
+    Menu (TM1638My* _module, ControlTemp* _controlTemp, BubbleCounter* _bubbleCounter, MicroDS3231* _rtc, CurrSettings* _currSettings);
     void display();
     bool loopNeedControl();
     submenu getSubmenu();
@@ -32,6 +32,7 @@ class Menu {
     TM1638My* module;
     MenuItem* subMenu[6];
     ControlTemp* controlTemp;
+    BubbleCounter* bubbleCounter;
     MicroDS3231* rtc;
     CurrSettings* currSettings;
     byte gorInd, verInd;
@@ -45,9 +46,10 @@ class Menu {
     void blinkDisplay();
 };
 
-Menu::Menu (TM1638My* _module, ControlTemp* _controlTemp, MicroDS3231* _rtc, CurrSettings* _currSettings) {
+Menu::Menu (TM1638My* _module, ControlTemp* _controlTemp, BubbleCounter* _bubbleCounter, MicroDS3231* _rtc, CurrSettings* _currSettings) {
   module = _module;
   controlTemp = _controlTemp;
+  bubbleCounter = _bubbleCounter;
   rtc = _rtc;
   currSettings = _currSettings;
   gorInd = 0;
@@ -208,7 +210,7 @@ submenu Menu::submenuName(byte _gorInd, byte _verInd) {
         case 0: return bubbleSpeed; break;
         case 1: return bubbleControl; break;
         case 2: return sensorValue; break;
-        case 3: return sensorSettings; break;
+        case 3: return bubbleSettings; break;
         case 4: return bubbleDaySpeed; break;
         case 5: return bubbleNightSpeed; break;
         case 6: return bubbleControlSound; break;
@@ -232,10 +234,10 @@ byte Menu::getDots(submenu _submenu) {
     case dayTemp: return B00000000; break;
     case nightTemp: return B00000000; break;
     case deltaTemp: return B00001000; break;
-    case bubbleSpeed: return B00000000; break;
+    case bubbleSpeed: return B01000000; break;
     case bubbleControl: return B00000000; break;
     case sensorValue: return B00000000; break;
-    case sensorSettings: return B00000000; break;
+    case bubbleSettings: return B00000000; break;
     case bubbleDaySpeed: return B00000000; break;
     case bubbleNightSpeed: return B00000000; break;
     case bubbleControlSound: return B00000000; break;
@@ -339,7 +341,7 @@ void Menu::initSubmenu(submenu _submenu) {
       subMenu[5] = nullptr;
       break;
     case bubbleSpeed:
-      subMenu[0] = new TextItem("30");
+      subMenu[0] = new bubbleCounterValue(bubbleCounter, bubbleIn100Second);
       subMenu[1] = nullptr;
       subMenu[2] = nullptr;
       subMenu[3] = nullptr;
@@ -355,18 +357,18 @@ void Menu::initSubmenu(submenu _submenu) {
       subMenu[5] = nullptr;
       break;
     case sensorValue:
-      subMenu[0] = new TextItem("32");
-      subMenu[1] = nullptr;
+      subMenu[0] = new bubbleCounterValue(bubbleCounter, minLevel);
+      subMenu[1] = new bubbleCounterValue(bubbleCounter, maxLevel);
       subMenu[2] = nullptr;
       subMenu[3] = nullptr;
       subMenu[4] = nullptr;
       subMenu[5] = nullptr;
       break;
-    case sensorSettings:
-      subMenu[0] = new TextItem("33");
-      subMenu[1] = nullptr;
-      subMenu[2] = nullptr;
-      subMenu[3] = nullptr;
+    case bubbleSettings:
+      subMenu[0] = new TextItem("d ");
+      subMenu[1] = new byteEEPROMvalue(EEPROM_MAX_DURATION_BUBBLE, 0, 50, 2, 1);
+      subMenu[2] = new TextItem("h ");
+      subMenu[3] = new byteEEPROMvalue(EEPROM_MIN_LEVEL_BUBBLE, 0, 50, 2, 1);
       subMenu[4] = nullptr;
       subMenu[5] = nullptr;
       break;
