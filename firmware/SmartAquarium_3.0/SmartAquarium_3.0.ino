@@ -17,14 +17,17 @@ ControlTemp controlTemp(&oneWire, &Module);
 #include "BubbleCounter.h"
 BubbleCounter bubbleCounter;
 
+#include "StepMotor.h"
+StepMotor stepMotor(MOTOR_PIN_1, MOTOR_PIN_2, MOTOR_PIN_3, MOTOR_PIN_4);
+
 #include "Menu.h"
-Menu menu(&Module, &controlTemp, &bubbleCounter, &rtc, &currSettings);
+Menu menu(&Module, &controlTemp, &bubbleCounter, &stepMotor, &rtc, &currSettings);
 
 #include "Lamps.h"
 Lamps lamps(&currSettings);
 
 #include "LoopTime.h"
-LoopTime loopTime(&Module, &menu, &lamps, &controlTemp, &bubbleCounter, &rtc, &currSettings);
+LoopTime loopTime(&Module, &menu, &lamps, &controlTemp, &bubbleCounter, &stepMotor, &rtc, &currSettings);
 
 void setup() {  
   currSettings.alarmMelody = nullptr;

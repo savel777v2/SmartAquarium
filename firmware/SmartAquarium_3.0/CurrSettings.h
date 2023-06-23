@@ -15,6 +15,11 @@
 #define PIEZO_PIN 3 // + ground
 #define ALARM_DURATION 60000
 
+#define MOTOR_PIN_1 11
+#define MOTOR_PIN_2 10
+#define MOTOR_PIN_3 9
+#define MOTOR_PIN_4 8
+
 #define EEPROM_TIMER_MINUTE 7
 #define EEPROM_TIMER_SECOND 8
 #define EEPROM_MORNING_HOUR 0
@@ -32,6 +37,7 @@
 #define EEPROM_DELTA_TEMP 15
 #define EEPROM_MAX_DURATION_BUBBLE 20
 #define EEPROM_MIN_LEVEL_BUBBLE 21
+#define EEPROM_MOTOR_POSITION 22
 
 struct CurrSettings {
   DateTime now;

@@ -12,9 +12,9 @@
 class LoopTime {
 
   public:
-    LoopTime(TM1638My* _module, Menu* _menu, Lamps* _lamps, ControlTemp* _controlTemp, BubbleCounter* _bubbleCounter, MicroDS3231* _rtc, CurrSettings* _currSettings);
+    LoopTime(TM1638My* _module, Menu* _menu, Lamps* _lamps, ControlTemp* _controlTemp, BubbleCounter* _bubbleCounter, StepMotor* _stepMotor, MicroDS3231* _rtc, CurrSettings* _currSettings);
     void readKeyboard();
-    void loop();    
+    void loop();
     void minuteControl();
 
   private:
@@ -23,22 +23,26 @@ class LoopTime {
     Lamps* lamps;
     ControlTemp* controlTemp;
     BubbleCounter* bubbleCounter;
+    StepMotor* stepMotor;
     MicroDS3231* rtc;
     CurrSettings* currSettings;
     unsigned long nextKeyboardTime, lastLoopTime;
+    byte activeLedMotor = 0;
     bool itsDay(int _nowInMinutes, int _morningInMinutes, int _eveningInMinutes);
 };
 
-LoopTime::LoopTime (TM1638My* _module, Menu* _menu, Lamps* _lamps, ControlTemp* _controlTemp, BubbleCounter* _bubbleCounter, MicroDS3231* _rtc, CurrSettings* _currSettings) {
+LoopTime::LoopTime (TM1638My* _module, Menu* _menu, Lamps* _lamps, ControlTemp* _controlTemp, BubbleCounter* _bubbleCounter, StepMotor* _stepMotor, MicroDS3231* _rtc, CurrSettings* _currSettings) {
   module = _module;
   menu = _menu;
   lamps = _lamps;
   controlTemp = _controlTemp;
   bubbleCounter = _bubbleCounter;
+  stepMotor = _stepMotor;
   rtc = _rtc;
   currSettings = _currSettings;
   nextKeyboardTime = millis() + KEYBOARD_INTERVAL;
   lastLoopTime = 0;
+  activeLedMotor = 0;
 };
 
 void LoopTime::readKeyboard() {
@@ -58,11 +62,10 @@ void LoopTime::loop() {
   // Loop once First time
   if (lastLoopTime == 0) {
     lastLoopTime = millis();
-
-    //currSettings->now = rtc->getTime();
-    currSettings->now.hour = 11;
+    currSettings->now = rtc->getTime();
+    /*currSettings->now.hour = 11;
     currSettings->now.minute = 42;
-    currSettings->now.second = 40;
+    currSettings->now.second = 40;*/
 
     minuteControl();
     menu->display();
@@ -76,9 +79,17 @@ void LoopTime::loop() {
   if ((loopResult & 0b00000001) == 0b00000001 && menu->getSubmenu() == sensorValue) menu->display();
   if ((loopResult & 0b00000100) == 0b00000100) module->setLED(1, 7); // начало пузырька
   if ((loopResult & 0b00001000) == 0b00001000) module->setLED(0, 7); // конец пузырька
-  if ((loopResult & 0b00010000) == 0b00010000 && menu->getSubmenu() == bubbleSpeed) menu->display();
-  
-  
+  if ((loopResult & 0b00010000) == 0b00010000 && menu->getSubmenu() == bubblesInSecond) menu->display();
+
+  // loop StepMotor and display
+  int _direction = stepMotor->loop();
+  if (_direction != 255) {
+    module->setLED(0, activeLedMotor);
+    if (_direction < 0) activeLedMotor = activeLedMotor == 0 ? 3 : activeLedMotor - 1;
+    else if (_direction > 0) activeLedMotor = activeLedMotor == 3 ? 0 : activeLedMotor + 1;
+    if (_direction != 0) module->setLED(1, activeLedMotor);
+  }
+
   // loop timer
   if (currSettings->timer != nullptr) {
     status curStatus = currSettings->timer->loop();
@@ -140,7 +151,7 @@ void LoopTime::loop() {
         currSettings->now.minute = 0;
         currSettings->now.hour++;
         // синхронизация времени раз в час
-        //currSettings->now = rtc->getTime();
+        currSettings->now = rtc->getTime();
       }
       minuteControl();
     }

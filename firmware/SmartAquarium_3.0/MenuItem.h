@@ -9,7 +9,7 @@
 
 enum typeBubbleCounterValue
 {
-  bubbleIn100Second,minLevel,maxLevel
+  bubbleIn100Second, minLevel, maxLevel
 };
 
 class MenuItem {
@@ -55,7 +55,7 @@ class MenuItem {
       int lenPref = len - ans.length();
       if (lenPref < 0) return ans.substring(-lenPref);
       String pref = "";
-      while (lenPref-- > 0) {        
+      while (lenPref-- > 0) {
         if (leadingSpaces > 0) {
           leadingSpaces--;
           pref += ' ';
@@ -235,9 +235,35 @@ class byteEEPROMvalue: public MenuItem {
       EEPROM.update(adressEEPROM, editValue);
     };
   private:
+    byte minValue, maxValue;
+  protected:
     int adressEEPROM;
     byte editValue;
-    byte minValue, maxValue, len, leadingSpaces;
+    byte len, leadingSpaces;
+};
+
+class MotorPosition: public byteEEPROMvalue {
+
+  public:
+    MotorPosition (StepMotor* _stepMotor) : byteEEPROMvalue (EEPROM_MOTOR_POSITION, 0, 250, 4, 3) {
+      stepMotor = _stepMotor;
+    };
+    String display() {
+      if (currMode.editing) {
+        if (currMode.blinkOn) return valToString(editValue - 125, len, leadingSpaces);
+        else return emptyString(len);
+      }
+      else {
+        return valToString(EEPROM.read(adressEEPROM) - 125, len, leadingSpaces);
+      }
+    };
+    void saveEditing() {
+      currMode.editing = false;
+      stepMotor->set_positionMove(editValue - 125);
+      EEPROM.update(adressEEPROM, editValue);
+    };
+  private:
+    StepMotor* stepMotor;
 
 };
 
@@ -372,7 +398,6 @@ class RtsTemp: public MenuItem {
       rtc = _rtc;
     };
     String display() {
-      return "234";
       int _intValue = rtc->getTemperatureFloat() * 10;
       return valToString(_intValue, 3);
     };
@@ -477,7 +502,7 @@ class bubbleCounterValue: public MenuItem {
           switch (typeValue) {
             case bubbleIn100Second: return valToString(_intValue, 4, 1); break;
             default: return valToString(_intValue, 4, 3); break;
-          }          
+          }
           break;
       }
     };
