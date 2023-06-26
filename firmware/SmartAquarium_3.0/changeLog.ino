@@ -31,6 +31,9 @@
     - Выполнил шаблоны всех меню для контроля расхода памяти (гл.пер.\память 1460\23478)
     - Новый объект StepMotor (гл.пер.\память 1529\25212)
     - MotorPosition - новый объект наследник MenuItem.byteEEPROMvalue; Menu - режим motorPosition для submenu (гл.пер.\память 1547крит\25530)
-    - MicroDS3231 - расскоментировал использавоние (гл.пер.\память 1581крит\27254)
+    - MicroDS3231 - расскоментировал использование (гл.пер.\память 1581крит\27254)
+  25.06.2023
+    - Новый объект BubbleCounter.h; bubbleSettings, bubbleDaySpeed, bubbleNightSpeed, beforeMorningStart, bubbleControlSound - новые меню submenu (гл.пер.\память 1611\29148)
+  
 
 */

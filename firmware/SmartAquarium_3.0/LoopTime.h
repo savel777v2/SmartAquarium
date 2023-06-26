@@ -12,7 +12,7 @@
 class LoopTime {
 
   public:
-    LoopTime(TM1638My* _module, Menu* _menu, Lamps* _lamps, ControlTemp* _controlTemp, BubbleCounter* _bubbleCounter, StepMotor* _stepMotor, MicroDS3231* _rtc, CurrSettings* _currSettings);
+    LoopTime(TM1638My* _module, Menu* _menu, Lamps* _lamps, ControlTemp* _controlTemp, BubbleCounter* _bubbleCounter, StepMotor* _stepMotor, BubbleControl* _bubbleControl, MicroDS3231* _rtc, CurrSettings* _currSettings);
     void readKeyboard();
     void loop();
     void minuteControl();
@@ -23,7 +23,8 @@ class LoopTime {
     Lamps* lamps;
     ControlTemp* controlTemp;
     BubbleCounter* bubbleCounter;
-    StepMotor* stepMotor;
+    StepMotor* stepMotor;    
+    BubbleControl* bubbleControl;
     MicroDS3231* rtc;
     CurrSettings* currSettings;
     unsigned long nextKeyboardTime, lastLoopTime;
@@ -31,13 +32,14 @@ class LoopTime {
     bool itsDay(int _nowInMinutes, int _morningInMinutes, int _eveningInMinutes);
 };
 
-LoopTime::LoopTime (TM1638My* _module, Menu* _menu, Lamps* _lamps, ControlTemp* _controlTemp, BubbleCounter* _bubbleCounter, StepMotor* _stepMotor, MicroDS3231* _rtc, CurrSettings* _currSettings) {
+LoopTime::LoopTime (TM1638My* _module, Menu* _menu, Lamps* _lamps, ControlTemp* _controlTemp, BubbleCounter* _bubbleCounter, StepMotor* _stepMotor, BubbleControl* _bubbleControl, MicroDS3231* _rtc, CurrSettings* _currSettings) {
   module = _module;
   menu = _menu;
   lamps = _lamps;
   controlTemp = _controlTemp;
   bubbleCounter = _bubbleCounter;
   stepMotor = _stepMotor;
+  bubbleControl = _bubbleControl;
   rtc = _rtc;
   currSettings = _currSettings;
   nextKeyboardTime = millis() + KEYBOARD_INTERVAL;
@@ -79,7 +81,12 @@ void LoopTime::loop() {
   if ((loopResult & 0b00000001) == 0b00000001 && menu->getSubmenu() == sensorValue) menu->display();
   if ((loopResult & 0b00000100) == 0b00000100) module->setLED(1, 7); // начало пузырька
   if ((loopResult & 0b00001000) == 0b00001000) module->setLED(0, 7); // конец пузырька
-  if ((loopResult & 0b00010000) == 0b00010000 && menu->getSubmenu() == bubblesInSecond) menu->display();
+  if ((loopResult & 0b00010000) == 0b00010000) {
+    // контроль пузырьков - по ошибке или пузырьку
+    if (bubbleControl->controlWaiting()) module->setLED(1, 6);
+    else module->setLED(0, 6);
+    if (menu->getSubmenu() == bubblesInSecond) menu->display();
+  }
 
   // loop StepMotor and display
   int _direction = stepMotor->loop();
@@ -174,6 +181,7 @@ void LoopTime::minuteControl() {
   // it's day or nigth
   currSettings->nowDay = itsDay(_nowInMinutes, _morningInMinutes, _eveningInMinutes);
 
+  // control alarm
   if (EEPROM.read(EEPROM_ALARM) == 1) {
     int _alarmInMinutes = (int)EEPROM.read(EEPROM_ALARM_HOUR) * 60 + EEPROM.read(EEPROM_ALARM_MINUTE);
     if (_nowInMinutes == _alarmInMinutes) {
@@ -181,6 +189,24 @@ void LoopTime::minuteControl() {
       else currSettings->alarmMelody->restart();
     }
   }
+
+  // change control bubble settings  
+  int _morningBubbles = _morningInMinutes - EEPROM.read(EEPROM_BEFORE_MORNING_BUBBLE_START);
+  if (_morningBubbles < 0) _morningBubbles = _morningBubbles + 1440;
+  int _eveningBubbles = _eveningInMinutes - EEPROM.read(EEPROM_LAMP_INTERVAL) * 2;
+  if (_eveningBubbles < 0) _eveningBubbles = _eveningBubbles + 1440;
+  byte _needingBubbleSpeed;
+  byte _needingStatus;
+  if (itsDay(_nowInMinutes, _morningBubbles, _eveningBubbles)) {
+    _needingBubbleSpeed = EEPROM.read(EEPROM_DAY_BUBBLE_SPEED);
+    _needingStatus = EEPROM.read(EEPROM_DAY_BUBBLE_ON);
+  }
+  else {
+    _needingBubbleSpeed = EEPROM.read(EEPROM_NIGHT_BUBBLE_SPEED);
+    _needingStatus = EEPROM.read(EEPROM_NIGHT_BUBBLE_ON);
+  }
+  bubbleControl->set_currStatus(_needingStatus);
+  bubbleControl->set_bubblesIn100Second(_needingBubbleSpeed);
 
   // control lamps
   lamps->controlLamps();
