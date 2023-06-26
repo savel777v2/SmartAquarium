@@ -12,6 +12,11 @@ enum typeBubbleCounterValue
   bubbleIn100Second, minLevel, maxLevel
 };
 
+enum typeBubbleControlValue
+{
+  controlCondition, minBubblesIn100Second, maxBubblesIn100Second
+};
+
 class MenuItem {
 
   public:
@@ -49,21 +54,6 @@ class MenuItem {
       boolean editing: 1;
       boolean blinkOn: 1;
     } currMode;
-
-    String valToString(int val, byte len, byte leadingSpaces = 0) {
-      String ans(val);
-      int lenPref = len - ans.length();
-      if (lenPref < 0) return ans.substring(-lenPref);
-      String pref = "";
-      while (lenPref-- > 0) {
-        if (leadingSpaces > 0) {
-          leadingSpaces--;
-          pref += ' ';
-        }
-        else pref += '0';
-      }
-      return pref + ans;
-    }
 
     String emptyString(int len) {
       String ans;
@@ -199,20 +189,21 @@ class CurMinute: public MenuItem {
 class byteEEPROMvalue: public MenuItem {
 
   public:
-    byteEEPROMvalue (int _adressEEPROM, byte _minValue, byte _maxValue, byte _len, byte _leadingSpaces = 0) {
+    byteEEPROMvalue (int _adressEEPROM, byte _minValue, byte _maxValue, byte _len, byte _leadingSpaces = 0, byte _multiplier = 1) {
       adressEEPROM = _adressEEPROM;
       minValue = _minValue;
       maxValue = _maxValue;
       len = _len;
       leadingSpaces = _leadingSpaces;
+      multiplier = _multiplier;
     };
     String display() {
       if (currMode.editing) {
-        if (currMode.blinkOn) return valToString(editValue, len, leadingSpaces);
+        if (currMode.blinkOn) return valToString((int)editValue*multiplier, len, leadingSpaces);
         else return emptyString(len);
       }
       else {
-        return valToString(EEPROM.read(adressEEPROM), len, leadingSpaces);
+        return valToString((int)EEPROM.read(adressEEPROM)*multiplier, len, leadingSpaces);
       }
     };
     boolean editing() {
@@ -240,6 +231,7 @@ class byteEEPROMvalue: public MenuItem {
     int adressEEPROM;
     byte editValue;
     byte len, leadingSpaces;
+    byte multiplier;
 };
 
 class MotorPosition: public byteEEPROMvalue {
@@ -509,5 +501,25 @@ class bubbleCounterValue: public MenuItem {
   private:
     BubbleCounter* bubbleCounter;
     typeBubbleCounterValue typeValue;
+
+};
+
+class bubbleControlValue: public MenuItem {
+
+  public:
+    bubbleControlValue (BubbleControl* _bubbleControl, typeBubbleControlValue _typeValue) {
+      bubbleControl = _bubbleControl;
+      typeValue = _typeValue;
+    };
+    String display() {      
+      switch (typeValue) {
+        case controlCondition: return bubbleControl->get_condition(); break;
+        case minBubblesIn100Second: return valToString(bubbleControl->get_minBubblesIn100Second(), 4, 1); break;
+        case maxBubblesIn100Second: return valToString(bubbleControl->get_maxBubblesIn100Second(), 4, 1); break;
+      }
+    };
+  private:
+    BubbleControl* bubbleControl;
+    typeBubbleControlValue typeValue;
 
 };

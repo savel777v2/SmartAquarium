@@ -44,11 +44,37 @@
 #define EEPROM_NIGHT_BUBBLE_ON 26
 #define EEPROM_BEFORE_MORNING_BUBBLE_START 27
 #define EEPROM_CONTROL_BUBBLE_SOUND_ON 28
+#define EEPROM_DAY_FEEDING_DURATION 29 // продолжительность цикла еды *10 в миллисекундах
+#define EEPROM_DAY_FEEDING_PAUSE 30 // продолжительность простоя для цикла еды *10 в секундах
+#define EEPROM_MORNING_FEEDING_HOUR 31
+#define EEPROM_MORNING_FEEDING_MINUTE 32
+#define EEPROM_MORNING_FEEDING_LOOP 33 // количество циклов еды через паузу
+#define EEPROM_EVENING_FEEDING_HOUR 34
+#define EEPROM_EVENING_FEEDING_MINUTE 35
+#define EEPROM_EVENING_FEEDING_LOOP 36 // количество циклов еды через паузу
+#define EEPROM_NIGHT_FEEDING_HOUR 37
+#define EEPROM_NIGHT_FEEDING_MINUTE 38
+#define EEPROM_NIGHT_FEEDING_DURATION 39 // продолжительность ночной еды *10 в миллисекундах (один цикл)
+
+String valToString(int val, byte len, byte leadingSpaces = 0) {
+  String ans(val);
+  int lenPref = len - ans.length();
+  if (lenPref < 0) return ans.substring(-lenPref);
+  String pref = "";
+  while (lenPref-- > 0) {
+    if (leadingSpaces > 0) {
+      leadingSpaces--;
+      pref += ' ';
+    }
+    else pref += '0';
+  }
+  return pref + ans;
+}
 
 struct CurrSettings {
   DateTime now;
 
-  bool nowDay: 1;  
+  bool nowDay: 1;
   bool heaterOn: 1;
   bool secondLed: 1;
 

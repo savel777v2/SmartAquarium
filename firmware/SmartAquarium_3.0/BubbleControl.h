@@ -11,7 +11,7 @@ class BubbleControl {
     BubbleControl(BubbleCounter* _bubbleCounter, StepMotor* _stepMotor);
     void set_currStatus(byte currStatus);
     byte get_currStatus();
-    void get_condition(char* _strValue);
+    String get_condition();
     void set_bubblesIn100Second(byte bubblesIn100Second);
     byte get_bubblesIn100Second();
     int get_minBubbleDuration();
@@ -27,7 +27,6 @@ class BubbleControl {
     StepMotor* stepMotor;
 
     void _checkReturnPosition(); // возвращает на место после ошибки
-    void _addSybstring(char* _str1, char* _str2);
 
     // 0 - отключен, 1 - включен, 2 - в процессе, 3 - результат достигнут, 4 - ошибка 1 (ничего не меняется), 5 - ошибка 2 (долго крутим), 6 - ошибка 3 (не попали в длительность)
     byte _currStatus = 0;
@@ -54,14 +53,6 @@ void BubbleControl::_checkReturnPosition() {
   if (_currStatus == 4 && _moveNoResult != 0) stepMotor->set_positionMove(_moveNoResult * -1);
 }
 
-void BubbleControl::_addSybstring(char* _str1, char* _str2) {
-  int i = -1;
-  do {
-    i++;
-    _str1[i] = _str2[i];
-  } while (_str2[i] != '\0');
-}
-
 // global functions
 void BubbleControl::set_currStatus(byte currStatus) {
   if (_currStatus == 0 && currStatus == 1) _currStatus = 1;
@@ -75,17 +66,15 @@ byte BubbleControl::get_currStatus() {
   return _currStatus;
 }
 
-void BubbleControl::get_condition(char* _strValue) {
+String BubbleControl::get_condition() {
   switch (_currStatus) {
-    case 0: _addSybstring(_strValue, " OFF"); break;
-    case 1: _addSybstring(_strValue, "  ON"); break;
-    case 2:
-      sprintf(_strValue, "%4d", _lastPositionMove);
-      break;
-    case 3: _addSybstring(_strValue, "Good"); break;
-    case 4: _addSybstring(_strValue, "Err1"); break;
-    case 5: _addSybstring(_strValue, "Err2"); break;
-    case 6: _addSybstring(_strValue, "Err3"); break;
+    case 0: return " OFF"; break;
+    case 1: return "  ON"; break;
+    case 2: return valToString(_lastPositionMove,4,3); break;
+    case 3: return "Good"; break;
+    case 4: return "Err1"; break;
+    case 5: return "Err2"; break;
+    case 6: return "Err3"; break;
   }
 }
 

@@ -33,7 +33,11 @@
     - MotorPosition - новый объект наследник MenuItem.byteEEPROMvalue; Menu - режим motorPosition для submenu (гл.пер.\память 1547крит\25530)
     - MicroDS3231 - расскоментировал использование (гл.пер.\память 1581крит\27254)
   25.06.2023
-    - Новый объект BubbleCounter.h; bubbleSettings, bubbleDaySpeed, bubbleNightSpeed, beforeMorningStart, bubbleControlSound - новые меню submenu (гл.пер.\память 1611\29148)
+    - Новый объект BubbleControl.h; bubbleSettings, bubbleDaySpeed, bubbleNightSpeed, beforeMorningStart, bubbleControlSound - новые меню submenu (гл.пер.\память 1611\29148)
+  26.06.2023
+    - bubbleControlValue - новый объект наследник MenuItem; bubblesInSecond - модифицировал меню submenu (гл.пер.\память 1653\29366)
+    - bubbleControlSettings - новые меню submenu (гл.пер.\память 1651\29482)
+    - morningFeeding, eveningFeeding, dayFeedingSettings, nightFeeding - новые настройки для Feeding submenu (гл.пер.\память 1641\30202)
   
 
 */
