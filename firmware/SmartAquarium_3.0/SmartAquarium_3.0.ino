@@ -1,3 +1,5 @@
+#include <EEPROM.h>
+
 #include "TM1638My.h"
 TM1638My Module(4, 5, 6); // DIO, CLK, STB
 
@@ -8,20 +10,19 @@ MicroDS3231 rtc; // A4 - SDA, A% - SCL
 CurrSettings currSettings;
 
 #include "ControlTemp.h"
-
-#define DS18B20_PIN 7
-
-OneWire oneWire(DS18B20_PIN);
-ControlTemp controlTemp(&oneWire, &Module);
+ControlTemp controlTemp(&Module);
 
 #include "BubbleCounter.h"
 BubbleCounter bubbleCounter;
 
 #include "StepMotor.h"
-StepMotor stepMotor(MOTOR_PIN_1, MOTOR_PIN_2, MOTOR_PIN_3, MOTOR_PIN_4);
+StepMotor stepMotor;
 
 #include "BubbleControl.h"
 BubbleControl bubbleControl(&bubbleCounter, &stepMotor);
+
+#include "Feeding.h"
+Feeding feeding;
 
 #include "Menu.h"
 Menu menu(&Module, &controlTemp, &bubbleCounter, &stepMotor, &bubbleControl, &rtc, &currSettings);
@@ -30,9 +31,10 @@ Menu menu(&Module, &controlTemp, &bubbleCounter, &stepMotor, &bubbleControl, &rt
 Lamps lamps(&currSettings);
 
 #include "LoopTime.h"
-LoopTime loopTime(&Module, &menu, &lamps, &controlTemp, &bubbleCounter, &stepMotor, &bubbleControl, &rtc, &currSettings);
+LoopTime loopTime(&Module, &menu, &lamps, &controlTemp, &bubbleCounter, &stepMotor, &bubbleControl, &feeding, &rtc, &currSettings);
 
-void setup() {  
+void setup() {
+  pinMode(PIEZO_PIN, OUTPUT);
   currSettings.alarmMelody = nullptr;
   currSettings.timer = nullptr;  
 #if (DEBUG_MODE == 1)

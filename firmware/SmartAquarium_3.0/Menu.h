@@ -13,7 +13,7 @@
 
 enum submenu
 {
-  time, timer, morning, evening, alarm, lampInterval,
+  timeMenu, timer, morning, evening, alarm, lampInterval,
   curTemp, logTemp, dayTemp, nightTemp, deltaTemp,
   bubblesInSecond, bubbleControlSettings, sensorValue, bubbleSettings, bubbleDaySpeed, bubbleNightSpeed, beforeMorningStart, bubbleControlSound,
   feedingLoop, morningFeeding, eveningFeeding, dayFeedingSettings, nightFeeding, durations,
@@ -195,7 +195,7 @@ submenu Menu::submenuName(byte _gorInd, byte _verInd) {
 
   switch (_gorInd) {
     case 0: switch (_verInd) {
-        case 0: return time; break;
+        case 0: return timeMenu; break;
         case 1: return timer; break;
         case 2: return morning; break;
         case 3: return evening; break;
@@ -248,7 +248,7 @@ submenu Menu::submenuName(byte _gorInd, byte _verInd) {
 
 byte Menu::getDots(submenu _submenu) {
   switch (_submenu) {
-    case time: return currSettings->secondLed ? B00010000 : 0; break;
+    case timeMenu: return currSettings->secondLed ? B00010000 : 0; break;
     case bubbleDaySpeed:
     case bubbleNightSpeed:
     case timer:
@@ -257,7 +257,7 @@ byte Menu::getDots(submenu _submenu) {
     case morningFeeding:
     case eveningFeeding:
     case alarm: return B00010000; break;
-    case curTemp: return controlTemp->getAquaTempStatus() == normal ? B00100010 : B00100000; break;
+    case curTemp: return controlTemp->getAquaTempConnected() ? B00100010 : B00100000; break;
     case bubbleControlSettings: return B01000100; break;    
     case logTemp: return B01000010; break;
     case deltaTemp: return B00001000; break;
@@ -277,7 +277,7 @@ void Menu::initSubmenu(submenu _submenu) {
   }
 
   switch (_submenu) {
-    case time:
+    case timeMenu:
       subMenu[0] = new DayFlag(currSettings);
       subMenu[1] = new TextItem(" ");
       subMenu[2] = new CurHour(currSettings);

@@ -5,18 +5,14 @@
 */
 #pragma once
 
-enum status {
-  on, off, display
-};
-
 class Timer {
 
   public:
-    Timer (byte _minute, byte _second);
-    status loop();
+    Timer (byte _minute, byte _second);    
     void restart(byte _minute, byte _second);
     byte getMinute();
     byte getSecond();
+    int loopNeedDisplay();
 
   private:
     byte minute, second;
@@ -41,9 +37,9 @@ byte Timer::getSecond() {
   return second;
 };
 
-status Timer::loop() {
-  if (second == 0 && minute == 0) return off;
-  if (millis() < nextSecondTime) return on;
+int Timer::loopNeedDisplay() {
+  if (second == 0 && minute == 0) return -1;
+  if (millis() < nextSecondTime) return 0;
 
   if (second == 0) {
     second = 59;
@@ -51,9 +47,9 @@ status Timer::loop() {
   }
   else {
     second--;
-    if (second == 0 && minute == 0) return off;
+    if (second == 0 && minute == 0) return -1;
   }
 
   nextSecondTime += 1000;
-  return display;
+  return 1;
 }

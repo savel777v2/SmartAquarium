@@ -15,7 +15,7 @@ class Lamps {
 
   public:
     Lamps(CurrSettings* _currSettings);
-    void controlLamps();
+    void scheduler();
     void changeManualLamp();
 
   private:
@@ -33,7 +33,7 @@ Lamps::Lamps(CurrSettings* _currSettings) {
   manualLampTimeOff = 0;
 };
 
-void Lamps::controlLamps() {
+void Lamps::scheduler() {
 
   byte lampPinsLevel[3];
 
@@ -54,7 +54,7 @@ void Lamps::controlLamps() {
   }
   else {
     int minutesBetweenLamps = EEPROM.read(EEPROM_LAMP_INTERVAL);
-    int nowInMinutes = (int)currSettings->now.hour * 60 + currSettings->now.minute;
+    int nowInMinutes = (int)currSettings->nowHour * 60 + currSettings->nowMinute;
     int morningInMinutes = (int)EEPROM.read(EEPROM_MORNING_HOUR) * 60 + EEPROM.read(EEPROM_MORNING_MINUTE);
     int eveningInMinutes = (int)EEPROM.read(EEPROM_EVENING_HOUR) * 60 + EEPROM.read(EEPROM_EVENING_MINUTE);
     for (int i = 0; i < 3; i++) {
@@ -94,6 +94,6 @@ void Lamps::changeManualLamp() {
   else manualLamp = 0;
 
   manualLampTimeOff = millis() + MANUAL_LAMP_DURATION;
-  controlLamps();
+  scheduler();
 
 }

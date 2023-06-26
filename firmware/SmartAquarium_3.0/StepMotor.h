@@ -9,10 +9,15 @@
 #define MAX_USER_SPEED 32 // максимально допустимое значение линейной пользовательской скорости
 #define MAX_DELAY 128 // максимальная задержка шага мотора при скорости около 0 = MIN_DELAY * MAX_USER_SPEED
 
+#define MOTOR_PIN_1 11
+#define MOTOR_PIN_2 10
+#define MOTOR_PIN_3 9
+#define MOTOR_PIN_4 8
+
 class StepMotor {
   public:
 
-    StepMotor(byte pin1, byte pin2, byte pin3, byte pin4);
+    StepMotor();
     void set_userSpeed(int userSpeed);
     int get_userSpeed();
     void set_positionMotor(long positionMotor);
@@ -21,7 +26,7 @@ class StepMotor {
     long get_positionMove();
     bool get_isActive();
     unsigned long get_lastSeekMotor();
-    int loop();
+    int loopDirection();
 
   private:
 
@@ -31,7 +36,6 @@ class StepMotor {
     void motorPositionUp(byte& phaseMotor, int& ans); // шаг мотора вверх
     void motorPositionDown(byte& phaseMotor, int& ans); // шаг мотора вниз
    
-    byte _pin1, _pin2,  _pin3, _pin4;
     unsigned long _lastSeekMotor = 0; // время последнего шага мотора
     bool _isActive = false; // мотор активен
     long _positionMotor = 0; // относительная позиция мотора
@@ -45,15 +49,11 @@ class StepMotor {
 
 };
 
-StepMotor::StepMotor(byte pin1, byte pin2, byte pin3, byte pin4) {
-  _pin1 = pin1;
-  _pin2 = pin2;
-  _pin3 = pin3;
-  _pin4 = pin4;  
-  pinMode(_pin1, OUTPUT);
-  pinMode(_pin2, OUTPUT);
-  pinMode(_pin3, OUTPUT);
-  pinMode(_pin4, OUTPUT);
+StepMotor::StepMotor() {
+  pinMode(MOTOR_PIN_1, OUTPUT);
+  pinMode(MOTOR_PIN_2, OUTPUT);
+  pinMode(MOTOR_PIN_3, OUTPUT);
+  pinMode(MOTOR_PIN_4, OUTPUT);
 }
 
 int StepMotor::getStepDelay(int userSpeed) {
@@ -147,7 +147,7 @@ unsigned long StepMotor::get_lastSeekMotor() {
   return _lastSeekMotor;
 }
 
-int StepMotor::loop() {  
+int StepMotor::loopDirection() {  
   
   int ans = 255;
 
@@ -158,10 +158,10 @@ int StepMotor::loop() {
       ans = 0;
       _isActive = false;
       _stepDelay = MAX_DELAY;
-      digitalWrite(_pin1, LOW);
-      digitalWrite(_pin2, LOW);
-      digitalWrite(_pin3, LOW);
-      digitalWrite(_pin4, LOW);
+      digitalWrite(MOTOR_PIN_1, LOW);
+      digitalWrite(MOTOR_PIN_2, LOW);
+      digitalWrite(MOTOR_PIN_3, LOW);
+      digitalWrite(MOTOR_PIN_4, LOW);
     }
     else {
       _isActive = true;      
@@ -174,28 +174,28 @@ int StepMotor::loop() {
       else motorPositionDown(_phaseMotor, ans);
       switch (_phaseMotor) {
         case 0:
-          digitalWrite(_pin1, HIGH);
-          digitalWrite(_pin2, LOW);
-          digitalWrite(_pin3, LOW);
-          digitalWrite(_pin4, HIGH);
+          digitalWrite(MOTOR_PIN_1, HIGH);
+          digitalWrite(MOTOR_PIN_2, LOW);
+          digitalWrite(MOTOR_PIN_3, LOW);
+          digitalWrite(MOTOR_PIN_4, HIGH);
           break;
         case 1:
-          digitalWrite(_pin1, LOW);
-          digitalWrite(_pin2, LOW);
-          digitalWrite(_pin3, HIGH);
-          digitalWrite(_pin4, HIGH);
+          digitalWrite(MOTOR_PIN_1, LOW);
+          digitalWrite(MOTOR_PIN_2, LOW);
+          digitalWrite(MOTOR_PIN_3, HIGH);
+          digitalWrite(MOTOR_PIN_4, HIGH);
           break;
         case 2:
-          digitalWrite(_pin1, LOW);
-          digitalWrite(_pin2, HIGH);
-          digitalWrite(_pin3, HIGH);
-          digitalWrite(_pin4, LOW);
+          digitalWrite(MOTOR_PIN_1, LOW);
+          digitalWrite(MOTOR_PIN_2, HIGH);
+          digitalWrite(MOTOR_PIN_3, HIGH);
+          digitalWrite(MOTOR_PIN_4, LOW);
           break;
         case 3:
-          digitalWrite(_pin1, HIGH);
-          digitalWrite(_pin2, HIGH);
-          digitalWrite(_pin3, LOW);
-          digitalWrite(_pin4, LOW);
+          digitalWrite(MOTOR_PIN_1, HIGH);
+          digitalWrite(MOTOR_PIN_2, HIGH);
+          digitalWrite(MOTOR_PIN_3, LOW);
+          digitalWrite(MOTOR_PIN_4, LOW);
           break;
       }
       // ускорение в нужном направлении

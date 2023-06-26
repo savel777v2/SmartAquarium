@@ -5,20 +5,11 @@
 */
 #pragma once
 
-#include <microDS3231.h>
 #include "Melody.h"
 #include "Timer.h"
 
 #define DEBUG_MODE 0 // Отладка по COM порту
 #define KEYBOARD_INTERVAL 100
-#define SECOND_LED_DURATION 50
-#define PIEZO_PIN 3 // + ground
-#define ALARM_DURATION 60000
-
-#define MOTOR_PIN_1 11
-#define MOTOR_PIN_2 10
-#define MOTOR_PIN_3 9
-#define MOTOR_PIN_4 8
 
 #define EEPROM_TIMER_MINUTE 7
 #define EEPROM_TIMER_SECOND 8
@@ -71,9 +62,11 @@ String valToString(int val, byte len, byte leadingSpaces = 0) {
   return pref + ans;
 }
 
-struct CurrSettings {
-  DateTime now;
-
+struct CurrSettings {  
+  byte nowSecond;
+  byte nowMinute;
+  byte nowHour;  
+  
   bool nowDay: 1;
   bool heaterOn: 1;
   bool secondLed: 1;

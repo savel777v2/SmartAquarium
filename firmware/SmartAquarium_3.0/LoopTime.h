@@ -9,10 +9,12 @@
 #include "MenuItem.h"
 #include "BubbleCounter.h"
 
+#define SECOND_NOLED_DURATION 950
+
 class LoopTime {
 
   public:
-    LoopTime(TM1638My* _module, Menu* _menu, Lamps* _lamps, ControlTemp* _controlTemp, BubbleCounter* _bubbleCounter, StepMotor* _stepMotor, BubbleControl* _bubbleControl, MicroDS3231* _rtc, CurrSettings* _currSettings);
+    LoopTime(TM1638My* _module, Menu* _menu, Lamps* _lamps, ControlTemp* _controlTemp, BubbleCounter* _bubbleCounter, StepMotor* _stepMotor, BubbleControl* _bubbleControl, Feeding* _feeding, MicroDS3231* _rtc, CurrSettings* _currSettings);
     void readKeyboard();
     void loop();
     void minuteControl();
@@ -25,14 +27,15 @@ class LoopTime {
     BubbleCounter* bubbleCounter;
     StepMotor* stepMotor;    
     BubbleControl* bubbleControl;
+    Feeding* feeding;
     MicroDS3231* rtc;
     CurrSettings* currSettings;
-    unsigned long nextKeyboardTime, lastLoopTime;
+    unsigned long nextKeyboardTime, nextSecondTime;
     byte activeLedMotor = 0;
     bool itsDay(int _nowInMinutes, int _morningInMinutes, int _eveningInMinutes);
 };
 
-LoopTime::LoopTime (TM1638My* _module, Menu* _menu, Lamps* _lamps, ControlTemp* _controlTemp, BubbleCounter* _bubbleCounter, StepMotor* _stepMotor, BubbleControl* _bubbleControl, MicroDS3231* _rtc, CurrSettings* _currSettings) {
+LoopTime::LoopTime (TM1638My* _module, Menu* _menu, Lamps* _lamps, ControlTemp* _controlTemp, BubbleCounter* _bubbleCounter, StepMotor* _stepMotor, BubbleControl* _bubbleControl, Feeding* _feeding, MicroDS3231* _rtc, CurrSettings* _currSettings) {
   module = _module;
   menu = _menu;
   lamps = _lamps;
@@ -40,10 +43,11 @@ LoopTime::LoopTime (TM1638My* _module, Menu* _menu, Lamps* _lamps, ControlTemp* 
   bubbleCounter = _bubbleCounter;
   stepMotor = _stepMotor;
   bubbleControl = _bubbleControl;
+  feeding = _feeding;
   rtc = _rtc;
   currSettings = _currSettings;
   nextKeyboardTime = millis() + KEYBOARD_INTERVAL;
-  lastLoopTime = 0;
+  nextSecondTime = 0;
   activeLedMotor = 0;
 };
 
@@ -62,26 +66,30 @@ void LoopTime::readKeyboard() {
 void LoopTime::loop() {
 
   // Loop once First time
-  if (lastLoopTime == 0) {
-    lastLoopTime = millis();
-    currSettings->now = rtc->getTime();
+  if (nextSecondTime == 0) {
+    nextSecondTime = millis() + 1000;
+    currSettings->nowSecond = rtc->getSeconds();
+    currSettings->nowMinute = rtc->getMinutes();
+    currSettings->nowHour = rtc->getHours();
     /*currSettings->now.hour = 11;
     currSettings->now.minute = 42;
     currSettings->now.second = 40;*/
-
     minuteControl();
     menu->display();
   }
 
   // temp reader and display
-  if (controlTemp->readTemperatureNeedDisplay() && menu->getSubmenu() == curTemp) menu->display();
+  if (controlTemp->loopNeedDisplay() && menu->getSubmenu() == curTemp) menu->display();
+
+  // Feeding and display
+  if (feeding->loopNeedDisplay() && menu->getSubmenu() == feedingLoop) menu->display();
 
   // loop BubbleCounter and display
-  byte loopResult = bubbleCounter->loop();
-  if ((loopResult & 0b00000001) == 0b00000001 && menu->getSubmenu() == sensorValue) menu->display();
-  if ((loopResult & 0b00000100) == 0b00000100) module->setLED(1, 7); // начало пузырька
-  if ((loopResult & 0b00001000) == 0b00001000) module->setLED(0, 7); // конец пузырька
-  if ((loopResult & 0b00010000) == 0b00010000) {
+  byte needDisplayCounter = bubbleCounter->loopNeedDisplay();
+  if ((needDisplayCounter & 0b00000001) == 0b00000001 && menu->getSubmenu() == sensorValue) menu->display();
+  if ((needDisplayCounter & 0b00000100) == 0b00000100) module->setLED(1, 7); // начало пузырька
+  if ((needDisplayCounter & 0b00001000) == 0b00001000) module->setLED(0, 7); // конец пузырька
+  if ((needDisplayCounter & 0b00010000) == 0b00010000) {
     // контроль пузырьков - по ошибке или пузырьку
     if (bubbleControl->controlWaiting()) module->setLED(1, 6);
     else module->setLED(0, 6);
@@ -89,7 +97,7 @@ void LoopTime::loop() {
   }
 
   // loop StepMotor and display
-  int _direction = stepMotor->loop();
+  int _direction = stepMotor->loopDirection();
   if (_direction != 255) {
     module->setLED(0, activeLedMotor);
     if (_direction < 0) activeLedMotor = activeLedMotor == 0 ? 3 : activeLedMotor - 1;
@@ -99,40 +107,40 @@ void LoopTime::loop() {
 
   // loop timer
   if (currSettings->timer != nullptr) {
-    status curStatus = currSettings->timer->loop();
-    if (curStatus == off) {
+    int needDisplay = currSettings->timer->loopNeedDisplay();
+    if (needDisplay == -1) {
       delete currSettings->timer;
       currSettings->timer = nullptr;
-      if (currSettings->alarmMelody == nullptr) currSettings->alarmMelody = new Melody(PIEZO_PIN);
+      if (currSettings->alarmMelody == nullptr) currSettings->alarmMelody = new Melody();
       else (currSettings->alarmMelody->restart());
-      if (menu->getSubmenu() == time || menu->getSubmenu() == timer) {
+      if (menu->getSubmenu() == timeMenu || menu->getSubmenu() == timer) {
         menu->display();
       }
     }
-    else if (curStatus == display && menu->getSubmenu() == timer) menu->display();
+    else if (needDisplay == 1 && menu->getSubmenu() == timer) menu->display();
   }
 
   // turn off alarm Melody
   if (currSettings->alarmMelody != nullptr) {
-    currSettings->alarmMelody->loop();
-    if ((millis() - currSettings->alarmMelody->getMelodyStartTime()) >= ALARM_DURATION) {
+    int needLoop = currSettings->alarmMelody->loopNeedLoop();
+    if (!needLoop) {
       delete currSettings->alarmMelody;
       currSettings->alarmMelody = nullptr;
     }
   }
 
   // turn off second Led
-  if (currSettings->secondLed && (millis() - lastLoopTime) > SECOND_LED_DURATION) {
+  if (currSettings->secondLed && millis() > (nextSecondTime - SECOND_NOLED_DURATION)) {
     currSettings->secondLed = false;
     menu->display();
   }
 
   // Loop increment local time
-  if ((millis() - lastLoopTime) > 1000) {
+  if (millis() > nextSecondTime) {
 
     // секунда оттикала
-    lastLoopTime  = millis();
-    if (menu->getSubmenu() == time) {
+    nextSecondTime += 1000;
+    if (menu->getSubmenu() == timeMenu) {
       currSettings->secondLed = true;
       menu->display();
     }
@@ -150,15 +158,18 @@ void LoopTime::loop() {
       currSettings->max4 = 0;
     }
 
-    currSettings->now.second++;
-    if (currSettings->now.second == 60) {
-      currSettings->now.second = 0;
-      currSettings->now.minute++;
-      if (currSettings->now.minute == 60) {
-        currSettings->now.minute = 0;
-        currSettings->now.hour++;
+    currSettings->nowSecond++;
+    if (currSettings->nowSecond == 60) {
+      currSettings->nowSecond = 0;
+      currSettings->nowMinute++;
+      if (currSettings->nowMinute == 60) {
+        currSettings->nowMinute = 0;
+        currSettings->nowHour++;
         // синхронизация времени раз в час
-        currSettings->now = rtc->getTime();
+        currSettings->nowSecond = rtc->getSeconds();
+        currSettings->nowMinute = rtc->getMinutes();
+        currSettings->nowHour = rtc->getHours();        
+        // currSettings->now = rtc->getTime();
       }
       minuteControl();
     }
@@ -174,7 +185,7 @@ bool LoopTime::itsDay(int _nowInMinutes, int _morningInMinutes, int _eveningInMi
 void LoopTime::minuteControl() {
 
   // local values
-  int _nowInMinutes = (int)currSettings->now.hour * 60 + currSettings->now.minute;
+  int _nowInMinutes = (int)currSettings->nowHour * 60 + currSettings->nowMinute;
   int _morningInMinutes = (int)EEPROM.read(EEPROM_MORNING_HOUR) * 60 + EEPROM.read(EEPROM_MORNING_MINUTE);
   int _eveningInMinutes = (int)EEPROM.read(EEPROM_EVENING_HOUR) * 60 + EEPROM.read(EEPROM_EVENING_MINUTE);
 
@@ -185,7 +196,7 @@ void LoopTime::minuteControl() {
   if (EEPROM.read(EEPROM_ALARM) == 1) {
     int _alarmInMinutes = (int)EEPROM.read(EEPROM_ALARM_HOUR) * 60 + EEPROM.read(EEPROM_ALARM_MINUTE);
     if (_nowInMinutes == _alarmInMinutes) {
-      if (currSettings->alarmMelody == nullptr) currSettings->alarmMelody = new Melody(PIEZO_PIN);
+      if (currSettings->alarmMelody == nullptr) currSettings->alarmMelody = new Melody();
       else currSettings->alarmMelody->restart();
     }
   }
@@ -209,9 +220,12 @@ void LoopTime::minuteControl() {
   bubbleControl->set_bubblesIn100Second(_needingBubbleSpeed);
 
   // control lamps
-  lamps->controlLamps();
+  lamps->scheduler();
 
   // control heater
-  controlTemp->heaterOnOff(currSettings->nowDay, currSettings->now.minute, currSettings->now.hour);
+  controlTemp->scheduler(currSettings->nowDay, currSettings->nowMinute, currSettings->nowHour);
+
+  // control feeding
+  feeding->scheduler(_nowInMinutes);
 
 }

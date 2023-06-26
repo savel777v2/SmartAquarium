@@ -5,51 +5,49 @@
 */
 #pragma once
 
+#define MELODY_DURATION 60000
+#define PIEZO_PIN 3 // + ground
+
 class Melody {
 
   public:
-    Melody (int _piezo_pin);
+    Melody();
     ~Melody();
     void restart();
-    unsigned long getMelodyStartTime();    
-    void loop();
+    bool loopNeedLoop();
 
   private:
-    int piezo_pin;
     byte note;
-    unsigned long melodyStartTime;
-    unsigned long nextNoteTime;
+    unsigned long nextNoteTime, melodyEndTime;
     unsigned int notes[10][2] = {{2500, 50}, {0, 100}, {2500, 50}, {0, 100}, {2500, 50}, {0, 100}, {2500, 50}, {0, 100}, {2500, 50}, {0, 3000}};
 };
 
-Melody::Melody (int _piezo_pin) {
-  piezo_pin = _piezo_pin;
-  pinMode(piezo_pin, OUTPUT);
+Melody::Melody () {
   restart();
+};
+
+Melody::~Melody () {
+  noTone(PIEZO_PIN);
 };
 
 void Melody::restart() {
   note = 0;
-  nextNoteTime = 0;
-  melodyStartTime = millis();
+  nextNoteTime = millis();
+  melodyEndTime = millis() + MELODY_DURATION;
 };
 
-unsigned long Melody::getMelodyStartTime() {
-  return melodyStartTime;
-};
+bool Melody::loopNeedLoop() {
 
-Melody::~Melody () {
-  noTone(piezo_pin);
-};
+  if (millis() > melodyEndTime) return false;
+  
+  if (millis() < nextNoteTime) return true;
 
-void Melody::loop() {
-  if (millis() < nextNoteTime) return;
+  if (notes[note][0] == 0) noTone(PIEZO_PIN);
+  else tone(PIEZO_PIN, notes[note][0]);
 
-  if (nextNoteTime == 0) melodyStartTime = millis();
-
-  if (notes[note][0] == 0) noTone(piezo_pin);
-  else tone(piezo_pin, notes[note][0]);
-
-  nextNoteTime = millis() + notes[note][1];
+  nextNoteTime += notes[note][1];
   if (++note == sizeof(notes) / sizeof(notes[0])) note = 0;
+
+  return true;
+    
 }

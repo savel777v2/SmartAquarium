@@ -126,14 +126,14 @@ class CurHour: public MenuItem {
         if (currMode.blinkOn) return valToString(editValue, 2);
         else return "  ";
       }
-      else return valToString(currSettings->now.hour, 2);
+      else return valToString(currSettings->nowHour, 2);
     };
     boolean editing() {
       return true;
     };
     void enterEditing() {
       currMode.editing = currMode.blinkOn = true;
-      editValue = currSettings->now.hour;
+      editValue = currSettings->nowHour;
     };
     void downValue() {
       changeValue(editValue, -1, 0, 23);
@@ -145,7 +145,7 @@ class CurHour: public MenuItem {
     };
     void saveEditing() {
       currMode.editing = false;
-      currSettings->now.hour = editValue;
+      currSettings->nowHour = editValue;
     };
   private:
     byte editValue;
@@ -160,14 +160,14 @@ class CurMinute: public MenuItem {
         if (currMode.blinkOn) return valToString(editValue, 2);
         else return "  ";
       }
-      else return valToString(currSettings->now.minute, 2);
+      else return valToString(currSettings->nowMinute, 2);
     };
     boolean editing() {
       return true;
     };
     void enterEditing() {
       currMode.editing = currMode.blinkOn = true;
-      editValue = currSettings->now.minute;
+      editValue = currSettings->nowMinute;
     };
     void downValue() {
       changeValue(editValue, -1, 0, 59);
@@ -179,7 +179,7 @@ class CurMinute: public MenuItem {
     };
     void saveEditing() {
       currMode.editing = false;
-      currSettings->now.minute = editValue;
+      currSettings->nowMinute = editValue;
     };
   private:
     byte editValue;
@@ -390,7 +390,7 @@ class RtsTemp: public MenuItem {
       rtc = _rtc;
     };
     String display() {
-      int _intValue = rtc->getTemperatureFloat() * 10;
+      int _intValue = rtc->getTemperature() * 10;
       return valToString(_intValue, 3);
     };
   private:
@@ -405,7 +405,7 @@ class AquaTemp: public MenuItem {
       controlTemp = _controlTemp;
     };
     String display() {
-      if (controlTemp->getAquaTempStatus() != normal) return "Err";
+      if (!controlTemp->getAquaTempConnected()) return "Err";
       else {
         int _intValue = controlTemp->getAquaTemp() * 10;
         return valToString(_intValue, 3);
@@ -450,7 +450,7 @@ class TempLog: public MenuItem {
     ControlTemp* controlTemp;
     byte editValue;
     String logToString(byte _index) {
-      byte _indexOfNow = currSettings->now.hour;
+      byte _indexOfNow = currSettings->nowHour;
       byte _indexOfLog;
       if ((23 - _index) > _indexOfNow) _indexOfLog = _indexOfNow + _index + 1;
       else _indexOfLog = _indexOfNow + _index - 23;

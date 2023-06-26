@@ -37,7 +37,7 @@ class BubbleCounter {
     int getBubbleInMinute();    
     long getDuration();
     bool itsRegularBubbles();    
-    byte loop();
+    byte loopNeedDisplay();
 
   private:
 
@@ -194,7 +194,7 @@ void BubbleCounter::endingBubbleInterval(byte& ans) {
 };
 
 // функция подсчета пузырьков
-byte BubbleCounter::loop() {
+byte BubbleCounter::loopNeedDisplay() {
 
   // поразрядно: 0 - обсчет Min\Max, 1 - обсчет _InSecond, 2 - начало индикации, 3 - конец индикации, 4 - пузырек или ошибка
   byte ans = 0;
