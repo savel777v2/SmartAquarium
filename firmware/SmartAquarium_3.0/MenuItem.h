@@ -5,8 +5,6 @@
 */
 #pragma once
 
-#include <EEPROM.h>
-
 enum typeBubbleCounterValue
 {
   bubbleIn100Second, minLevel, maxLevel
