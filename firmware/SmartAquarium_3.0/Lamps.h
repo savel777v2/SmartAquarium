@@ -54,9 +54,9 @@ void Lamps::scheduler() {
   }
   else {
     int minutesBetweenLamps = EEPROM.read(EEPROM_LAMP_INTERVAL);
-    int nowInMinutes = (int)currSettings->nowHour * 60 + currSettings->nowMinute;
-    int morningInMinutes = (int)EEPROM.read(EEPROM_MORNING_HOUR) * 60 + EEPROM.read(EEPROM_MORNING_MINUTE);
-    int eveningInMinutes = (int)EEPROM.read(EEPROM_EVENING_HOUR) * 60 + EEPROM.read(EEPROM_EVENING_MINUTE);
+    int nowInMinutes = timeInMinutes(currSettings->nowHour, currSettings->nowMinute);
+    int morningInMinutes = timeInMinutes(EEPROM.read(EEPROM_MORNING_HOUR), EEPROM.read(EEPROM_MORNING_MINUTE));
+    int eveningInMinutes = timeInMinutes(EEPROM.read(EEPROM_EVENING_HOUR), EEPROM.read(EEPROM_EVENING_MINUTE));
     for (int i = 0; i < 3; i++) {
       // after morning
       int minutesLamp = morningInMinutes + minutesBetweenLamps * i;
@@ -84,7 +84,7 @@ void Lamps::scheduler() {
   digitalWrite(LAMP1_PIN, lampPinsLevel[0] ? LOW : HIGH);
   digitalWrite(LAMP2_PIN, lampPinsLevel[1] ? LOW : HIGH);
   digitalWrite(LAMP3_PIN, lampPinsLevel[2] ? LOW : HIGH);
-  
+
 }
 
 void Lamps::changeManualLamp() {

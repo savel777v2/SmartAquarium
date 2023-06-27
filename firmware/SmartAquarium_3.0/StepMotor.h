@@ -35,6 +35,7 @@ class StepMotor {
     void stepDelayMovePosition(int& stepDelay); // двигаемся к нужной позиции сначала ускоряясь, затем замедляясь
     void motorPositionUp(byte& phaseMotor, int& ans); // шаг мотора вверх
     void motorPositionDown(byte& phaseMotor, int& ans); // шаг мотора вниз
+    void writePins(byte pins); // прописывает значения в пины
    
     unsigned long _lastSeekMotor = 0; // время последнего шага мотора
     bool _isActive = false; // мотор активен
@@ -95,8 +96,7 @@ void StepMotor::stepDelayMovePosition(int& stepDelay) {
 // шаг мотора вверх
 void StepMotor::motorPositionUp(byte& phaseMotor, int& ans) {
   _positionMotor++;
-  if (phaseMotor == 3) phaseMotor = 0;
-  else phaseMotor++;
+  phaseMotor = phaseMotor == 3 ? 0 : phaseMotor+1;
   if (_positionMove != 0) _positionMove--;
   ans = 1;
 }
@@ -104,10 +104,17 @@ void StepMotor::motorPositionUp(byte& phaseMotor, int& ans) {
 // шаг мотора вниз
 void StepMotor::motorPositionDown(byte& phaseMotor, int& ans) {
   _positionMotor--;
-  if (phaseMotor == 0) phaseMotor = 3;
-  else phaseMotor--;
+  phaseMotor = phaseMotor == 0 ? 3 : phaseMotor-1;
   if (_positionMove != 0) _positionMove++;
   ans = -1;
+}
+
+// прописывает значения в пины
+void StepMotor::writePins(byte pins) {
+  digitalWrite(MOTOR_PIN_1, (pins & 0b00000001) == 0b00000001 ? HIGH : LOW);
+  digitalWrite(MOTOR_PIN_2, (pins & 0b00000010) == 0b00000010 ? HIGH : LOW);
+  digitalWrite(MOTOR_PIN_3, (pins & 0b00000100) == 0b00000100 ? HIGH : LOW);
+  digitalWrite(MOTOR_PIN_4, (pins & 0b00001000) == 0b00001000 ? HIGH : LOW);
 }
 
 void StepMotor::set_userSpeed(int userSpeed) {
@@ -158,45 +165,22 @@ int StepMotor::loopDirection() {
       ans = 0;
       _isActive = false;
       _stepDelay = MAX_DELAY;
-      digitalWrite(MOTOR_PIN_1, LOW);
-      digitalWrite(MOTOR_PIN_2, LOW);
-      digitalWrite(MOTOR_PIN_3, LOW);
-      digitalWrite(MOTOR_PIN_4, LOW);
+      writePins(0);
     }
     else {
       _isActive = true;      
       // двигаем мотор
-      if (_directionMotor  > 0) motorPositionUp(_phaseMotor, ans);
+      if (_directionMotor > 0) motorPositionUp(_phaseMotor, ans);
       else if (_directionMotor < 0) motorPositionDown(_phaseMotor, ans);
       else if (_positionMove > 0) motorPositionUp(_phaseMotor, ans);
       else if (_positionMove < 0) motorPositionDown(_phaseMotor, ans);
       else if (_userSpeed > 0) motorPositionUp(_phaseMotor, ans);
       else motorPositionDown(_phaseMotor, ans);
       switch (_phaseMotor) {
-        case 0:
-          digitalWrite(MOTOR_PIN_1, HIGH);
-          digitalWrite(MOTOR_PIN_2, LOW);
-          digitalWrite(MOTOR_PIN_3, LOW);
-          digitalWrite(MOTOR_PIN_4, HIGH);
-          break;
-        case 1:
-          digitalWrite(MOTOR_PIN_1, LOW);
-          digitalWrite(MOTOR_PIN_2, LOW);
-          digitalWrite(MOTOR_PIN_3, HIGH);
-          digitalWrite(MOTOR_PIN_4, HIGH);
-          break;
-        case 2:
-          digitalWrite(MOTOR_PIN_1, LOW);
-          digitalWrite(MOTOR_PIN_2, HIGH);
-          digitalWrite(MOTOR_PIN_3, HIGH);
-          digitalWrite(MOTOR_PIN_4, LOW);
-          break;
-        case 3:
-          digitalWrite(MOTOR_PIN_1, HIGH);
-          digitalWrite(MOTOR_PIN_2, HIGH);
-          digitalWrite(MOTOR_PIN_3, LOW);
-          digitalWrite(MOTOR_PIN_4, LOW);
-          break;
+        case 0: writePins(0b00001001); break;
+        case 1: writePins(0b00001100); break;
+        case 2: writePins(0b00000110); break;
+        case 3: writePins(0b00000011); break;
       }
       // ускорение в нужном направлении
       if (_directionMotor == 0) {

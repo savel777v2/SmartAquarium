@@ -25,7 +25,7 @@ class LoopTime {
     Lamps* lamps;
     ControlTemp* controlTemp;
     BubbleCounter* bubbleCounter;
-    StepMotor* stepMotor;    
+    StepMotor* stepMotor;
     BubbleControl* bubbleControl;
     Feeding* feeding;
     MicroDS3231* rtc;
@@ -71,9 +71,6 @@ void LoopTime::loop() {
     currSettings->nowSecond = rtc->getSeconds();
     currSettings->nowMinute = rtc->getMinutes();
     currSettings->nowHour = rtc->getHours();
-    /*currSettings->now.hour = 11;
-    currSettings->now.minute = 42;
-    currSettings->now.second = 40;*/
     minuteControl();
     menu->display();
   }
@@ -168,8 +165,7 @@ void LoopTime::loop() {
         // синхронизация времени раз в час
         currSettings->nowSecond = rtc->getSeconds();
         currSettings->nowMinute = rtc->getMinutes();
-        currSettings->nowHour = rtc->getHours();        
-        // currSettings->now = rtc->getTime();
+        currSettings->nowHour = rtc->getHours();
       }
       minuteControl();
     }
@@ -185,27 +181,28 @@ bool LoopTime::itsDay(int _nowInMinutes, int _morningInMinutes, int _eveningInMi
 void LoopTime::minuteControl() {
 
   // local values
-  int _nowInMinutes = (int)currSettings->nowHour * 60 + currSettings->nowMinute;
-  int _morningInMinutes = (int)EEPROM.read(EEPROM_MORNING_HOUR) * 60 + EEPROM.read(EEPROM_MORNING_MINUTE);
-  int _eveningInMinutes = (int)EEPROM.read(EEPROM_EVENING_HOUR) * 60 + EEPROM.read(EEPROM_EVENING_MINUTE);
+  int _nowInMinutes = timeInMinutes(currSettings->nowHour, currSettings->nowMinute);
+  int _morningInMinutes = timeInMinutes(EEPROM.read(EEPROM_MORNING_HOUR), EEPROM.read(EEPROM_MORNING_MINUTE));
+  int _eveningInMinutes = timeInMinutes(EEPROM.read(EEPROM_EVENING_HOUR), EEPROM.read(EEPROM_EVENING_MINUTE));
+
 
   // it's day or nigth
   currSettings->nowDay = itsDay(_nowInMinutes, _morningInMinutes, _eveningInMinutes);
 
   // control alarm
   if (EEPROM.read(EEPROM_ALARM) == 1) {
-    int _alarmInMinutes = (int)EEPROM.read(EEPROM_ALARM_HOUR) * 60 + EEPROM.read(EEPROM_ALARM_MINUTE);
+    int _alarmInMinutes = timeInMinutes(EEPROM.read(EEPROM_ALARM_HOUR), EEPROM.read(EEPROM_ALARM_MINUTE));
     if (_nowInMinutes == _alarmInMinutes) {
       if (currSettings->alarmMelody == nullptr) currSettings->alarmMelody = new Melody();
       else currSettings->alarmMelody->restart();
     }
   }
 
-  // change control bubble settings  
+  // change control bubble settings
   int _morningBubbles = _morningInMinutes - EEPROM.read(EEPROM_BEFORE_MORNING_BUBBLE_START);
-  if (_morningBubbles < 0) _morningBubbles = _morningBubbles + 1440;
+  if (_morningBubbles < 0) _morningBubbles += 1440;
   int _eveningBubbles = _eveningInMinutes - EEPROM.read(EEPROM_LAMP_INTERVAL) * 2;
-  if (_eveningBubbles < 0) _eveningBubbles = _eveningBubbles + 1440;
+  if (_eveningBubbles < 0) _eveningBubbles += 1440;
   byte _needingBubbleSpeed;
   byte _needingStatus;
   if (itsDay(_nowInMinutes, _morningBubbles, _eveningBubbles)) {

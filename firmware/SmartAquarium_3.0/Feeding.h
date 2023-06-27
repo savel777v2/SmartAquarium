@@ -47,7 +47,7 @@ void Feeding::setFeedingLoop(int _feedingLoop) {
 // start Eating Loop on the schedule if necessary
 void Feeding::controlFeeding(int _nowInMinutes, int _feedingLoop, byte _needHour, byte _needMinute) {  
   if (_feedingLoop == 0 || _feedingLoop == 255 || feedingLoop > 0) return;
-  if (((int)_needHour * 60 + _needMinute) != _nowInMinutes) return;
+  if (timeInMinutes(_needHour,_needMinute) != _nowInMinutes) return;
   feedingLoop = _feedingLoop;
 }
 

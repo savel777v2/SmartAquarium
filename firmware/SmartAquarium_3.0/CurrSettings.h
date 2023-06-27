@@ -47,7 +47,11 @@
 #define EEPROM_NIGHT_FEEDING_MINUTE 38
 #define EEPROM_NIGHT_FEEDING_DURATION 39 // продолжительность ночной еды *10 в миллисекундах (один цикл)
 
-String valToString(int val, byte len, byte leadingSpaces = 0) {
+int timeInMinutes(const int _hour, const int _minutes) {
+  return _hour * 60 + _minutes;
+}
+
+String valToString(const int val, const byte len, byte leadingSpaces = 0) {
   String ans(val);
   int lenPref = len - ans.length();
   if (lenPref < 0) return ans.substring(-lenPref);
