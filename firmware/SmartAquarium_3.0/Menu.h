@@ -24,7 +24,7 @@ enum submenu
 class Menu {
 
   public:
-    Menu (TM1638My* _module, ControlTemp* _controlTemp, BubbleCounter* _bubbleCounter, StepMotor* _stepMotor, BubbleControl* _bubbleControl, MicroDS3231* _rtc, CurrSettings* _currSettings);
+    Menu (TM1638My* _module, ControlTemp* _controlTemp, BubbleCounter* _bubbleCounter, StepMotor* _stepMotor, BubbleControl* _bubbleControl, Feeding* _feeding, MicroDS3231* _rtc, CurrSettings* _currSettings);
     void display();
     bool loopNeedControl();
     submenu getSubmenu();
@@ -36,6 +36,7 @@ class Menu {
     BubbleCounter* bubbleCounter;
     StepMotor* stepMotor;
     BubbleControl* bubbleControl;
+    Feeding* feeding;
     MicroDS3231* rtc;
     CurrSettings* currSettings;
     byte gorInd, verInd;
@@ -49,11 +50,12 @@ class Menu {
     void blinkDisplay();
 };
 
-Menu::Menu (TM1638My* _module, ControlTemp* _controlTemp, BubbleCounter* _bubbleCounter, StepMotor* _stepMotor, BubbleControl* _bubbleControl, MicroDS3231* _rtc, CurrSettings* _currSettings) {
+Menu::Menu (TM1638My* _module, ControlTemp* _controlTemp, BubbleCounter* _bubbleCounter, StepMotor* _stepMotor, BubbleControl* _bubbleControl, Feeding* _feeding, MicroDS3231* _rtc, CurrSettings* _currSettings) {
   module = _module;
   controlTemp = _controlTemp;
   bubbleCounter = _bubbleCounter;
   stepMotor = _stepMotor;
+  feeding = _feeding;
   bubbleControl = _bubbleControl;
   rtc = _rtc;
   currSettings = _currSettings;
@@ -258,10 +260,11 @@ byte Menu::getDots(submenu _submenu) {
     case eveningFeeding:
     case alarm: return B00010000; break;
     case curTemp: return controlTemp->getAquaTempConnected() ? B00100010 : B00100000; break;
-    case bubbleControlSettings: return B01000100; break;    
+    case bubbleControlSettings: return B01000100; break;
     case logTemp: return B01000010; break;
+    case nightFeeding: return B01000100; break;
     case deltaTemp: return B00001000; break;
-    case nightFeeding:
+    case dayFeedingSettings:
     case bubblesInSecond: return B01000000; break;
   }
   return 0;
@@ -278,19 +281,18 @@ void Menu::initSubmenu(submenu _submenu) {
 
   switch (_submenu) {
     case timeMenu:
-      subMenu[0] = new DayFlag(currSettings);
+      subMenu[0] = new SettingsValue(currSettings, dayNight);
       subMenu[1] = new TextItem(" ");
-      subMenu[2] = new CurHour(currSettings);
-      subMenu[3] = new CurMinute(currSettings);
-      subMenu[4] = new TimerFlag(currSettings);
+      subMenu[2] = new TimeValue(currSettings, 0, rtc);
+      subMenu[3] = new TimeValue(currSettings, 1, rtc);
+      subMenu[4] = new SettingsValue(currSettings, timerOn);
       subMenu[5] = new AlarmFlag();
       break;
     case timer:
       subMenu[0] = new TextItem("St");
-      subMenu[1] = new TimerMinute(currSettings);
-      subMenu[2] = new TimerSecond(currSettings);
-      subMenu[3] = new TextItem(" ");
-      subMenu[4] = new TimerStart(currSettings);
+      subMenu[1] = new TimerValue(currSettings, 0);
+      subMenu[2] = new TimerValue(currSettings, 1);
+      subMenu[3] = new TimerStart(currSettings);
       break;
     case morning:
       subMenu[0] = new TextItem("Sd");
@@ -306,13 +308,11 @@ void Menu::initSubmenu(submenu _submenu) {
       subMenu[0] = new TextItem("Sb");
       subMenu[1] = new byteEEPROMvalue(EEPROM_ALARM_HOUR, 0, 23, 2);
       subMenu[2] = new byteEEPROMvalue(EEPROM_ALARM_MINUTE, 0, 59, 2);
-      subMenu[3] = new TextItem(" ");
-      subMenu[4] = new byteEEPROMvalue(EEPROM_ALARM, 0, 1, 1);
+      subMenu[3] = new byteEEPROMvalue(EEPROM_ALARM, 0, 1, 2, 1);
       break;
     case lampInterval:
-      subMenu[0] = new TextItem("Sdn");
-      subMenu[1] = new TextItem(" ");
-      subMenu[2] = new byteEEPROMvalue(EEPROM_LAMP_INTERVAL, 0, 30, 2);
+      subMenu[0] = new TextItem("Sdn ");
+      subMenu[1] = new byteEEPROMvalue(EEPROM_LAMP_INTERVAL, 0, 30, 2);
       break;
     case curTemp:
       subMenu[0] = new TextItem("i");
@@ -321,19 +321,17 @@ void Menu::initSubmenu(submenu _submenu) {
       subMenu[3] = new AquaTemp(controlTemp);
       break;
     case logTemp:
-      subMenu[0] = new TempLog (currSettings, controlTemp);
+      subMenu[0] = new TempLog(currSettings, controlTemp);
       break;
     case dayTemp:
       subMenu[0] = new TextItem("Td  ");
       subMenu[1] = new byteEEPROMvalue(EEPROM_DAY_TEMP, 14, 30, 2);
-      subMenu[2] = new TextItem(" ");
-      subMenu[3] = new byteEEPROMvalue(EEPROM_DAY_TEMP_ON, 0, 1, 1);
+      subMenu[2] = new byteEEPROMvalue(EEPROM_DAY_TEMP_ON, 0, 1, 2, 1);
       break;
     case nightTemp:
       subMenu[0] = new TextItem("Tn  ");
       subMenu[1] = new byteEEPROMvalue(EEPROM_NIGHT_TEMP, 14, 30, 2);
-      subMenu[2] = new TextItem(" ");
-      subMenu[3] = new byteEEPROMvalue(EEPROM_NIGHT_TEMP_ON, 0, 1, 1);
+      subMenu[2] = new byteEEPROMvalue(EEPROM_NIGHT_TEMP_ON, 0, 1, 2, 1);
       break;
     case deltaTemp:
       subMenu[0] = new TextItem("dt  ");
@@ -376,7 +374,8 @@ void Menu::initSubmenu(submenu _submenu) {
       subMenu[1] = new byteEEPROMvalue(EEPROM_CONTROL_BUBBLE_SOUND_ON, 0, 1, 3, 2);
       break;
     case feedingLoop:
-      subMenu[0] = new TextItem("40");
+      subMenu[0] = new TextItem("Feed");
+      subMenu[1] = new FeedingValue(feeding);
       break;
     case morningFeeding:
       subMenu[0] = new TextItem("Fd");
@@ -391,13 +390,16 @@ void Menu::initSubmenu(submenu _submenu) {
       subMenu[3] = new byteEEPROMvalue(EEPROM_EVENING_FEEDING_LOOP, 0, 20, 2, 1);
       break;
     case dayFeedingSettings:
-      subMenu[0] = new byteEEPROMvalue(EEPROM_DAY_FEEDING_DURATION, 0, 250, 4, 3, 10);
-      subMenu[1] = new byteEEPROMvalue(EEPROM_DAY_FEEDING_PAUSE, 0, 250, 4, 3, 10);
+      subMenu[0] = new TextItem("d");
+      subMenu[1] = new byteEEPROMvalue(EEPROM_DAY_FEEDING_DURATION, 0, 250, 3, 0);
+      subMenu[2] = new TextItem("p");
+      subMenu[3] = new byteEEPROMvalue(EEPROM_DAY_FEEDING_PAUSE, 0, 99, 3, 2, 10);
       break;
     case nightFeeding:
       subMenu[0] = new byteEEPROMvalue(EEPROM_NIGHT_FEEDING_HOUR, 0, 23, 2);
       subMenu[1] = new byteEEPROMvalue(EEPROM_NIGHT_FEEDING_MINUTE, 0, 23, 2);
-      subMenu[2] = new byteEEPROMvalue(EEPROM_NIGHT_FEEDING_DURATION, 0, 250, 4, 3, 10);
+      subMenu[2] = new TextItem("d");
+      subMenu[3] = new byteEEPROMvalue(EEPROM_NIGHT_FEEDING_DURATION, 0, 250, 3, 0);
       break;
     case durations:
       subMenu[0] = new TextItem("45");

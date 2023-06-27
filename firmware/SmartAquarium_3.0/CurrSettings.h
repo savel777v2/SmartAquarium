@@ -62,11 +62,11 @@ String valToString(int val, byte len, byte leadingSpaces = 0) {
   return pref + ans;
 }
 
-struct CurrSettings {  
+struct CurrSettings {
   byte nowSecond;
   byte nowMinute;
-  byte nowHour;  
-  
+  byte nowHour;
+
   bool nowDay: 1;
   bool heaterOn: 1;
   bool secondLed: 1;

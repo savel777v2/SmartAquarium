@@ -11,8 +11,10 @@
 class Feeding {
   public:
     Feeding();
-    void Feeding::scheduler(int _nowInMinutes);
-    bool Feeding::loopNeedDisplay();
+    int getFeedingLoop();
+    void setFeedingLoop(int _feedingLoop);
+    void scheduler(int _nowInMinutes);
+    bool loopNeedDisplay();
     
   private:
     int feedingLoop;
@@ -20,7 +22,7 @@ class Feeding {
     bool feedingOn;
     byte lastButton;
     
-    void controlFeeding(int _nowInMinutes, int _needEatingLoop, byte _needHour, byte _needMinute);
+    void controlFeeding(int _nowInMinutes, int _feedingLoop, byte _needHour, byte _needMinute);
 };
 
 // Initialize eating pins for motor and button
@@ -34,11 +36,19 @@ Feeding::Feeding() {
   lastButton = 0;
 };
 
+int Feeding::getFeedingLoop() {
+  return feedingLoop;
+}
+
+void Feeding::setFeedingLoop(int _feedingLoop) {
+  feedingLoop = _feedingLoop;
+}
+
 // start Eating Loop on the schedule if necessary
-void Feeding::controlFeeding(int _nowInMinutes, int _needEatingLoop, byte _needHour, byte _needMinute) {  
-  if (_needEatingLoop == 0 || _needEatingLoop == 255 || feedingLoop > 0) return;
+void Feeding::controlFeeding(int _nowInMinutes, int _feedingLoop, byte _needHour, byte _needMinute) {  
+  if (_feedingLoop == 0 || _feedingLoop == 255 || feedingLoop > 0) return;
   if (((int)_needHour * 60 + _needMinute) != _nowInMinutes) return;
-  feedingLoop = _needEatingLoop;
+  feedingLoop = _feedingLoop;
 }
 
 // control different settings of schedule

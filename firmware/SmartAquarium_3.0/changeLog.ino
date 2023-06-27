@@ -44,7 +44,14 @@
     - Оптимизация PPROM: ControlTemp сменил библиотеку DS18B20.h на легкую microDS18B20.h - (гл.пер.\память 1624\29910)
     - Оптимизация PPROM: ControlTemp рефакторинг readTemperatureNeedDisplay (гл.пер.\память 1624\29874)
     - Оптимизация PPROM: убрал пин в Melody.h + рефакторинг - (гл.пер.\память 1624\29820)
-    
+  27.06.2023
+    - Оптимизация PPROM: переместил currSettings внутрь наследников MenuItem (гл.пер.\память 1624\29652)
+    - Оптимизация PPROM: объединил TimerMinute+TimerSecond=TimerValue внутри наследников MenuItem (гл.пер.\память 1602\29452)
+    - Оптимизация PPROM: объединил CurHour+CurMinute=TimeValue внутри наследников MenuItem (гл.пер.\память 1580\29314)
+    - Оптимизация PPROM: объединил DayFlag+TimerFlag=SettingsValue внутри наследников MenuItem (гл.пер.\память 1558\29284)
+    - Оптимизация PPROM: удалил избыточные текстовые объекты в Menu (гл.пер.\память 1566\29018)
+    - Новый наследник FeedingValue для MenuItem. submenu.feedingLoop - новое меню (гл.пер.\память 1594\29460)
+    - TimeValue для MenuItem - добавил установку времени в MicroDS3231 (гл.пер.\память 1594\30450)
     
 
 */

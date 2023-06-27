@@ -15,15 +15,15 @@ enum typeBubbleControlValue
   controlCondition, minBubblesIn100Second, maxBubblesIn100Second
 };
 
+enum typeSettingsValue
+{
+  dayNight, timerOn
+};
+
 class MenuItem {
 
   public:
     MenuItem() {
-      currSettings = nullptr;
-      currMode.editing = false;
-    };
-    MenuItem(CurrSettings* _currSettings) {
-      currSettings = _currSettings;
       currMode.editing = false;
     };
     virtual ~MenuItem() {};
@@ -47,7 +47,6 @@ class MenuItem {
     }
 
   protected:
-    CurrSettings* currSettings;
     struct CurrMode {
       boolean editing: 1;
       boolean blinkOn: 1;
@@ -71,7 +70,7 @@ class MenuItem {
 class TextItem: public MenuItem {
 
   public:
-    TextItem (String _s) {
+    TextItem (const String _s) {
       s = _s;
     };
     String display() {
@@ -83,25 +82,19 @@ class TextItem: public MenuItem {
 
 };
 
-class DayFlag: public MenuItem {
+class SettingsValue: public MenuItem {
 
   public:
-    DayFlag (CurrSettings* _currSettings) : MenuItem(_currSettings) {};
-    String display() {
-      if (currSettings->nowDay) return "d";
-      else return "n";
+    SettingsValue (const CurrSettings* _currSettings, const typeSettingsValue _valueType) {
+      currSettings = _currSettings;
+      valueType = _valueType;
     };
-
-};
-
-class TimerFlag: public MenuItem {
-
-  public:
-    TimerFlag (CurrSettings* _currSettings) : MenuItem(_currSettings) {};
     String display() {
-      if (currSettings->timer != nullptr) return "t";
-      else return " ";
+      return valueType == timerOn ? (currSettings->timer == nullptr ? " " : "t") : (currSettings->nowDay ? "d" : "n");
     };
+  private:
+    typeSettingsValue valueType;
+    CurrSettings* currSettings;
 
 };
 
@@ -115,79 +108,63 @@ class AlarmFlag: public MenuItem {
 
 };
 
-class CurHour: public MenuItem {
+class TimeValue: public MenuItem {
 
   public:
-    CurHour (CurrSettings* _currSettings) : MenuItem(_currSettings) {};
+    TimeValue (const CurrSettings* _currSettings, const byte _valueIndex, const MicroDS3231* _rtc) {
+      currSettings = _currSettings;
+      valueIndex = _valueIndex;
+      rtc = _rtc;
+    };
     String display() {
       if (currMode.editing) {
         if (currMode.blinkOn) return valToString(editValue, 2);
         else return "  ";
       }
-      else return valToString(currSettings->nowHour, 2);
+      else return valToString(valueIndex ? currSettings->nowMinute : currSettings->nowHour, 2);
     };
     boolean editing() {
       return true;
     };
     void enterEditing() {
       currMode.editing = currMode.blinkOn = true;
-      editValue = currSettings->nowHour;
+      editValue = valueIndex ? currSettings->nowMinute : currSettings->nowHour;
     };
     void downValue() {
-      changeValue(editValue, -1, 0, 23);
+      changeValue(editValue, -1, 0, valueIndex ? 59 : 23);
       currMode.blinkOn = true;
     };
     void upValue() {
-      changeValue(editValue, 1, 0, 23);
+      changeValue(editValue, 1, 0, valueIndex ? 59 : 23);
       currMode.blinkOn = true;
     };
     void saveEditing() {
       currMode.editing = false;
-      currSettings->nowHour = editValue;
-    };
-  private:
-    byte editValue;
-};
-
-class CurMinute: public MenuItem {
-
-  public:
-    CurMinute (CurrSettings* _currSettings) : MenuItem(_currSettings) {};
-    String display() {
-      if (currMode.editing) {
-        if (currMode.blinkOn) return valToString(editValue, 2);
-        else return "  ";
+      DateTime rtcNow = rtc->getTime();
+      switch (valueIndex) {
+        case 0:
+          currSettings->nowHour = editValue;
+          rtcNow.hour = editValue;
+          break;
+        case 1:
+          currSettings->nowMinute = editValue;
+          rtcNow.minute = editValue;
+          break;
       }
-      else return valToString(currSettings->nowMinute, 2);
-    };
-    boolean editing() {
-      return true;
-    };
-    void enterEditing() {
-      currMode.editing = currMode.blinkOn = true;
-      editValue = currSettings->nowMinute;
-    };
-    void downValue() {
-      changeValue(editValue, -1, 0, 59);
-      currMode.blinkOn = true;
-    };
-    void upValue() {
-      changeValue(editValue, 1, 0, 59);
-      currMode.blinkOn = true;
-    };
-    void saveEditing() {
-      currMode.editing = false;
-      currSettings->nowMinute = editValue;
+      rtc->setTime(rtcNow);
     };
   private:
     byte editValue;
+    byte valueIndex;
+    CurrSettings* currSettings;
+    MicroDS3231* rtc;
 
 };
 
 class byteEEPROMvalue: public MenuItem {
 
   public:
-    byteEEPROMvalue (int _adressEEPROM, byte _minValue, byte _maxValue, byte _len, byte _leadingSpaces = 0, byte _multiplier = 1) {
+    byteEEPROMvalue (const int _adressEEPROM, const byte _minValue, const byte _maxValue, const byte _len, const byte _leadingSpaces = 0, const byte _multiplier = 1) {
       adressEEPROM = _adressEEPROM;
       minValue = _minValue;
       maxValue = _maxValue;
@@ -197,11 +174,11 @@ class byteEEPROMvalue: public MenuItem {
     };
     String display() {
       if (currMode.editing) {
-        if (currMode.blinkOn) return valToString((int)editValue*multiplier, len, leadingSpaces);
+        if (currMode.blinkOn) return valToString((int)editValue * multiplier, len, leadingSpaces);
         else return emptyString(len);
       }
       else {
-        return valToString((int)EEPROM.read(adressEEPROM)*multiplier, len, leadingSpaces);
+        return valToString((int)EEPROM.read(adressEEPROM) * multiplier, len, leadingSpaces);
       }
     };
     boolean editing() {
@@ -235,7 +212,7 @@ class byteEEPROMvalue: public MenuItem {
 class MotorPosition: public byteEEPROMvalue {
 
   public:
-    MotorPosition (StepMotor* _stepMotor) : byteEEPROMvalue (EEPROM_MOTOR_POSITION, 0, 250, 4, 3) {
+    MotorPosition (const StepMotor* _stepMotor) : byteEEPROMvalue (EEPROM_MOTOR_POSITION, 0, 250, 4, 3) {
       stepMotor = _stepMotor;
     };
     String display() {
@@ -257,20 +234,23 @@ class MotorPosition: public byteEEPROMvalue {
 
 };
 
-class TimerMinute: public MenuItem {
+class TimerValue: public MenuItem {
 
   public:
-    TimerMinute (CurrSettings* _currSettings) : MenuItem(_currSettings) {};
+    TimerValue (const CurrSettings* _currSettings, const byte _valueIndex) {
+      currSettings = _currSettings;
+      valueIndex = _valueIndex;
+    };
     String display() {
       if (currSettings->timer != nullptr) {
-        return valToString(currSettings->timer->getMinute(), 2);
+        return valToString(valueIndex ? currSettings->timer->getSecond() : currSettings->timer->getMinute(), 2);
       }
       else if (currMode.editing) {
         if (currMode.blinkOn) return valToString(editValue, 2);
         else return "  ";
       }
       else {
-        return valToString(EEPROM.read(EEPROM_TIMER_MINUTE), 2);
+        return valToString(EEPROM.read(valueIndex ? EEPROM_TIMER_SECOND : EEPROM_TIMER_MINUTE), 2);
       }
     };
     boolean editing() {
@@ -278,7 +258,7 @@ class TimerMinute: public MenuItem {
     };
     void enterEditing() {
       currMode.editing = currMode.blinkOn = true;
-      editValue = EEPROM.read(EEPROM_TIMER_MINUTE);
+      editValue = EEPROM.read(valueIndex ? EEPROM_TIMER_SECOND : EEPROM_TIMER_MINUTE);
     };
     void downValue() {
       changeValue(editValue, -1, 0, 59);
@@ -290,49 +270,11 @@ class TimerMinute: public MenuItem {
     };
     void saveEditing() {
       currMode.editing = false;
-      EEPROM.update(EEPROM_TIMER_MINUTE, editValue);
+      EEPROM.update(valueIndex ? EEPROM_TIMER_SECOND : EEPROM_TIMER_MINUTE, editValue);
     };
   private:
-    byte editValue;
-
-};
-
-class TimerSecond: public MenuItem {
-
-  public:
-    TimerSecond (CurrSettings* _currSettings) : MenuItem(_currSettings) {};
-    String display() {
-      if (currSettings->timer != nullptr) {
-        return valToString(currSettings->timer->getSecond(), 2);
-      }
-      else if (currMode.editing) {
-        if (currMode.blinkOn) return valToString(editValue, 2);
-        else return "  ";
-      }
-      else {
-        return valToString(EEPROM.read(EEPROM_TIMER_SECOND), 2);
-      }
-    };
-    boolean editing() {
-      return currSettings->timer == nullptr;
-    };
-    void enterEditing() {
-      currMode.editing = currMode.blinkOn = true;
-      editValue = EEPROM.read(EEPROM_TIMER_SECOND);
-    };
-    void downValue() {
-      changeValue(editValue, -1, 0, 59);
-      currMode.blinkOn = true;
-    };
-    void upValue() {
-      changeValue(editValue, 1, 0, 59);
-      currMode.blinkOn = true;
-    };
-    void saveEditing() {
-      currMode.editing = false;
-      EEPROM.update(EEPROM_TIMER_SECOND, editValue);
-    };
-  private:
+    CurrSettings* currSettings;
+    bool valueIndex;
     byte editValue;
 
 };
@@ -340,14 +282,16 @@ class TimerSecond: public MenuItem {
 class TimerStart: public MenuItem {
 
   public:
-    TimerStart (CurrSettings* _currSettings) : MenuItem(_currSettings) {};
+    TimerStart (const CurrSettings* _currSettings) {
+      currSettings = _currSettings;
+    };
     String display() {
       if (currMode.editing) {
-        if (currMode.blinkOn) return valToString(editValue, 1);
-        else return " ";
+        if (currMode.blinkOn) return valToString(editValue, 2, 1);
+        else return "  ";
       }
       else {
-        return currSettings->timer != nullptr ? "1" : "0";
+        return currSettings->timer != nullptr ? " 1" : " 0";
       }
     };
     boolean editing() {
@@ -378,13 +322,14 @@ class TimerStart: public MenuItem {
     };
   private:
     byte editValue;
+    CurrSettings* currSettings;
 
 };
 
 class RtsTemp: public MenuItem {
 
   public:
-    RtsTemp (MicroDS3231* _rtc) {
+    RtsTemp (const MicroDS3231* _rtc) {
       rtc = _rtc;
     };
     String display() {
@@ -399,7 +344,7 @@ class RtsTemp: public MenuItem {
 class AquaTemp: public MenuItem {
 
   public:
-    AquaTemp (ControlTemp* _controlTemp) {
+    AquaTemp (const ControlTemp* _controlTemp) {
       controlTemp = _controlTemp;
     };
     String display() {
@@ -417,7 +362,8 @@ class AquaTemp: public MenuItem {
 class TempLog: public MenuItem {
 
   public:
-    TempLog (CurrSettings* _currSettings, ControlTemp* _controlTemp) : MenuItem(_currSettings) {
+    TempLog (const CurrSettings* _currSettings, const ControlTemp* _controlTemp) {
+      currSettings = _currSettings;
       controlTemp = _controlTemp;
     };
     String display() {
@@ -445,6 +391,7 @@ class TempLog: public MenuItem {
       currMode.blinkOn = true;
     };
   private:
+    CurrSettings* currSettings;
     ControlTemp* controlTemp;
     byte editValue;
     String logToString(byte _index) {
@@ -473,13 +420,13 @@ class TempLog: public MenuItem {
 class bubbleCounterValue: public MenuItem {
 
   public:
-    bubbleCounterValue (BubbleCounter* _bubbleCounter, typeBubbleCounterValue _typeValue) {
+    bubbleCounterValue (const BubbleCounter* _bubbleCounter, const typeBubbleCounterValue _valueType) {
       bubbleCounter = _bubbleCounter;
-      typeValue = _typeValue;
+      valueType = _valueType;
     };
     String display() {
       int _intValue = 0;
-      switch (typeValue) {
+      switch (valueType) {
         case bubbleIn100Second: _intValue = bubbleCounter->getBubbleIn100Second(); break;
         case minLevel: _intValue = bubbleCounter->getMinLevel(); break;
         case maxLevel: _intValue = bubbleCounter->getMaxLevel(); break;
@@ -489,7 +436,7 @@ class bubbleCounterValue: public MenuItem {
         case -2: return "Err2"; break;
         case -3: return valToString(0, 4, 1); break;
         default:
-          switch (typeValue) {
+          switch (valueType) {
             case bubbleIn100Second: return valToString(_intValue, 4, 1); break;
             default: return valToString(_intValue, 4, 3); break;
           }
@@ -498,19 +445,19 @@ class bubbleCounterValue: public MenuItem {
     };
   private:
     BubbleCounter* bubbleCounter;
-    typeBubbleCounterValue typeValue;
+    typeBubbleCounterValue valueType;
 
 };
 
 class bubbleControlValue: public MenuItem {
 
   public:
-    bubbleControlValue (BubbleControl* _bubbleControl, typeBubbleControlValue _typeValue) {
+    bubbleControlValue (const BubbleControl* _bubbleControl, const typeBubbleControlValue _valueType) {
       bubbleControl = _bubbleControl;
-      typeValue = _typeValue;
+      valueType = _valueType;
     };
-    String display() {      
-      switch (typeValue) {
+    String display() {
+      switch (valueType) {
         case controlCondition: return bubbleControl->get_condition(); break;
         case minBubblesIn100Second: return valToString(bubbleControl->get_minBubblesIn100Second(), 4, 1); break;
         case maxBubblesIn100Second: return valToString(bubbleControl->get_maxBubblesIn100Second(), 4, 1); break;
@@ -518,6 +465,46 @@ class bubbleControlValue: public MenuItem {
     };
   private:
     BubbleControl* bubbleControl;
-    typeBubbleControlValue typeValue;
+    typeBubbleControlValue valueType;
+
+};
+
+class FeedingValue: public MenuItem {
+
+  public:
+    FeedingValue (const Feeding* _feeding) {
+      feeding = _feeding;
+    };
+    String display() {
+      if (currMode.editing) {
+        if (currMode.blinkOn) return valToString(editValue, 4, 3);
+        else return "  ";
+      }
+      else {
+        return valToString(feeding->getFeedingLoop(), 4, 3);
+      }
+    };
+    boolean editing() {
+      return true;
+    };
+    void enterEditing() {
+      currMode.editing = currMode.blinkOn = true;
+      editValue = feeding->getFeedingLoop();
+    };
+    void downValue() {
+      changeValue(editValue, -1, 0, 10);
+      currMode.blinkOn = true;
+    };
+    void upValue() {
+      changeValue(editValue, 1, 0, 10);
+      currMode.blinkOn = true;
+    };
+    void saveEditing() {
+      currMode.editing = false;
+      feeding->setFeedingLoop(editValue);
+    };
+  private:
+    byte editValue;
+    Feeding* feeding;
 
 };

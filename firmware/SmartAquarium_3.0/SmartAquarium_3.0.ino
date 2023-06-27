@@ -25,7 +25,7 @@ BubbleControl bubbleControl(&bubbleCounter, &stepMotor);
 Feeding feeding;
 
 #include "Menu.h"
-Menu menu(&Module, &controlTemp, &bubbleCounter, &stepMotor, &bubbleControl, &rtc, &currSettings);
+Menu menu(&Module, &controlTemp, &bubbleCounter, &stepMotor, &bubbleControl, &feeding, &rtc, &currSettings);
 
 #include "Lamps.h"
 Lamps lamps(&currSettings);
