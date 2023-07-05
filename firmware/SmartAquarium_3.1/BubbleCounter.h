@@ -182,7 +182,7 @@ bool BubbleCounter::itsRegularBubbles() {
 
 void BubbleCounter::writeLastDuration(long _duration, byte& ans) {
   // ошибка или пузырек
-  ans = ans | 0b00010000;
+  ans |= 0b00010000;
   if (++indexDuration == BUFFER_LAST_DURATIONS) indexDuration = 0;
   lastDurations[indexDuration] = _duration;
 }
@@ -190,7 +190,7 @@ void BubbleCounter::writeLastDuration(long _duration, byte& ans) {
 void BubbleCounter::endingBubbleInterval(byte& ans) {
   tempDurationBubble = tempLevelBubble = levelBubble = bubblePart = 0;
   // погасить инидикатор
-  ans = ans | 0b00001000;
+  ans |= 0b00001000;
 };
 
 // функция подсчета пузырьков
@@ -225,7 +225,7 @@ byte BubbleCounter::loopNeedDisplay() {
     MaxLevel = tempMaxLevel;
     tempMinLevel = 20000;
     tempMaxLevel = 0;
-    ans = ans | 0b00000001;
+    ans |= 0b00000001;
   }
 
   // write changes of a values
@@ -257,7 +257,7 @@ byte BubbleCounter::loopNeedDisplay() {
       tempDurationBubble = intervalTime;
       tempLevelBubble = levelBubble = intervalLevel;
       // зажечь инидикатор      
-      ans = ans | 0b00000100;
+      ans |= 0b00000100;
     }
   }
   else {
@@ -316,7 +316,7 @@ byte BubbleCounter::loopNeedDisplay() {
     sensorInSecond = tempSensorInSecond;
     error0InSecond = tempError0InSecond;
     error1InSecond = tempError1InSecond;
-    ans = ans | 0b00000010;
+    ans |= 0b00000010;
     tempSensorInSecond = tempError0InSecond = tempError1InSecond = 0;
   }
   else tempSensorInSecond++;

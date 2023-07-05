@@ -5,11 +5,6 @@
 */
 #pragma once
 
-enum typeBubbleCounterValue
-{
-  bubbleIn100Second, minLevel, maxLevel
-};
-
 enum typeBubbleControlValue
 {
   controlCondition, minBubblesIn100Second, maxBubblesIn100Second
@@ -17,7 +12,12 @@ enum typeBubbleControlValue
 
 enum typeSettingsValue
 {
-  dayNight, timerOn
+  dayNight, timerOn, dur
+};
+
+enum typeBubbleCounterValue
+{
+  bubbleIn100Second, minLevel, maxLevel
 };
 
 class MenuItem {
@@ -65,20 +65,38 @@ class MenuItem {
       else editValue = newValue;
     }
 
+    String valToString(const int val, const byte len, byte leadingSpaces = 0) {
+      String ans(val);
+      int lenPref = len - ans.length();
+      if (lenPref < 0) return ans.substring(-lenPref);
+      String pref = "";
+      while (lenPref-- > 0) {
+        if (leadingSpaces > 0) {
+          leadingSpaces--;
+          pref += ' ';
+        }
+        else pref += '0';
+      }
+      return pref + ans;
+    }
+
 };
 
 class TextItem: public MenuItem {
 
   public:
-    TextItem (const String _s) {
-      s = _s;
+    TextItem (const char* _s) {
+      for (int i = 0; i < sizeof(s); i++) {
+        s[i] = _s[i];
+        if (_s[i] == '\0') break;
+      }
     };
     String display() {
-      return s;
+      return String(s);
     };
 
   private:
-    String s;
+    char s[9];
 
 };
 
@@ -90,7 +108,16 @@ class SettingsValue: public MenuItem {
       valueType = _valueType;
     };
     String display() {
-      return valueType == timerOn ? (currSettings->timer == nullptr ? " " : "t") : (currSettings->nowDay ? "d" : "n");
+      switch (valueType) {
+        case dayNight: return currSettings->nowDay ? "d" : "n"; break;
+        case timerOn: return currSettings->timer == nullptr ? " " : "t"; break;
+        case dur:
+          String ans;
+          for (byte value:currSettings->printDurations) {
+            ans += valToString(value, 2, 1);
+          }
+          return ans;
+      }
     };
   private:
     typeSettingsValue valueType;
@@ -458,7 +485,17 @@ class bubbleControlValue: public MenuItem {
     };
     String display() {
       switch (valueType) {
-        case controlCondition: return bubbleControl->get_condition(); break;
+        case controlCondition:
+          switch (bubbleControl->get_currStatus()) {
+            case 0: return " OFF"; break;
+            case 1: return "  ON"; break;
+            case 2: return valToString(bubbleControl->get_lastPositionMove(), 4, 3); break;
+            case 3: return "Good"; break;
+            case 4: return "Err1"; break;
+            case 5: return "Err2"; break;
+            case 6: return "Err3"; break;
+          }
+          break;
         case minBubblesIn100Second: return valToString(bubbleControl->get_minBubblesIn100Second(), 4, 1); break;
         case maxBubblesIn100Second: return valToString(bubbleControl->get_maxBubblesIn100Second(), 4, 1); break;
       }
