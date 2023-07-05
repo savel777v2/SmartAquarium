@@ -19,7 +19,7 @@ class Melody {
   private:
     byte note;
     unsigned long nextNoteTime, melodyEndTime;
-    unsigned int notes[10][2] = {{2500, 50}, {0, 100}, {2500, 50}, {0, 100}, {2500, 50}, {0, 100}, {2500, 50}, {0, 100}, {2500, 50}, {0, 3000}};
+    const unsigned int notes[10][2] = {{2500, 50}, {0, 100}, {2500, 50}, {0, 100}, {2500, 50}, {0, 100}, {2500, 50}, {0, 100}, {2500, 50}, {0, 3000}};
 };
 
 Melody::Melody () {

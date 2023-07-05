@@ -5,11 +5,6 @@
 */
 #pragma once
 
-enum typeBubbleCounterValue
-{
-  bubbleIn100Second, minLevel, maxLevel
-};
-
 enum typeBubbleControlValue
 {
   controlCondition, minBubblesIn100Second, maxBubblesIn100Second
@@ -18,6 +13,11 @@ enum typeBubbleControlValue
 enum typeSettingsValue
 {
   dayNight, timerOn
+};
+
+enum typeBubbleCounterValue
+{
+  bubbleIn100Second, minLevel, maxLevel
 };
 
 class MenuItem {
@@ -70,15 +70,18 @@ class MenuItem {
 class TextItem: public MenuItem {
 
   public:
-    TextItem (const String _s) {
-      s = _s;
+    TextItem (const char* _s) {
+      for (int i = 0; i < sizeof(s); i++) {
+        s[i] = _s[i];
+        if (_s[i] == '\0') break;
+      }
     };
     String display() {
-      return s;
+      return String(s);
     };
 
   private:
-    String s;
+    char s[9];
 
 };
 
