@@ -27,13 +27,13 @@ void loopTime() {
     currSettings.nowMinute = rtc.getMinutes();
     currSettings.nowHour = rtc.getHours();
     minuteControl();
-    menu.display();
+    menuDisplay();
   }  
 
   // turn off second Led
   if (currSettings.secondLed && millis() > (nextSecondTime - SECOND_NOLED_DURATION)) {
     currSettings.secondLed = false;
-    menu.display();
+    menuDisplay();
   }
 
   // Loop increment local time
@@ -41,18 +41,18 @@ void loopTime() {
 
     // секунда оттикала
     nextSecondTime += 1000;
-    if (menu.getSubmenu() == timeMenu) {
+    if (getSubmenu() == timeMenu) {
       currSettings.secondLed = true;
-      menu.display();
+      menuDisplay();
     }
 
-    if (menu.getSubmenu() == durations) {
+    if (getSubmenu() == durations) {
       // print durations
       for (int i = 0; i < DURATIONS_SIZE; i++) {
         currSettings.printDurations[i] = currSettings.curDurations[i];
         currSettings.curDurations[i] = 0;
       }
-      menu.display();
+      menuDisplay();
     }
 
     currSettings.nowSecond++;

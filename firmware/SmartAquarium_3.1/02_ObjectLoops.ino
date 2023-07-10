@@ -1,24 +1,24 @@
 void controlTempLoop() {
   // temp reader and display
-  if (controlTemp.loopNeedDisplay() && menu.getSubmenu() == curTemp) menu.display();  
+  if (controlTemp.loopNeedDisplay() && getSubmenu() == curTemp) menuDisplay();  
 }
 
 void feedingLoop() {
   // Feeding and display
-  if (feeding.loopNeedDisplay() && menu.getSubmenu() == feedingMenu) menu.display();
+  if (feeding.loopNeedDisplay() && getSubmenu() == feedingMenu) menuDisplay();
 }
 
 void bubbleCounterControlLoop() {
   // loop BubbleCounter and display
   byte needDisplayCounter = bubbleCounter.loopNeedDisplay();
-  if ((needDisplayCounter & 0b00000001) == 0b00000001 && menu.getSubmenu() == sensorValue) menu.display();
+  if ((needDisplayCounter & 0b00000001) == 0b00000001 && getSubmenu() == sensorValue) menuDisplay();
   if ((needDisplayCounter & 0b00000100) == 0b00000100) module.setLED(1, 7); // начало пузырька
   if ((needDisplayCounter & 0b00001000) == 0b00001000) module.setLED(0, 7); // конец пузырька
   if ((needDisplayCounter & 0b00010000) == 0b00010000) {
     // контроль пузырьков - по ошибке или пузырьку
     if (bubbleControl.controlWaiting()) module.setLED(1, 6);
     else module.setLED(0, 6);
-    if (menu.getSubmenu() == bubblesInSecond) menu.display();
+    if (getSubmenu() == bubblesInSecond) menuDisplay();
   }
 }
 
@@ -44,11 +44,11 @@ void timerLoop() {
       currSettings.timer = nullptr;
       if (currSettings.alarmMelody == nullptr) currSettings.alarmMelody = new Melody();
       else (currSettings.alarmMelody->restart());
-      if (menu.getSubmenu() == timeMenu || menu.getSubmenu() == timer) {
-        menu.display();
+      if (getSubmenu() == timeMenu || getSubmenu() == timer) {
+        menuDisplay();
       }
     }
-    else if (needDisplay == 1 && menu.getSubmenu() == timer) menu.display();
+    else if (needDisplay == 1 && getSubmenu() == timer) menuDisplay();
   }
 }
 

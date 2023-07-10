@@ -27,8 +27,11 @@ Feeding feeding;
 #include "Lamps.h"
 Lamps lamps(&currSettings);
 
-#include "Menu.h"
-Menu menu(&module, &controlTemp, &bubbleCounter, &stepMotor, &bubbleControl, &feeding, &rtc, &currSettings);
+#include "MenuSettings.h"
+MenuSettings menuSettings;
+
+/*#include "Menu.h"
+Menu menu(&module, &controlTemp, &bubbleCounter, &stepMotor, &bubbleControl, &feeding, &rtc, &currSettings);*/
 
 void setup() {
   currSettings.alarmMelody = nullptr;
@@ -44,7 +47,7 @@ void setup() {
 }
 
 void loop() {
-  bool res = menu.loopNeedControl();  
+  bool res = menuLoopNeedControl();
 
   if (res) {
     minuteControl();
