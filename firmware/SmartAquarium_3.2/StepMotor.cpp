@@ -2,7 +2,6 @@
   StepMotor.cpp - Программная реализация модуля управления шаговым мотором
 */
 
-#include "Arduino.h"
 #include "StepMotor.h"
 
 StepMotor::StepMotor() {

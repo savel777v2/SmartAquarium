@@ -10,7 +10,7 @@
 #ifndef StepMotor_h
 #define StepMotor_h
 
-#include "Arduino.h"
+#include <Arduino.h>
 
 #define MIN_DELAY 4 // минимальная задержка между шагом мотора в мс., соответсвует MAX_USER_SPEED
 #define MAX_USER_SPEED 32 // максимально допустимое значение линейной пользовательской скорости

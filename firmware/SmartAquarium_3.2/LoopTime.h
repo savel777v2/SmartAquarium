@@ -5,7 +5,7 @@
 */
 #pragma once
 
-#include "CurrSettings.h"
+#include "Global.h"
 #include "MenuItem.h"
 #include "BubbleCounter.h"
 
@@ -14,7 +14,7 @@
 class LoopTime {
 
   public:
-    LoopTime(TM1638My* _module, Menu* _menu, Lamps* _lamps, ControlTemp* _controlTemp, BubbleCounter* _bubbleCounter, StepMotor* _stepMotor, BubbleControl* _bubbleControl, Feeding* _feeding, MicroDS3231* _rtc, CurrSettings* _currSettings);
+    LoopTime(TM1638My* _module, Menu* _menu, Lamps* _lamps, ControlTemp* _controlTemp, BubbleCounter* _bubbleCounter, StepMotor* _stepMotor, BubbleControl* _bubbleControl, Feeding* _feeding, MicroDS3231* _rtc, global::CurrSettings* _currSettings);
     void readKeyboard();
     void loop();
     void minuteControl();
@@ -29,13 +29,13 @@ class LoopTime {
     BubbleControl* bubbleControl;
     Feeding* feeding;
     MicroDS3231* rtc;
-    CurrSettings* currSettings;
+    global::CurrSettings* currSettings;
     unsigned long nextKeyboardTime, nextSecondTime;
     byte activeLedMotor = 0;
     bool itsDay(int _nowInMinutes, int _morningInMinutes, int _eveningInMinutes);
 };
 
-LoopTime::LoopTime (TM1638My* _module, Menu* _menu, Lamps* _lamps, ControlTemp* _controlTemp, BubbleCounter* _bubbleCounter, StepMotor* _stepMotor, BubbleControl* _bubbleControl, Feeding* _feeding, MicroDS3231* _rtc, CurrSettings* _currSettings) {
+LoopTime::LoopTime (TM1638My* _module, Menu* _menu, Lamps* _lamps, ControlTemp* _controlTemp, BubbleCounter* _bubbleCounter, StepMotor* _stepMotor, BubbleControl* _bubbleControl, Feeding* _feeding, MicroDS3231* _rtc, global::CurrSettings* _currSettings) {
   module = _module;
   menu = _menu;
   lamps = _lamps;
@@ -181,9 +181,9 @@ bool LoopTime::itsDay(int _nowInMinutes, int _morningInMinutes, int _eveningInMi
 void LoopTime::minuteControl() {
 
   // local values
-  int _nowInMinutes = timeInMinutes(currSettings->nowHour, currSettings->nowMinute);
-  int _morningInMinutes = timeInMinutes(EEPROM.read(EEPROM_MORNING_HOUR), EEPROM.read(EEPROM_MORNING_MINUTE));
-  int _eveningInMinutes = timeInMinutes(EEPROM.read(EEPROM_EVENING_HOUR), EEPROM.read(EEPROM_EVENING_MINUTE));
+  int _nowInMinutes = global::timeInMinutes(currSettings->nowHour, currSettings->nowMinute);
+  int _morningInMinutes = global::timeInMinutes(EEPROM.read(EEPROM_MORNING_HOUR), EEPROM.read(EEPROM_MORNING_MINUTE));
+  int _eveningInMinutes = global::timeInMinutes(EEPROM.read(EEPROM_EVENING_HOUR), EEPROM.read(EEPROM_EVENING_MINUTE));
 
 
   // it's day or nigth
@@ -191,7 +191,7 @@ void LoopTime::minuteControl() {
 
   // control alarm
   if (EEPROM.read(EEPROM_ALARM) == 1) {
-    int _alarmInMinutes = timeInMinutes(EEPROM.read(EEPROM_ALARM_HOUR), EEPROM.read(EEPROM_ALARM_MINUTE));
+    int _alarmInMinutes = global::timeInMinutes(EEPROM.read(EEPROM_ALARM_HOUR), EEPROM.read(EEPROM_ALARM_MINUTE));
     if (_nowInMinutes == _alarmInMinutes) {
       if (currSettings->alarmMelody == nullptr) currSettings->alarmMelody = new Melody();
       else currSettings->alarmMelody->restart();

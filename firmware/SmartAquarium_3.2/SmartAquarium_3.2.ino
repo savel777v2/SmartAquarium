@@ -6,8 +6,8 @@ TM1638My Module(4, 5, 6); // DIO, CLK, STB
 #include <microDS3231.h>
 MicroDS3231 rtc; // A4 - SDA, A% - SCL
 
-#include "CurrSettings.h"
-CurrSettings currSettings;
+#include "Global.h"
+global::CurrSettings currSettings;
 
 #include "ControlTemp.h"
 ControlTemp controlTemp(&Module);

@@ -5,6 +5,8 @@
 */
 #pragma once
 
+#include "Global.h"
+
 // Lamps from left to right
 #define LAMP1_PIN A1
 #define LAMP2_PIN A2
@@ -14,17 +16,17 @@
 class Lamps {
 
   public:
-    Lamps(CurrSettings* _currSettings);
+    Lamps(global::CurrSettings* _currSettings);
     void scheduler();
     void changeManualLamp();
 
   private:
-    CurrSettings* currSettings;
+    global::CurrSettings* currSettings;
     byte manualLamp;
     unsigned long manualLampTimeOff;
 };
 
-Lamps::Lamps(CurrSettings* _currSettings) {
+Lamps::Lamps(global::CurrSettings* _currSettings) {
   pinMode(LAMP1_PIN, OUTPUT);
   pinMode(LAMP2_PIN, OUTPUT);
   pinMode(LAMP3_PIN, OUTPUT);
@@ -54,9 +56,9 @@ void Lamps::scheduler() {
   }
   else {
     int minutesBetweenLamps = EEPROM.read(EEPROM_LAMP_INTERVAL);
-    int nowInMinutes = timeInMinutes(currSettings->nowHour, currSettings->nowMinute);
-    int morningInMinutes = timeInMinutes(EEPROM.read(EEPROM_MORNING_HOUR), EEPROM.read(EEPROM_MORNING_MINUTE));
-    int eveningInMinutes = timeInMinutes(EEPROM.read(EEPROM_EVENING_HOUR), EEPROM.read(EEPROM_EVENING_MINUTE));
+    int nowInMinutes = global::timeInMinutes(currSettings->nowHour, currSettings->nowMinute);
+    int morningInMinutes = global::timeInMinutes(EEPROM.read(EEPROM_MORNING_HOUR), EEPROM.read(EEPROM_MORNING_MINUTE));
+    int eveningInMinutes = global::timeInMinutes(EEPROM.read(EEPROM_EVENING_HOUR), EEPROM.read(EEPROM_EVENING_MINUTE));
     for (int i = 0; i < 3; i++) {
       // after morning
       int minutesLamp = morningInMinutes + minutesBetweenLamps * i;

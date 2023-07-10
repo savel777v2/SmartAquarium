@@ -8,7 +8,7 @@
 #define BLINK_INTERVAL 500
 
 #include "TM1638My.h"
-#include "CurrSettings.h"
+#include "Global.h"
 #include "MenuItem.h"
 
 enum submenu
@@ -24,7 +24,7 @@ enum submenu
 class Menu {
 
   public:
-    Menu (TM1638My* _module, ControlTemp* _controlTemp, BubbleCounter* _bubbleCounter, StepMotor* _stepMotor, BubbleControl* _bubbleControl, Feeding* _feeding, MicroDS3231* _rtc, CurrSettings* _currSettings);
+    Menu (TM1638My* _module, ControlTemp* _controlTemp, BubbleCounter* _bubbleCounter, StepMotor* _stepMotor, BubbleControl* _bubbleControl, Feeding* _feeding, MicroDS3231* _rtc, global::CurrSettings* _currSettings);
     void display();
     bool loopNeedControl();
     submenu getSubmenu();
@@ -38,7 +38,7 @@ class Menu {
     BubbleControl* bubbleControl;
     Feeding* feeding;
     MicroDS3231* rtc;
-    CurrSettings* currSettings;
+    global::CurrSettings* currSettings;
     byte gorInd, verInd;
     unsigned long nextKeyboardTime, lastBlinkTime;
     byte numEditItem;
@@ -50,7 +50,7 @@ class Menu {
     void blinkDisplay();
 };
 
-Menu::Menu (TM1638My* _module, ControlTemp* _controlTemp, BubbleCounter* _bubbleCounter, StepMotor* _stepMotor, BubbleControl* _bubbleControl, Feeding* _feeding, MicroDS3231* _rtc, CurrSettings* _currSettings) {
+Menu::Menu (TM1638My* _module, ControlTemp* _controlTemp, BubbleCounter* _bubbleCounter, StepMotor* _stepMotor, BubbleControl* _bubbleControl, Feeding* _feeding, MicroDS3231* _rtc, global::CurrSettings* _currSettings) {
   module = _module;
   controlTemp = _controlTemp;
   bubbleCounter = _bubbleCounter;

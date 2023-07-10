@@ -70,7 +70,7 @@ String BubbleControl::get_condition() {
   switch (_currStatus) {
     case 0: return " OFF"; break;
     case 1: return "  ON"; break;
-    case 2: return valToString(_lastPositionMove,4,3); break;
+    case 2: return global::valToString(_lastPositionMove,4,3); break;
     case 3: return "Good"; break;
     case 4: return "Err1"; break;
     case 5: return "Err2"; break;

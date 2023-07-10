@@ -88,7 +88,7 @@ class TextItem: public MenuItem {
 class SettingsValue: public MenuItem {
 
   public:
-    SettingsValue (const CurrSettings* _currSettings, const typeSettingsValue _valueType) {
+    SettingsValue (const global::CurrSettings* _currSettings, const typeSettingsValue _valueType) {
       currSettings = _currSettings;
       valueType = _valueType;
     };
@@ -97,7 +97,7 @@ class SettingsValue: public MenuItem {
     };
   private:
     typeSettingsValue valueType;
-    CurrSettings* currSettings;
+    global::CurrSettings* currSettings;
 
 };
 
@@ -114,17 +114,17 @@ class AlarmFlag: public MenuItem {
 class TimeValue: public MenuItem {
 
   public:
-    TimeValue (const CurrSettings* _currSettings, const byte _valueIndex, const MicroDS3231* _rtc) {
+    TimeValue (const global::CurrSettings* _currSettings, const byte _valueIndex, const MicroDS3231* _rtc) {
       currSettings = _currSettings;
       valueIndex = _valueIndex;
       rtc = _rtc;
     };
     String display() {
       if (currMode.editing) {
-        if (currMode.blinkOn) return valToString(editValue, 2);
+        if (currMode.blinkOn) return global::valToString(editValue, 2);
         else return "  ";
       }
-      else return valToString(valueIndex ? currSettings->nowMinute : currSettings->nowHour, 2);
+      else return global::valToString(valueIndex ? currSettings->nowMinute : currSettings->nowHour, 2);
     };
     boolean editing() {
       return true;
@@ -159,7 +159,7 @@ class TimeValue: public MenuItem {
   private:
     byte editValue;
     byte valueIndex;
-    CurrSettings* currSettings;
+    global::CurrSettings* currSettings;
     MicroDS3231* rtc;
 
 };
@@ -177,11 +177,11 @@ class byteEEPROMvalue: public MenuItem {
     };
     String display() {
       if (currMode.editing) {
-        if (currMode.blinkOn) return valToString((int)editValue * multiplier, len, leadingSpaces);
+        if (currMode.blinkOn) return global::valToString((int)editValue * multiplier, len, leadingSpaces);
         else return emptyString(len);
       }
       else {
-        return valToString((int)EEPROM.read(adressEEPROM) * multiplier, len, leadingSpaces);
+        return global::valToString((int)EEPROM.read(adressEEPROM) * multiplier, len, leadingSpaces);
       }
     };
     boolean editing() {
@@ -220,11 +220,11 @@ class MotorPosition: public byteEEPROMvalue {
     };
     String display() {
       if (currMode.editing) {
-        if (currMode.blinkOn) return valToString(editValue - 125, len, leadingSpaces);
+        if (currMode.blinkOn) return global::valToString(editValue - 125, len, leadingSpaces);
         else return emptyString(len);
       }
       else {
-        return valToString(EEPROM.read(adressEEPROM) - 125, len, leadingSpaces);
+        return global::valToString(EEPROM.read(adressEEPROM) - 125, len, leadingSpaces);
       }
     };
     void saveEditing() {
@@ -240,20 +240,20 @@ class MotorPosition: public byteEEPROMvalue {
 class TimerValue: public MenuItem {
 
   public:
-    TimerValue (const CurrSettings* _currSettings, const byte _valueIndex) {
+    TimerValue (const global::CurrSettings* _currSettings, const byte _valueIndex) {
       currSettings = _currSettings;
       valueIndex = _valueIndex;
     };
     String display() {
       if (currSettings->timer != nullptr) {
-        return valToString(valueIndex ? currSettings->timer->getSecond() : currSettings->timer->getMinute(), 2);
+        return global::valToString(valueIndex ? currSettings->timer->getSecond() : currSettings->timer->getMinute(), 2);
       }
       else if (currMode.editing) {
-        if (currMode.blinkOn) return valToString(editValue, 2);
+        if (currMode.blinkOn) return global::valToString(editValue, 2);
         else return "  ";
       }
       else {
-        return valToString(EEPROM.read(valueIndex ? EEPROM_TIMER_SECOND : EEPROM_TIMER_MINUTE), 2);
+        return global::valToString(EEPROM.read(valueIndex ? EEPROM_TIMER_SECOND : EEPROM_TIMER_MINUTE), 2);
       }
     };
     boolean editing() {
@@ -276,7 +276,7 @@ class TimerValue: public MenuItem {
       EEPROM.update(valueIndex ? EEPROM_TIMER_SECOND : EEPROM_TIMER_MINUTE, editValue);
     };
   private:
-    CurrSettings* currSettings;
+    global::CurrSettings* currSettings;
     bool valueIndex;
     byte editValue;
 
@@ -285,12 +285,12 @@ class TimerValue: public MenuItem {
 class TimerStart: public MenuItem {
 
   public:
-    TimerStart (const CurrSettings* _currSettings) {
+    TimerStart (const global::CurrSettings* _currSettings) {
       currSettings = _currSettings;
     };
     String display() {
       if (currMode.editing) {
-        if (currMode.blinkOn) return valToString(editValue, 2, 1);
+        if (currMode.blinkOn) return global::valToString(editValue, 2, 1);
         else return "  ";
       }
       else {
@@ -325,7 +325,7 @@ class TimerStart: public MenuItem {
     };
   private:
     byte editValue;
-    CurrSettings* currSettings;
+    global::CurrSettings* currSettings;
 
 };
 
@@ -337,7 +337,7 @@ class RtsTemp: public MenuItem {
     };
     String display() {
       int _intValue = rtc->getTemperature() * 10;
-      return valToString(_intValue, 3);
+      return global::valToString(_intValue, 3);
     };
   private:
     MicroDS3231* rtc;
@@ -354,7 +354,7 @@ class AquaTemp: public MenuItem {
       if (!controlTemp->getAquaTempConnected()) return "Err";
       else {
         int _intValue = controlTemp->getAquaTemp() * 10;
-        return valToString(_intValue, 3);
+        return global::valToString(_intValue, 3);
       }
     };
   private:
@@ -365,7 +365,7 @@ class AquaTemp: public MenuItem {
 class TempLog: public MenuItem {
 
   public:
-    TempLog (const CurrSettings* _currSettings, const ControlTemp* _controlTemp) {
+    TempLog (const global::CurrSettings* _currSettings, const ControlTemp* _controlTemp) {
       currSettings = _currSettings;
       controlTemp = _controlTemp;
     };
@@ -394,7 +394,7 @@ class TempLog: public MenuItem {
       currMode.blinkOn = true;
     };
   private:
-    CurrSettings* currSettings;
+    global::CurrSettings* currSettings;
     ControlTemp* controlTemp;
     byte editValue;
     String logToString(byte _index) {
@@ -402,7 +402,7 @@ class TempLog: public MenuItem {
       byte _indexOfLog;
       if ((23 - _index) > _indexOfNow) _indexOfLog = _indexOfNow + _index + 1;
       else _indexOfLog = _indexOfNow + _index - 23;
-      String ans = valToString(_indexOfLog, 2);
+      String ans = global::valToString(_indexOfLog, 2);
       ans += "00";
       word _valueOfLog = controlTemp->getHeaterTempLog(_indexOfLog);
       if (_valueOfLog > 10000) {
@@ -413,7 +413,7 @@ class TempLog: public MenuItem {
       if (_valueOfLog == 0) ans += "Err";
       else {
         _valueOfLog -= 1000;
-        ans += valToString(_valueOfLog, 3);
+        ans += global::valToString(_valueOfLog, 3);
       }
       return ans;
     }
@@ -437,11 +437,11 @@ class bubbleCounterValue: public MenuItem {
       switch (_intValue) {
         case -1: return "Err1"; break;
         case -2: return "Err2"; break;
-        case -3: return valToString(0, 4, 1); break;
+        case -3: return global::valToString(0, 4, 1); break;
         default:
           switch (valueType) {
-            case bubbleIn100Second: return valToString(_intValue, 4, 1); break;
-            default: return valToString(_intValue, 4, 3); break;
+            case bubbleIn100Second: return global::valToString(_intValue, 4, 1); break;
+            default: return global::valToString(_intValue, 4, 3); break;
           }
           break;
       }
@@ -462,8 +462,8 @@ class bubbleControlValue: public MenuItem {
     String display() {
       switch (valueType) {
         case controlCondition: return bubbleControl->get_condition(); break;
-        case minBubblesIn100Second: return valToString(bubbleControl->get_minBubblesIn100Second(), 4, 1); break;
-        case maxBubblesIn100Second: return valToString(bubbleControl->get_maxBubblesIn100Second(), 4, 1); break;
+        case minBubblesIn100Second: return global::valToString(bubbleControl->get_minBubblesIn100Second(), 4, 1); break;
+        case maxBubblesIn100Second: return global::valToString(bubbleControl->get_maxBubblesIn100Second(), 4, 1); break;
       }
     };
   private:
@@ -480,11 +480,11 @@ class FeedingValue: public MenuItem {
     };
     String display() {
       if (currMode.editing) {
-        if (currMode.blinkOn) return valToString(editValue, 4, 3);
+        if (currMode.blinkOn) return global::valToString(editValue, 4, 3);
         else return "  ";
       }
       else {
-        return valToString(feeding->getFeedingLoop(), 4, 3);
+        return global::valToString(feeding->getFeedingLoop(), 4, 3);
       }
     };
     boolean editing() {

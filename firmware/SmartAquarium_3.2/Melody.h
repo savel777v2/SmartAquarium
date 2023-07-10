@@ -5,7 +5,7 @@
 #ifndef Melody_h
 #define Melody_h
 
-#include "Arduino.h"
+#include <Arduino.h>
 
 #define MELODY_DURATION 60000 // общая продолжительность мелодии в мс, играет по нотам циклично
 #define PIEZO_PIN 3 // вывод на микросхеме, подтягивать к ground

@@ -1,10 +1,11 @@
 /*
-  MenuItem.h - Library for displaying menu in TM1638.
-
-
+  Global.h - Объект содержит общие функции и определения для всего программного средства
 */
-#pragma once
 
+#ifndef Global_h
+#define Global_h
+
+#include <Arduino.h>
 #include "Melody.h"
 #include "Timer.h"
 
@@ -47,24 +48,11 @@
 #define EEPROM_NIGHT_FEEDING_MINUTE 38
 #define EEPROM_NIGHT_FEEDING_DURATION 39 // продолжительность ночной еды *10 в миллисекундах (один цикл)
 
-int timeInMinutes(const int _hour, const int _minutes) {
-  return _hour * 60 + _minutes;
-}
+namespace global {
 
-String valToString(const int val, const byte len, byte leadingSpaces = 0) {
-  String ans(val);
-  int lenPref = len - ans.length();
-  if (lenPref < 0) return ans.substring(-lenPref);
-  String pref = "";
-  while (lenPref-- > 0) {
-    if (leadingSpaces > 0) {
-      leadingSpaces--;
-      pref += ' ';
-    }
-    else pref += '0';
-  }
-  return pref + ans;
-}
+int timeInMinutes(const int _hour, const int _minutes);
+
+String valToString(const int val, const byte len, byte leadingSpaces = 0);
 
 struct CurrSettings {
   byte nowSecond;
@@ -87,3 +75,7 @@ struct CurrSettings {
   byte printMax3 = 0;
   byte printMax4 = 0;
 };
+
+};
+
+#endif

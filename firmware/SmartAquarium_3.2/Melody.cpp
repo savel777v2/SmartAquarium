@@ -2,7 +2,6 @@
   Melody.cpp - Программная реализация модуля мелодии
 */
 
-#include "Arduino.h"
 #include "Melody.h"
 
 Melody::Melody() {
