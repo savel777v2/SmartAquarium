@@ -12,7 +12,7 @@
 #include <Arduino.h>
 
 #include "Global.h"
-extern global::CurrSettings currSettings;
+extern global::CurrSettings globCurrSettings;
 
 // Прожектора слева направо
 #define LAMP1_PIN A1

@@ -77,10 +77,9 @@ String AlarmFlag::display() {
 };
 
 // выводит текущее время часы или минуты, редактирует и сохраняет его в MicroDS3231
-TimeValue::TimeValue (const global::CurrSettings* _currSettings, const byte _valueIndex, const MicroDS3231* _rtc) {
+TimeValue::TimeValue (const global::CurrSettings* _currSettings, const byte _valueIndex) {
   currSettings = _currSettings;
   valueIndex = _valueIndex;
-  rtc = _rtc;
 };
 
 String TimeValue::display() {
@@ -112,7 +111,7 @@ void TimeValue::upValue() {
 
 void TimeValue::saveEditing() {
   currMode.editing = false;
-  DateTime rtcNow = rtc->getTime();
+  DateTime rtcNow = globDS3231.getTime();
   switch (valueIndex) {
     case 0:
       currSettings->nowHour = editValue;
@@ -123,7 +122,7 @@ void TimeValue::saveEditing() {
       rtcNow.minute = editValue;
       break;
   }
-  rtc->setTime(rtcNow);
+ globDS3231.setTime(rtcNow);
 };
 
 // универсально выводит значение из EEPROM, редактирует и сохраняет его в EEPROM
@@ -282,33 +281,24 @@ void TimerStart::saveEditing() {
 };
 
 // выводит текущую температуру модуля MicroDS3231
-RtsTemp::RtsTemp (const MicroDS3231* _rtc) {
-  rtc = _rtc;
-};
-
 String RtsTemp::display() {
-  int _intValue = rtc->getTemperature() * 10;
+  int _intValue = globDS3231.getTemperature() * 10;
   return global::valToString(_intValue, 3);
 };
 
 // выводит текущую температуру ворды аквариума через объект ControlTemp
-AquaTemp::AquaTemp (const ControlTemp* _controlTemp) {
-  controlTemp = _controlTemp;
-};
-
 String AquaTemp::display() {
-  if (!controlTemp->getAquaTempConnected()) return "Err";
+  if (!globControlTemp.getAquaTempConnected()) return "Err";
   else {
-    int _intValue = controlTemp->getAquaTemp() * 10;
+    int _intValue = globControlTemp.getAquaTemp() * 10;
     return global::valToString(_intValue, 3);
   }
 };
 
 // выводит логи температуру воды аквариума через объект ControlTemp
 // в режиме редактирования - просматриваем историю логов
-TempLog::TempLog (const global::CurrSettings* _currSettings, const ControlTemp* _controlTemp) {
+TempLog::TempLog (const global::CurrSettings* _currSettings) {
   currSettings = _currSettings;
-  controlTemp = _controlTemp;
 };
 
 String TempLog::display() {
@@ -347,7 +337,7 @@ String TempLog::logToString(byte _index) {
   else _indexOfLog = _indexOfNow + _index - 23;
   String ans = global::valToString(_indexOfLog, 2);
   ans += "00";
-  word _valueOfLog = controlTemp->getHeaterTempLog(_indexOfLog);
+  word _valueOfLog = globControlTemp.getHeaterTempLog(_indexOfLog);
   if (_valueOfLog > 10000) {
     ans += "o";
     _valueOfLog -= 10000;

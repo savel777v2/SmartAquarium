@@ -8,12 +8,18 @@
 #include <EEPROM.h>
 #include <Arduino.h>
 #include <microDS3231.h>
+extern MicroDS3231 globDS3231;
+
 #include "Global.h"
 #include "TM1638My.h"
+extern TM1638My globModule1638;
+
 #include "Feeding.h"
 #include "BubbleControl.h"
 #include "BubbleCounter.h"
 #include "ControlTemp.h"
+extern ControlTemp globControlTemp;
+
 #include "StepMotor.h"
 
 enum typeBubbleCounterValue
@@ -91,7 +97,7 @@ class AlarmFlag: public MenuItem {
 class TimeValue: public MenuItem {
 
   public:
-    TimeValue (const global::CurrSettings* _currSettings, const byte _valueIndex, const MicroDS3231* _rtc);
+    TimeValue (const global::CurrSettings* _currSettings, const byte _valueIndex);
     String display();
     boolean editing();
     void enterEditing();
@@ -101,8 +107,7 @@ class TimeValue: public MenuItem {
   private:
     byte editValue;
     byte valueIndex;
-    global::CurrSettings* currSettings;
-    MicroDS3231* rtc;
+    global::CurrSettings* currSettings;    
 
 };
 
@@ -179,10 +184,7 @@ class TimerStart: public MenuItem {
 class RtsTemp: public MenuItem {
 
   public:
-    RtsTemp (const MicroDS3231 * _rtc);
     String display();
-  private:
-    MicroDS3231 * rtc;
 
 };
 
@@ -190,10 +192,7 @@ class RtsTemp: public MenuItem {
 class AquaTemp: public MenuItem {
 
   public:
-    AquaTemp (const ControlTemp * _controlTemp);
     String display();
-  private:
-    ControlTemp * controlTemp;
 
 };
 
@@ -202,15 +201,14 @@ class AquaTemp: public MenuItem {
 class TempLog: public MenuItem {
 
   public:
-    TempLog (const global::CurrSettings * _currSettings, const ControlTemp * _controlTemp);
+    TempLog (const global::CurrSettings * _currSettings);
     String display();
     boolean editing();
     void enterEditing();
     void downValue();
     void upValue();
   private:
-    global::CurrSettings* currSettings;
-    ControlTemp* controlTemp;
+    global::CurrSettings* currSettings;    
     byte editValue;
     String logToString(byte _index);
 

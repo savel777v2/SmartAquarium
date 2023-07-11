@@ -1,42 +1,42 @@
 #include <EEPROM.h>
 
 #include "TM1638My.h"
-TM1638My gModule1638(4, 5, 6); // DIO, CLK, STB
+TM1638My globModule1638(4, 5, 6); // DIO, CLK, STB
 
 #include <microDS3231.h>
-MicroDS3231 rtc; // A4 - SDA, A% - SCL
+MicroDS3231 globDS3231; // A4 - SDA, A% - SCL
 
 #include "Global.h"
-global::CurrSettings currSettings;
+global::CurrSettings globCurrSettings;
 
 #include "ControlTemp.h"
-ControlTemp controlTemp;
+ControlTemp globControlTemp;
 
 #include "BubbleCounter.h"
-BubbleCounter bubbleCounter;
+BubbleCounter globBubbleCounter;
 
 #include "StepMotor.h"
-StepMotor stepMotor;
+StepMotor globStepMotor;
 
 #include "BubbleControl.h"
-BubbleControl bubbleControl(&bubbleCounter, &stepMotor);
+BubbleControl globBubbleControl;
 
 #include "Feeding.h"
-Feeding feeding;
+Feeding globFeeding;
 
 #include "Menu.h"
-Menu menu(&gModule1638, &controlTemp, &bubbleCounter, &stepMotor, &bubbleControl, &feeding, &rtc, &currSettings);
+Menu globMenu(&globBubbleCounter, &globStepMotor, &globBubbleControl, &globFeeding, &globCurrSettings);
 
 #include "Lamps.h"
-Lamps lamps;
+Lamps globLamps;
 
 #include "LoopTime.h"
-LoopTime loopTime(&gModule1638, &menu, &lamps, &controlTemp, &bubbleCounter, &stepMotor, &bubbleControl, &feeding, &rtc, &currSettings);
+LoopTime globLoopTime;
 
 void setup() {
   pinMode(PIEZO_PIN, OUTPUT);
-  currSettings.alarmMelody = nullptr;
-  currSettings.timer = nullptr;  
+  globCurrSettings.alarmMelody = nullptr;
+  globCurrSettings.timer = nullptr;  
 #if (DEBUG_MODE == 1)
   Serial.begin(9600);
   Serial.println("debugging");
@@ -44,7 +44,7 @@ void setup() {
 }
 
 void loop() {
-  if (menu.loopNeedControl()) loopTime.minuteControl();
-  loopTime.readKeyboard();
-  loopTime.loop();
+  if (globMenu.loopNeedControl()) globLoopTime.minuteControl();
+  globLoopTime.readKeyboard();
+  globLoopTime.loop();
 }

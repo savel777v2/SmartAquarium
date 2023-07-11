@@ -8,12 +8,18 @@
 #include <EEPROM.h>
 #include <Arduino.h>
 #include <microDS3231.h>
+extern MicroDS3231 globDS3231;
+
 #include "Global.h"
+
 #include "TM1638My.h"
+extern TM1638My globModule1638;
+
 #include "Feeding.h"
 #include "BubbleControl.h"
 #include "BubbleCounter.h"
 #include "ControlTemp.h"
+extern ControlTemp globControlTemp;
 #include "StepMotor.h"
 #include "MenuItem.h"
 
@@ -33,20 +39,17 @@ enum submenu
 class Menu {
 
   public:
-    Menu (TM1638My* _module, ControlTemp* _controlTemp, BubbleCounter* _bubbleCounter, StepMotor* _stepMotor, BubbleControl* _bubbleControl, Feeding* _feeding, MicroDS3231* _rtc, global::CurrSettings* _currSettings);
+    Menu (BubbleCounter* _bubbleCounter, StepMotor* _stepMotor, BubbleControl* _bubbleControl, Feeding* _feeding, global::CurrSettings* _currSettings);
     void display();
     bool loopNeedControl();
     submenu getSubmenu();
 
-  private:
-    TM1638My* module;
-    MenuItem* subMenu[6];
-    ControlTemp* controlTemp;
+  private:    
+    MenuItem* subMenu[6];    
     BubbleCounter* bubbleCounter;
     StepMotor* stepMotor;
     BubbleControl* bubbleControl;
-    Feeding* feeding;
-    MicroDS3231* rtc;
+    Feeding* feeding;    
     global::CurrSettings* currSettings;
     byte gorInd, verInd;
     unsigned long nextKeyboardTime, lastBlinkTime;

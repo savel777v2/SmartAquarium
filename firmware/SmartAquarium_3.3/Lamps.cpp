@@ -25,7 +25,7 @@ void Lamps::scheduler() {
     tone(PIEZO_PIN, 2500, 100);
   }
 
-  if (manualLamp == 2 || !currSettings.nowDay) {
+  if (manualLamp == 2 || !globCurrSettings.nowDay) {
     for (int i = 0; i < 3; i++) lampPinsLevel[i] = 0;
   }
   else if (manualLamp == 1) {
@@ -33,7 +33,7 @@ void Lamps::scheduler() {
   }
   else {
     int minutesBetweenLamps = EEPROM.read(EEPROM_LAMP_INTERVAL);
-    int nowInMinutes = global::timeInMinutes(currSettings.nowHour, currSettings.nowMinute);
+    int nowInMinutes = global::timeInMinutes(globCurrSettings.nowHour, globCurrSettings.nowMinute);
     int morningInMinutes = global::timeInMinutes(EEPROM.read(EEPROM_MORNING_HOUR), EEPROM.read(EEPROM_MORNING_MINUTE));
     int eveningInMinutes = global::timeInMinutes(EEPROM.read(EEPROM_EVENING_HOUR), EEPROM.read(EEPROM_EVENING_MINUTE));
     for (int i = 0; i < 3; i++) {
@@ -68,8 +68,8 @@ void Lamps::scheduler() {
 
 void Lamps::changeManualLamp() {
 
-  if (manualLamp == 0) manualLamp = (currSettings.nowDay ? 2 : 1);
-  else if (manualLamp == (currSettings.nowDay ? 2 : 1)) manualLamp = (manualLamp == 2 ? 1 : 2);
+  if (manualLamp == 0) manualLamp = (globCurrSettings.nowDay ? 2 : 1);
+  else if (manualLamp == (globCurrSettings.nowDay ? 2 : 1)) manualLamp = (manualLamp == 2 ? 1 : 2);
   else manualLamp = 0;
 
   manualLampTimeOff = millis() + MANUAL_LAMP_DURATION;

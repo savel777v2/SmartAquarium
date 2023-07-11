@@ -6,7 +6,7 @@
 
 ControlTemp::ControlTemp() {
   pinMode(HEATER_PIN, OUTPUT);
-  gModule1638.setLED(0, 4);
+  globModule1638.setLED(0, 4);
   digitalWrite(HEATER_PIN, HIGH); // false - off
   heaterOn = false;
   aquaTempConnected = false;
@@ -28,11 +28,11 @@ float ControlTemp::getAquaTemp() {
   return aquaTemp;
 }
 
-void ControlTemp::scheduler(bool _nowDay, byte _nowMinute, byte _nowHour) {
+void ControlTemp::scheduler() {
 
   byte needingTemp;
   bool heaterAlwaysOff = false;
-  if (_nowDay) {
+  if (globCurrSettings.nowDay) {
     needingTemp = EEPROM.read(EEPROM_DAY_TEMP);
     if (EEPROM.read(EEPROM_DAY_TEMP_ON) == 0) heaterAlwaysOff = true;
   }
@@ -46,18 +46,18 @@ void ControlTemp::scheduler(bool _nowDay, byte _nowMinute, byte _nowHour) {
   float maxTemp = needingTemp + (float)deltaTemp / 10;
   if (heaterOn && (heaterAlwaysOff || !aquaTempConnected || aquaTemp >= maxTemp)) {
     heaterOn = false;
-    gModule1638.setLED(0, 4);
+    globModule1638.setLED(0, 4);
     digitalWrite(HEATER_PIN, HIGH);
   }
   else if (!heaterOn && !heaterAlwaysOff && aquaTempConnected && aquaTemp <= minTemp) {
     heaterOn = true;
-    gModule1638.setLED(1, 4);
+    globModule1638.setLED(1, 4);
     digitalWrite(HEATER_PIN, LOW);
   }
 
   // heaterTempLog each our
-  if (_nowMinute == 0) {
-    byte _indexOfLog = _nowHour;
+  if (globCurrSettings.nowMinute == 0) {
+    byte _indexOfLog = globCurrSettings.nowHour;
     word _logValue;
     if (!aquaTempConnected) _logValue = 0;
     else _logValue = (float)aquaTemp * 10 + 1000;

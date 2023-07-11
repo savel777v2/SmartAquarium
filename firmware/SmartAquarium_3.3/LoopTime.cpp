@@ -5,17 +5,7 @@
 
 #include "LoopTime.h"
 
-LoopTime::LoopTime (TM1638My* _module, Menu* _menu, Lamps* _lamps, ControlTemp* _controlTemp, BubbleCounter* _bubbleCounter, StepMotor* _stepMotor, BubbleControl* _bubbleControl, Feeding* _feeding, MicroDS3231* _rtc, global::CurrSettings* _currSettings) {
-  module = _module;
-  menu = _menu;
-  lamps = _lamps;
-  controlTemp = _controlTemp;
-  bubbleCounter = _bubbleCounter;
-  stepMotor = _stepMotor;
-  bubbleControl = _bubbleControl;
-  feeding = _feeding;
-  rtc = _rtc;
-  currSettings = _currSettings;
+LoopTime::LoopTime () {  
   nextKeyboardTime = millis() + KEYBOARD_INTERVAL;
   nextSecondTime = 0;
   activeLedMotor = 0;
@@ -26,10 +16,10 @@ void LoopTime::readKeyboard() {
   if (millis() <= nextKeyboardTime) return false;
 
   nextKeyboardTime = millis() + KEYBOARD_INTERVAL;
-  byte keys = module->keysPressed(B10000000, B00000000);
-  if (module->keyPressed(7, keys)) {
+  byte keys = globModule1638.keysPressed(B10000000, B00000000);
+  if (globModule1638.keyPressed(7, keys)) {
     // manualLamp
-    lamps->changeManualLamp();
+    globLamps.changeManualLamp();
   }
 };
 
@@ -38,68 +28,68 @@ void LoopTime::loop() {
   // Loop once First time
   if (nextSecondTime == 0) {
     nextSecondTime = millis() + 1000;
-    currSettings->nowSecond = rtc->getSeconds();
-    currSettings->nowMinute = rtc->getMinutes();
-    currSettings->nowHour = rtc->getHours();
+    globCurrSettings.nowSecond = globDS3231.getSeconds();
+    globCurrSettings.nowMinute = globDS3231.getMinutes();
+    globCurrSettings.nowHour = globDS3231.getHours();
     minuteControl();
-    menu->display();
+    globMenu.display();
   }
 
   // temp reader and display
-  if (controlTemp->loopNeedDisplay() && menu->getSubmenu() == curTemp) menu->display();
+  if (globControlTemp.loopNeedDisplay() && globMenu.getSubmenu() == curTemp) globMenu.display();
 
   // Feeding and display
-  if (feeding->loopNeedDisplay() && menu->getSubmenu() == feedingLoop) menu->display();
+  if (globFeeding.loopNeedDisplay() && globMenu.getSubmenu() == feedingLoop) globMenu.display();
 
   // loop BubbleCounter and display
-  byte needDisplayCounter = bubbleCounter->loopNeedDisplay();
-  if ((needDisplayCounter & 0b00000001) == 0b00000001 && menu->getSubmenu() == sensorValue) menu->display();
-  if ((needDisplayCounter & 0b00000100) == 0b00000100) module->setLED(1, 7); // начало пузырька
-  if ((needDisplayCounter & 0b00001000) == 0b00001000) module->setLED(0, 7); // конец пузырька
+  byte needDisplayCounter = globBubbleCounter.loopNeedDisplay();
+  if ((needDisplayCounter & 0b00000001) == 0b00000001 && globMenu.getSubmenu() == sensorValue) globMenu.display();
+  if ((needDisplayCounter & 0b00000100) == 0b00000100) globModule1638.setLED(1, 7); // начало пузырька
+  if ((needDisplayCounter & 0b00001000) == 0b00001000) globModule1638.setLED(0, 7); // конец пузырька
   if ((needDisplayCounter & 0b00010000) == 0b00010000) {
     // контроль пузырьков - по ошибке или пузырьку
-    if (bubbleControl->controlWaiting()) module->setLED(1, 6);
-    else module->setLED(0, 6);
-    if (menu->getSubmenu() == bubblesInSecond) menu->display();
+    if (globBubbleControl.controlWaiting()) globModule1638.setLED(1, 6);
+    else globModule1638.setLED(0, 6);
+    if (globMenu.getSubmenu() == bubblesInSecond) globMenu.display();
   }
 
   // loop StepMotor and display
-  int _direction = stepMotor->loopDirection();
+  int _direction = globStepMotor.loopDirection();
   if (_direction != 255) {
-    module->setLED(0, activeLedMotor);
+    globModule1638.setLED(0, activeLedMotor);
     if (_direction < 0) activeLedMotor = activeLedMotor == 0 ? 3 : activeLedMotor - 1;
     else if (_direction > 0) activeLedMotor = activeLedMotor == 3 ? 0 : activeLedMotor + 1;
-    if (_direction != 0) module->setLED(1, activeLedMotor);
+    if (_direction != 0) globModule1638.setLED(1, activeLedMotor);
   }
 
   // loop timer
-  if (currSettings->timer != nullptr) {
-    int needDisplay = currSettings->timer->loopNeedDisplay();
+  if (globCurrSettings.timer != nullptr) {
+    int needDisplay = globCurrSettings.timer->loopNeedDisplay();
     if (needDisplay == -1) {
-      delete currSettings->timer;
-      currSettings->timer = nullptr;
-      if (currSettings->alarmMelody == nullptr) currSettings->alarmMelody = new Melody();
-      else (currSettings->alarmMelody->restart());
-      if (menu->getSubmenu() == timeMenu || menu->getSubmenu() == timer) {
-        menu->display();
+      delete globCurrSettings.timer;
+      globCurrSettings.timer = nullptr;
+      if (globCurrSettings.alarmMelody == nullptr) globCurrSettings.alarmMelody = new Melody();
+      else (globCurrSettings.alarmMelody->restart());
+      if (globMenu.getSubmenu() == timeMenu || globMenu.getSubmenu() == timer) {
+        globMenu.display();
       }
     }
-    else if (needDisplay == 1 && menu->getSubmenu() == timer) menu->display();
+    else if (needDisplay == 1 && globMenu.getSubmenu() == timer) globMenu.display();
   }
 
   // turn off alarm Melody
-  if (currSettings->alarmMelody != nullptr) {
-    int needLoop = currSettings->alarmMelody->loopNeedLoop();
+  if (globCurrSettings.alarmMelody != nullptr) {
+    int needLoop = globCurrSettings.alarmMelody->loopNeedLoop();
     if (!needLoop) {
-      delete currSettings->alarmMelody;
-      currSettings->alarmMelody = nullptr;
+      delete globCurrSettings.alarmMelody;
+      globCurrSettings.alarmMelody = nullptr;
     }
   }
 
   // turn off second Led
-  if (currSettings->secondLed && millis() > (nextSecondTime - SECOND_NOLED_DURATION)) {
-    currSettings->secondLed = false;
-    menu->display();
+  if (globCurrSettings.secondLed && millis() > (nextSecondTime - SECOND_NOLED_DURATION)) {
+    globCurrSettings.secondLed = false;
+    globMenu.display();
   }
 
   // Loop increment local time
@@ -107,35 +97,35 @@ void LoopTime::loop() {
 
     // секунда оттикала
     nextSecondTime += 1000;
-    if (menu->getSubmenu() == timeMenu) {
-      currSettings->secondLed = true;
-      menu->display();
+    if (globMenu.getSubmenu() == timeMenu) {
+      globCurrSettings.secondLed = true;
+      globMenu.display();
     }
 
-    if (menu->getSubmenu() == durations) {
+    if (globMenu.getSubmenu() == durations) {
       // print durations
-      currSettings->printMax1 = currSettings->max1;
-      currSettings->printMax2 = currSettings->max2;
-      currSettings->printMax3 = currSettings->max3;
-      currSettings->printMax4 = currSettings->max4;
-      menu->display();
-      currSettings->max1 = 0;
-      currSettings->max2 = 0;
-      currSettings->max3 = 0;
-      currSettings->max4 = 0;
+      globCurrSettings.printMax1 = globCurrSettings.max1;
+      globCurrSettings.printMax2 = globCurrSettings.max2;
+      globCurrSettings.printMax3 = globCurrSettings.max3;
+      globCurrSettings.printMax4 = globCurrSettings.max4;
+      globMenu.display();
+      globCurrSettings.max1 = 0;
+      globCurrSettings.max2 = 0;
+      globCurrSettings.max3 = 0;
+      globCurrSettings.max4 = 0;
     }
 
-    currSettings->nowSecond++;
-    if (currSettings->nowSecond == 60) {
-      currSettings->nowSecond = 0;
-      currSettings->nowMinute++;
-      if (currSettings->nowMinute == 60) {
-        currSettings->nowMinute = 0;
-        currSettings->nowHour++;
+    globCurrSettings.nowSecond++;
+    if (globCurrSettings.nowSecond == 60) {
+      globCurrSettings.nowSecond = 0;
+      globCurrSettings.nowMinute++;
+      if (globCurrSettings.nowMinute == 60) {
+        globCurrSettings.nowMinute = 0;
+        globCurrSettings.nowHour++;
         // синхронизация времени раз в час
-        currSettings->nowSecond = rtc->getSeconds();
-        currSettings->nowMinute = rtc->getMinutes();
-        currSettings->nowHour = rtc->getHours();
+        globCurrSettings.nowSecond = globDS3231.getSeconds();
+        globCurrSettings.nowMinute = globDS3231.getMinutes();
+        globCurrSettings.nowHour = globDS3231.getHours();
       }
       minuteControl();
     }
@@ -151,20 +141,20 @@ bool LoopTime::itsDay(int _nowInMinutes, int _morningInMinutes, int _eveningInMi
 void LoopTime::minuteControl() {
 
   // local values
-  int _nowInMinutes = global::timeInMinutes(currSettings->nowHour, currSettings->nowMinute);
+  int _nowInMinutes = global::timeInMinutes(globCurrSettings.nowHour, globCurrSettings.nowMinute);
   int _morningInMinutes = global::timeInMinutes(EEPROM.read(EEPROM_MORNING_HOUR), EEPROM.read(EEPROM_MORNING_MINUTE));
   int _eveningInMinutes = global::timeInMinutes(EEPROM.read(EEPROM_EVENING_HOUR), EEPROM.read(EEPROM_EVENING_MINUTE));
 
 
   // it's day or nigth
-  currSettings->nowDay = itsDay(_nowInMinutes, _morningInMinutes, _eveningInMinutes);
+  globCurrSettings.nowDay = itsDay(_nowInMinutes, _morningInMinutes, _eveningInMinutes);
 
   // control alarm
   if (EEPROM.read(EEPROM_ALARM) == 1) {
     int _alarmInMinutes = global::timeInMinutes(EEPROM.read(EEPROM_ALARM_HOUR), EEPROM.read(EEPROM_ALARM_MINUTE));
     if (_nowInMinutes == _alarmInMinutes) {
-      if (currSettings->alarmMelody == nullptr) currSettings->alarmMelody = new Melody();
-      else currSettings->alarmMelody->restart();
+      if (globCurrSettings.alarmMelody == nullptr) globCurrSettings.alarmMelody = new Melody();
+      else globCurrSettings.alarmMelody->restart();
     }
   }
 
@@ -183,16 +173,16 @@ void LoopTime::minuteControl() {
     _needingBubbleSpeed = EEPROM.read(EEPROM_NIGHT_BUBBLE_SPEED);
     _needingStatus = EEPROM.read(EEPROM_NIGHT_BUBBLE_ON);
   }
-  bubbleControl->set_currStatus(_needingStatus);
-  bubbleControl->set_bubblesIn100Second(_needingBubbleSpeed);
+  globBubbleControl.set_currStatus(_needingStatus);
+  globBubbleControl.set_bubblesIn100Second(_needingBubbleSpeed);
 
   // control lamps
-  lamps->scheduler();
+  globLamps.scheduler();
 
   // control heater
-  controlTemp->scheduler(currSettings->nowDay, currSettings->nowMinute, currSettings->nowHour);
+  globControlTemp.scheduler();
 
   // control feeding
-  feeding->scheduler(_nowInMinutes);
+  globFeeding.scheduler(_nowInMinutes);
 
 };

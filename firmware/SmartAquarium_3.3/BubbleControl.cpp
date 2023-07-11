@@ -4,15 +4,10 @@
 
 #include "BubbleControl.h"
 
-BubbleControl::BubbleControl(BubbleCounter* _bubbleCounter, StepMotor* _stepMotor) {
-  bubbleCounter = _bubbleCounter;
-  stepMotor = _stepMotor;
-};
-
 // local functions
 void BubbleControl::_checkReturnPosition() {
   // return to position before NoResult
-  if (_currStatus == 4 && _moveNoResult != 0) stepMotor->set_positionMove(_moveNoResult * -1);
+  if (_currStatus == 4 && _moveNoResult != 0) globStepMotor.set_positionMove(_moveNoResult * -1);
 }
 
 // global functions
@@ -94,7 +89,7 @@ void BubbleControl::clearError() {
 bool BubbleControl::controlWaiting() {
 
   // пока не нужно контролировать
-  if (stepMotor->get_isActive()) {
+  if (globStepMotor.get_isActive()) {
     _bubblesAfterMotor = 0;
     return false;
   }
@@ -106,12 +101,12 @@ bool BubbleControl::controlWaiting() {
   }
 
   // теперь проверяем дабы пузырьки стабилизировались
-  if (!bubbleCounter->itsRegularBubbles()) return false;
+  if (!globBubbleCounter.itsRegularBubbles()) return false;
 
   // если не работаем - ничего не нужно
   if (_currStatus == 0) return false;
 
-  int bubbleDuration = bubbleCounter->getDuration();
+  int bubbleDuration = globBubbleCounter.getDuration();
 
   // если кран перекрыт, то перекрыт
   if (bubbleDuration == -3) bubbleDuration = 10000;
@@ -194,7 +189,7 @@ bool BubbleControl::controlWaiting() {
   // движение мотора собственно
   if (EEPROM.read(EEPROM_CONTROL_BUBBLE_SOUND_ON) == 1) tone(PIEZO_PIN, 2500, 500);
   _bubblesAfterMotor = 0;
-  stepMotor->set_positionMove(_lastPositionMove);
+  globStepMotor.set_positionMove(_lastPositionMove);
 
   return true;
 

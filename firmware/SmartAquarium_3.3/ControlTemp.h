@@ -12,9 +12,9 @@
 #include <Arduino.h>
 #include <microDS18B20.h>
 #include "TM1638My.h"
-extern TM1638My gModule1638;
-
+extern TM1638My globModule1638;
 #include "Global.h"
+extern global::CurrSettings globCurrSettings;
 
 // пин цифрового датчика температуры
 #define DS18B20_PIN 7
@@ -35,7 +35,7 @@ class ControlTemp {
     word getHeaterTempLog(byte _index);
     // проверка текущего состояния нагревателя от расписания и текущей температуры (берет из кэша)
     // вызывать при изменении текущих минут
-    void scheduler(bool _nowDay, byte _nowMinute, byte _nowHour);
+    void scheduler();
     // вызывать как можно чаще, функция считывания температуры
     // возвращает true если она изменилась, иначе false
     bool loopNeedDisplay();

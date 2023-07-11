@@ -11,12 +11,13 @@
 #include <Arduino.h>
 #include "Global.h"
 #include "BubbleCounter.h"
+extern BubbleCounter globBubbleCounter;
 #include "StepMotor.h"
+extern StepMotor globStepMotor;
 
 class BubbleControl {
   public:
 
-    BubbleControl(BubbleCounter* _bubbleCounter, StepMotor* _stepMotor);
     void set_currStatus(byte currStatus);
     byte get_currStatus();
     String get_condition();
@@ -30,9 +31,6 @@ class BubbleControl {
     bool controlWaiting();
 
   private:
-
-    BubbleCounter* bubbleCounter;
-    StepMotor* stepMotor;
 
     void _checkReturnPosition(); // возвращает на место после ошибки
 

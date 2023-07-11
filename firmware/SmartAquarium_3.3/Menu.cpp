@@ -4,14 +4,11 @@
 
 #include "Menu.h"
 
-Menu::Menu (TM1638My* _module, ControlTemp* _controlTemp, BubbleCounter* _bubbleCounter, StepMotor* _stepMotor, BubbleControl* _bubbleControl, Feeding* _feeding, MicroDS3231* _rtc, global::CurrSettings* _currSettings) {
-  module = _module;
-  controlTemp = _controlTemp;
+Menu::Menu (BubbleCounter* _bubbleCounter, StepMotor* _stepMotor, BubbleControl* _bubbleControl, Feeding* _feeding, global::CurrSettings* _currSettings) {    
   bubbleCounter = _bubbleCounter;
   stepMotor = _stepMotor;
   feeding = _feeding;
-  bubbleControl = _bubbleControl;
-  rtc = _rtc;
+  bubbleControl = _bubbleControl;  
   currSettings = _currSettings;
   gorInd = 0;
   verInd = 0;
@@ -43,20 +40,20 @@ bool Menu::readKeyboardNeedControl() {
   nextKeyboardTime = millis() + KEYBOARD_INTERVAL;
   bool ans = false;
 
-  byte keys = module->keysPressed(B00111111, B00111100);
-  if (module->keyPressed(0, keys) && currSettings->alarmMelody != nullptr) {
+  byte keys = globModule1638.keysPressed(B00111111, B00111100);
+  if (globModule1638.keyPressed(0, keys) && currSettings->alarmMelody != nullptr) {
     // Esc - выход из мелодии
     delete currSettings->alarmMelody;
     currSettings->alarmMelody = nullptr;
   }
   if (numEditItem) {
-    if (module->keyPressed(0, keys)) {
+    if (globModule1638.keyPressed(0, keys)) {
       // Esc - выход из редактирования
       subMenu[numEditItem - 1]->exitEditing();
       numEditItem = 0;
       display();
     }
-    if (module->keyPressed(1, keys)) {
+    if (globModule1638.keyPressed(1, keys)) {
       // Enter - сохраняем и к следующему
       subMenu[numEditItem - 1]->saveEditing();
       ans = true;
@@ -75,19 +72,19 @@ bool Menu::readKeyboardNeedControl() {
         display();
       }
     }
-    if (module->keyPressed(2, keys)) {
+    if (globModule1638.keyPressed(2, keys)) {
       subMenu[numEditItem - 1]->downValue();
       lastBlinkTime = millis();
       display();
     }
-    if (module->keyPressed(3, keys)) {
+    if (globModule1638.keyPressed(3, keys)) {
       subMenu[numEditItem - 1]->upValue();
       lastBlinkTime = millis();
       display();
     }
   }
   else {
-    if (module->keyPressed(0, keys)) {
+    if (globModule1638.keyPressed(0, keys)) {
       // Esc - возврат меню на адрес 0-0
       if (verInd) {
         verInd = 0;
@@ -100,7 +97,7 @@ bool Menu::readKeyboardNeedControl() {
         display();
       }
     }
-    if (module->keyPressed(1, keys)) {
+    if (globModule1638.keyPressed(1, keys)) {
       // Enter - режим редактирования
       int i;
       int sizeSubMenu = sizeof(subMenu) / sizeof(subMenu[0]);
@@ -114,10 +111,10 @@ bool Menu::readKeyboardNeedControl() {
       }
     }
     int dVer = 0, dGor = 0;
-    if (verInd == 0 && module->keyPressed(2, keys)) dGor--; // left
-    if (verInd == 0 && module->keyPressed(3, keys)) dGor++; // right
-    if (module->keyPressed(4, keys)) dVer++; // down
-    if (module->keyPressed(5, keys)) dVer--; // up
+    if (verInd == 0 && globModule1638.keyPressed(2, keys)) dGor--; // left
+    if (verInd == 0 && globModule1638.keyPressed(3, keys)) dGor++; // right
+    if (globModule1638.keyPressed(4, keys)) dVer++; // down
+    if (globModule1638.keyPressed(5, keys)) dVer--; // up
     if ((dGor || dVer) && (submenuName(gorInd + dGor, verInd + dVer) != anon)) {
       gorInd += dGor;
       verInd += dVer;
@@ -144,7 +141,7 @@ void Menu::display() {
   while (deltaLen++ < 0) {
     sOut += ' ';
   }
-  module->setDisplayToString(sOut, getDots(submenuName(gorInd, verInd)));
+  globModule1638.setDisplayToString(sOut, getDots(submenuName(gorInd, verInd)));
 };
 
 submenu Menu::submenuName(byte _gorInd, byte _verInd) {
@@ -213,7 +210,7 @@ byte Menu::getDots(submenu _submenu) {
     case morningFeeding:
     case eveningFeeding:
     case alarm: return B00010000; break;
-    case curTemp: return controlTemp->getAquaTempConnected() ? B00100010 : B00100000; break;
+    case curTemp: return globControlTemp.getAquaTempConnected() ? B00100010 : B00100000; break;
     case bubbleControlSettings: return B01000100; break;
     case logTemp: return B01000010; break;
     case nightFeeding: return B01000100; break;
@@ -237,8 +234,8 @@ void Menu::initSubmenu(submenu _submenu) {
     case timeMenu:
       subMenu[0] = new SettingsValue(currSettings, dayNight);
       subMenu[1] = new TextItem(" ");
-      subMenu[2] = new TimeValue(currSettings, 0, rtc);
-      subMenu[3] = new TimeValue(currSettings, 1, rtc);
+      subMenu[2] = new TimeValue(currSettings, 0);
+      subMenu[3] = new TimeValue(currSettings, 1);
       subMenu[4] = new SettingsValue(currSettings, timerOn);
       subMenu[5] = new AlarmFlag();
       break;
@@ -270,12 +267,12 @@ void Menu::initSubmenu(submenu _submenu) {
       break;
     case curTemp:
       subMenu[0] = new TextItem("i");
-      subMenu[1] = new RtsTemp(rtc);
+      subMenu[1] = new RtsTemp();
       subMenu[2] = new TextItem("o");
-      subMenu[3] = new AquaTemp(controlTemp);
+      subMenu[3] = new AquaTemp();
       break;
     case logTemp:
-      subMenu[0] = new TempLog(currSettings, controlTemp);
+      subMenu[0] = new TempLog(currSettings);
       break;
     case dayTemp:
       subMenu[0] = new TextItem("Td  ");
