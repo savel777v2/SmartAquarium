@@ -1,101 +1,39 @@
 /*
-  Lamps.h - Library for displaying menu in TM1638.
-
-
+  Lamps.h - Объект для управления светом прожекторов в аквариуме
+  Все настройки управления хранятся в EEPROM, адреса заданы в Global.h
+  На данный момент управляет 3 прожекторами - влючая их по утрам слева направо (рассвет),
+  и выключая по вечерам также слева направо (закат). Также возможно ручное управление по кнопке.
 */
-#pragma once
 
+#ifndef Lamps_h
+#define Lamps_h
+
+#include <EEPROM.h>
+#include <Arduino.h>
 #include "Global.h"
 
-// Lamps from left to right
+// Прожектора слева направо
 #define LAMP1_PIN A1
 #define LAMP2_PIN A2
 #define LAMP3_PIN A3
-#define MANUAL_LAMP_DURATION 600000 // at least on change 10 minutes
+// Продолжительность воздействия ручного управления по кнопке (после поять сваливается в расписание)
+#define MANUAL_LAMP_DURATION 600000 // 10 минут
 
 class Lamps {
 
   public:
     Lamps(global::CurrSettings* _currSettings);
+    // проверка режима света по расписанию
+    // вызывать при изменении текущих минут
     void scheduler();
+    // изменение ручного режима ламп - вызывать по нажатию кнопки
     void changeManualLamp();
 
   private:
     global::CurrSettings* currSettings;
+    // ручной режим ламп: 0 - отсутствует, действует автомат, 1 - лампы включены, 0 - отключены
     byte manualLamp;
     unsigned long manualLampTimeOff;
 };
 
-Lamps::Lamps(global::CurrSettings* _currSettings) {
-  pinMode(LAMP1_PIN, OUTPUT);
-  pinMode(LAMP2_PIN, OUTPUT);
-  pinMode(LAMP3_PIN, OUTPUT);
-  currSettings = _currSettings;
-  manualLamp = 0; // 0 - not, 1 - on, 2 - off
-  manualLampTimeOff = 0;
-};
-
-void Lamps::scheduler() {
-
-  byte lampPinsLevel[3];
-
-  // turn off manual lamp
-  if (manualLamp > 0 && millis() >= manualLampTimeOff) manualLamp = 0;
-
-  // tone for turn off manual lamp
-  if (manualLamp == 0 && manualLampTimeOff > 0) {
-    manualLampTimeOff = 0;
-    tone(PIEZO_PIN, 2500, 100);
-  }
-
-  if (manualLamp == 2 || !currSettings->nowDay) {
-    for (int i = 0; i < 3; i++) lampPinsLevel[i] = 0;
-  }
-  else if (manualLamp == 1) {
-    for (int i = 0; i < 3; i++) lampPinsLevel[i] = 1;
-  }
-  else {
-    int minutesBetweenLamps = EEPROM.read(EEPROM_LAMP_INTERVAL);
-    int nowInMinutes = global::timeInMinutes(currSettings->nowHour, currSettings->nowMinute);
-    int morningInMinutes = global::timeInMinutes(EEPROM.read(EEPROM_MORNING_HOUR), EEPROM.read(EEPROM_MORNING_MINUTE));
-    int eveningInMinutes = global::timeInMinutes(EEPROM.read(EEPROM_EVENING_HOUR), EEPROM.read(EEPROM_EVENING_MINUTE));
-    for (int i = 0; i < 3; i++) {
-      // after morning
-      int minutesLamp = morningInMinutes + minutesBetweenLamps * i;
-      lampPinsLevel[i] = 0;
-      if (nowInMinutes >= morningInMinutes) {
-        if (nowInMinutes >= minutesLamp) lampPinsLevel[i] = 1;
-      }
-      else if (minutesLamp >= 1440) {
-        minutesLamp = minutesLamp - 1440;
-        if (nowInMinutes >= minutesLamp) lampPinsLevel[i] = 1;
-      }
-      else lampPinsLevel[i] = 1;
-      // before evening
-      minutesLamp = eveningInMinutes + minutesBetweenLamps * (i - 2);
-      if (nowInMinutes < eveningInMinutes) {
-        if (nowInMinutes >= minutesLamp) lampPinsLevel[i] = 0;
-      }
-      else if (minutesLamp < 0) {
-        minutesLamp = minutesLamp + 1440;
-        if (nowInMinutes >= minutesLamp) lampPinsLevel[i] = 0;
-      }
-    }
-  }
-
-  digitalWrite(LAMP1_PIN, lampPinsLevel[0] ? LOW : HIGH);
-  digitalWrite(LAMP2_PIN, lampPinsLevel[1] ? LOW : HIGH);
-  digitalWrite(LAMP3_PIN, lampPinsLevel[2] ? LOW : HIGH);
-
-}
-
-void Lamps::changeManualLamp() {
-
-  if (manualLamp == 0) manualLamp = (currSettings->nowDay ? 2 : 1);
-  else if (manualLamp == (currSettings->nowDay ? 2 : 1)) manualLamp = (manualLamp == 2 ? 1 : 2);
-  else manualLamp = 0;
-
-  manualLampTimeOff = millis() + MANUAL_LAMP_DURATION;
-  scheduler();
-
-}
+#endif
