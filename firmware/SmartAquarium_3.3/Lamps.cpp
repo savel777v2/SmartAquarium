@@ -64,7 +64,7 @@ void Lamps::scheduler() {
   digitalWrite(LAMP2_PIN, lampPinsLevel[1] ? LOW : HIGH);
   digitalWrite(LAMP3_PIN, lampPinsLevel[2] ? LOW : HIGH);
 
-}
+};
 
 void Lamps::changeManualLamp() {
 
@@ -75,4 +75,4 @@ void Lamps::changeManualLamp() {
   manualLampTimeOff = millis() + MANUAL_LAMP_DURATION;
   scheduler();
 
-}
+};

@@ -25,7 +25,7 @@ BubbleControl globBubbleControl;
 Feeding globFeeding;
 
 #include "Menu.h"
-Menu globMenu(&globBubbleCounter, &globStepMotor, &globBubbleControl, &globFeeding, &globCurrSettings);
+Menu globMenu;
 
 #include "Lamps.h"
 Lamps globLamps;

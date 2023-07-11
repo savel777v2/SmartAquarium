@@ -32,4 +32,4 @@ bool Melody::loopNeedLoop() {
 
   return true;
 
-}
+};

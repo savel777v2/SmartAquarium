@@ -11,16 +11,13 @@
 extern MicroDS3231 globDS3231;
 
 #include "Global.h"
+extern global::CurrSettings globCurrSettings;
 
 #include "TM1638My.h"
 extern TM1638My globModule1638;
 
-#include "Feeding.h"
-#include "BubbleControl.h"
-#include "BubbleCounter.h"
 #include "ControlTemp.h"
 extern ControlTemp globControlTemp;
-#include "StepMotor.h"
 #include "MenuItem.h"
 
 // интервал мигаия при редатировании детали меню
@@ -39,18 +36,13 @@ enum submenu
 class Menu {
 
   public:
-    Menu (BubbleCounter* _bubbleCounter, StepMotor* _stepMotor, BubbleControl* _bubbleControl, Feeding* _feeding, global::CurrSettings* _currSettings);
+    Menu();
     void display();
     bool loopNeedControl();
     submenu getSubmenu();
 
-  private:    
-    MenuItem* subMenu[6];    
-    BubbleCounter* bubbleCounter;
-    StepMotor* stepMotor;
-    BubbleControl* bubbleControl;
-    Feeding* feeding;    
-    global::CurrSettings* currSettings;
+  private:
+    MenuItem* subMenu[6];
     byte gorInd, verInd;
     unsigned long nextKeyboardTime, lastBlinkTime;
     byte numEditItem;

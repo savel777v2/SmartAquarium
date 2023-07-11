@@ -11,16 +11,25 @@
 extern MicroDS3231 globDS3231;
 
 #include "Global.h"
+extern global::CurrSettings globCurrSettings;
+
 #include "TM1638My.h"
 extern TM1638My globModule1638;
 
 #include "Feeding.h"
+extern Feeding globFeeding;
+
 #include "BubbleControl.h"
+extern BubbleControl globBubbleControl;
+
 #include "BubbleCounter.h"
+extern BubbleCounter globBubbleCounter;
+
 #include "ControlTemp.h"
 extern ControlTemp globControlTemp;
 
 #include "StepMotor.h"
+extern StepMotor globStepMotor;
 
 enum typeBubbleCounterValue
 {
@@ -77,11 +86,10 @@ class TextItem: public MenuItem {
 class SettingsValue: public MenuItem {
 
   public:
-    SettingsValue (const global::CurrSettings* _currSettings, const typeSettingsValue _valueType);
+    SettingsValue (const typeSettingsValue _valueType);
     String display();
   private:
     typeSettingsValue valueType;
-    global::CurrSettings* currSettings;
 
 };
 
@@ -97,7 +105,7 @@ class AlarmFlag: public MenuItem {
 class TimeValue: public MenuItem {
 
   public:
-    TimeValue (const global::CurrSettings* _currSettings, const byte _valueIndex);
+    TimeValue (const byte _valueIndex);
     String display();
     boolean editing();
     void enterEditing();
@@ -107,7 +115,6 @@ class TimeValue: public MenuItem {
   private:
     byte editValue;
     byte valueIndex;
-    global::CurrSettings* currSettings;    
 
 };
 
@@ -135,13 +142,10 @@ class byteEEPROMvalue: public MenuItem {
 class MotorPosition: public byteEEPROMvalue {
 
   public:
-    //MotorPosition (const StepMotor* _stepMotor) : byteEEPROMvalue (EEPROM_MOTOR_POSITION, 0, 250, 4, 3);
-    MotorPosition (const StepMotor* _stepMotor);
+    MotorPosition ();
     String display();
     void saveEditing();
-  private:
-    StepMotor * stepMotor;
-
+    
 };
 
 // выводит текущие минуты или секунды таймера, если он тикает,
@@ -149,7 +153,7 @@ class MotorPosition: public byteEEPROMvalue {
 class TimerValue: public MenuItem {
 
   public:
-    TimerValue (const global::CurrSettings * _currSettings, const byte _valueIndex);
+    TimerValue (const byte _valueIndex);
     String display();
     boolean editing();
     void enterEditing();
@@ -157,7 +161,6 @@ class TimerValue: public MenuItem {
     void upValue();
     void saveEditing();
   private:
-    global::CurrSettings * currSettings;
     bool valueIndex;
     byte editValue;
 
@@ -167,7 +170,6 @@ class TimerValue: public MenuItem {
 class TimerStart: public MenuItem {
 
   public:
-    TimerStart (const global::CurrSettings * _currSettings);
     String display();
     boolean editing();
     void enterEditing();
@@ -176,7 +178,6 @@ class TimerStart: public MenuItem {
     void saveEditing();
   private:
     byte editValue;
-    global::CurrSettings * currSettings;
 
 };
 
@@ -201,14 +202,12 @@ class AquaTemp: public MenuItem {
 class TempLog: public MenuItem {
 
   public:
-    TempLog (const global::CurrSettings * _currSettings);
     String display();
     boolean editing();
     void enterEditing();
     void downValue();
     void upValue();
   private:
-    global::CurrSettings* currSettings;    
     byte editValue;
     String logToString(byte _index);
 
@@ -218,10 +217,9 @@ class TempLog: public MenuItem {
 class bubbleCounterValue: public MenuItem {
 
   public:
-    bubbleCounterValue(const BubbleCounter * _bubbleCounter, const typeBubbleCounterValue _valueType);
+    bubbleCounterValue(const typeBubbleCounterValue _valueType);
     String display();
   private:
-    BubbleCounter * bubbleCounter;
     typeBubbleCounterValue valueType;
 
 };
@@ -230,10 +228,9 @@ class bubbleCounterValue: public MenuItem {
 class bubbleControlValue: public MenuItem {
 
   public:
-    bubbleControlValue (const BubbleControl * _bubbleControl, const typeBubbleControlValue _valueType);
+    bubbleControlValue (const typeBubbleControlValue _valueType);
     String display();
   private:
-    BubbleControl * bubbleControl;
     typeBubbleControlValue valueType;
 
 };
@@ -242,7 +239,6 @@ class bubbleControlValue: public MenuItem {
 class FeedingValue: public MenuItem {
 
   public:
-    FeedingValue (const Feeding * _feeding);
     String display();
     boolean editing();
     void enterEditing();
@@ -251,7 +247,6 @@ class FeedingValue: public MenuItem {
     void saveEditing();
   private:
     byte editValue;
-    Feeding * feeding;
 
 };
 

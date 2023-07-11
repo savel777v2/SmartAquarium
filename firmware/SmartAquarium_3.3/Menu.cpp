@@ -4,12 +4,7 @@
 
 #include "Menu.h"
 
-Menu::Menu (BubbleCounter* _bubbleCounter, StepMotor* _stepMotor, BubbleControl* _bubbleControl, Feeding* _feeding, global::CurrSettings* _currSettings) {    
-  bubbleCounter = _bubbleCounter;
-  stepMotor = _stepMotor;
-  feeding = _feeding;
-  bubbleControl = _bubbleControl;  
-  currSettings = _currSettings;
+Menu::Menu() {
   gorInd = 0;
   verInd = 0;
   numEditItem = 0;
@@ -41,10 +36,10 @@ bool Menu::readKeyboardNeedControl() {
   bool ans = false;
 
   byte keys = globModule1638.keysPressed(B00111111, B00111100);
-  if (globModule1638.keyPressed(0, keys) && currSettings->alarmMelody != nullptr) {
+  if (globModule1638.keyPressed(0, keys) && globCurrSettings.alarmMelody != nullptr) {
     // Esc - выход из мелодии
-    delete currSettings->alarmMelody;
-    currSettings->alarmMelody = nullptr;
+    delete globCurrSettings.alarmMelody;
+    globCurrSettings.alarmMelody = nullptr;
   }
   if (numEditItem) {
     if (globModule1638.keyPressed(0, keys)) {
@@ -201,7 +196,7 @@ submenu Menu::submenuName(byte _gorInd, byte _verInd) {
 
 byte Menu::getDots(submenu _submenu) {
   switch (_submenu) {
-    case timeMenu: return currSettings->secondLed ? B00010000 : 0; break;
+    case timeMenu: return globCurrSettings.secondLed ? B00010000 : 0; break;
     case bubbleDaySpeed:
     case bubbleNightSpeed:
     case timer:
@@ -232,18 +227,18 @@ void Menu::initSubmenu(submenu _submenu) {
 
   switch (_submenu) {
     case timeMenu:
-      subMenu[0] = new SettingsValue(currSettings, dayNight);
+      subMenu[0] = new SettingsValue(dayNight);
       subMenu[1] = new TextItem(" ");
-      subMenu[2] = new TimeValue(currSettings, 0);
-      subMenu[3] = new TimeValue(currSettings, 1);
-      subMenu[4] = new SettingsValue(currSettings, timerOn);
+      subMenu[2] = new TimeValue(0);
+      subMenu[3] = new TimeValue(1);
+      subMenu[4] = new SettingsValue(timerOn);
       subMenu[5] = new AlarmFlag();
       break;
     case timer:
       subMenu[0] = new TextItem("St");
-      subMenu[1] = new TimerValue(currSettings, 0);
-      subMenu[2] = new TimerValue(currSettings, 1);
-      subMenu[3] = new TimerStart(currSettings);
+      subMenu[1] = new TimerValue(0);
+      subMenu[2] = new TimerValue(1);
+      subMenu[3] = new TimerStart();
       break;
     case morning:
       subMenu[0] = new TextItem("Sd");
@@ -272,7 +267,7 @@ void Menu::initSubmenu(submenu _submenu) {
       subMenu[3] = new AquaTemp();
       break;
     case logTemp:
-      subMenu[0] = new TempLog(currSettings);
+      subMenu[0] = new TempLog();
       break;
     case dayTemp:
       subMenu[0] = new TextItem("Td  ");
@@ -289,16 +284,16 @@ void Menu::initSubmenu(submenu _submenu) {
       subMenu[1] = new byteEEPROMvalue(EEPROM_DELTA_TEMP, 5, 10, 2);
       break;
     case bubblesInSecond:
-      subMenu[0] = new bubbleCounterValue(bubbleCounter, bubbleIn100Second);
-      subMenu[1] = new bubbleControlValue(bubbleControl, controlCondition);
+      subMenu[0] = new bubbleCounterValue(bubbleIn100Second);
+      subMenu[1] = new bubbleControlValue(controlCondition);
       break;
     case bubbleControlSettings:
-      subMenu[0] = new bubbleControlValue(bubbleControl, minBubblesIn100Second);
-      subMenu[1] = new bubbleControlValue(bubbleControl, maxBubblesIn100Second);
+      subMenu[0] = new bubbleControlValue(minBubblesIn100Second);
+      subMenu[1] = new bubbleControlValue(maxBubblesIn100Second);
       break;
     case sensorValue:
-      subMenu[0] = new bubbleCounterValue(bubbleCounter, minLevel);
-      subMenu[1] = new bubbleCounterValue(bubbleCounter, maxLevel);
+      subMenu[0] = new bubbleCounterValue(minLevel);
+      subMenu[1] = new bubbleCounterValue(maxLevel);
       break;
     case bubbleSettings:
       subMenu[0] = new TextItem("d ");
@@ -326,7 +321,7 @@ void Menu::initSubmenu(submenu _submenu) {
       break;
     case feedingLoop:
       subMenu[0] = new TextItem("Feed");
-      subMenu[1] = new FeedingValue(feeding);
+      subMenu[1] = new FeedingValue();
       break;
     case morningFeeding:
       subMenu[0] = new TextItem("Fd");
@@ -357,7 +352,7 @@ void Menu::initSubmenu(submenu _submenu) {
       break;
     case motorPosition:
       subMenu[0] = new TextItem("POS ");
-      subMenu[1] = new MotorPosition(stepMotor);
+      subMenu[1] = new MotorPosition();
       break;
     case motorSpeed:
       subMenu[0] = new TextItem("51");

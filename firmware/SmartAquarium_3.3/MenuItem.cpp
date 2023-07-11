@@ -61,13 +61,12 @@ String TextItem::display() {
 };
 
 // выводит настройку из currSettings
-SettingsValue::SettingsValue (const global::CurrSettings* _currSettings, const typeSettingsValue _valueType) {
-  currSettings = _currSettings;
+SettingsValue::SettingsValue (const typeSettingsValue _valueType) {
   valueType = _valueType;
 };
 
 String SettingsValue::display() {
-  return valueType == timerOn ? (currSettings->timer == nullptr ? " " : "t") : (currSettings->nowDay ? "d" : "n");
+  return valueType == timerOn ? (globCurrSettings.timer == nullptr ? " " : "t") : (globCurrSettings.nowDay ? "d" : "n");
 };
 
 // выводит флаг будильника из EEPROM
@@ -77,8 +76,7 @@ String AlarmFlag::display() {
 };
 
 // выводит текущее время часы или минуты, редактирует и сохраняет его в MicroDS3231
-TimeValue::TimeValue (const global::CurrSettings* _currSettings, const byte _valueIndex) {
-  currSettings = _currSettings;
+TimeValue::TimeValue (const byte _valueIndex) {
   valueIndex = _valueIndex;
 };
 
@@ -87,7 +85,7 @@ String TimeValue::display() {
     if (currMode.blinkOn) return global::valToString(editValue, 2);
     else return "  ";
   }
-  else return global::valToString(valueIndex ? currSettings->nowMinute : currSettings->nowHour, 2);
+  else return global::valToString(valueIndex ? globCurrSettings.nowMinute : globCurrSettings.nowHour, 2);
 };
 
 boolean TimeValue::editing() {
@@ -96,7 +94,7 @@ boolean TimeValue::editing() {
 
 void TimeValue::enterEditing() {
   currMode.editing = currMode.blinkOn = true;
-  editValue = valueIndex ? currSettings->nowMinute : currSettings->nowHour;
+  editValue = valueIndex ? globCurrSettings.nowMinute : globCurrSettings.nowHour;
 };
 
 void TimeValue::downValue() {
@@ -114,15 +112,15 @@ void TimeValue::saveEditing() {
   DateTime rtcNow = globDS3231.getTime();
   switch (valueIndex) {
     case 0:
-      currSettings->nowHour = editValue;
+      globCurrSettings.nowHour = editValue;
       rtcNow.hour = editValue;
       break;
     case 1:
-      currSettings->nowMinute = editValue;
+      globCurrSettings.nowMinute = editValue;
       rtcNow.minute = editValue;
       break;
   }
- globDS3231.setTime(rtcNow);
+  globDS3231.setTime(rtcNow);
 };
 
 // универсально выводит значение из EEPROM, редактирует и сохраняет его в EEPROM
@@ -170,8 +168,7 @@ void byteEEPROMvalue::saveEditing() {
 };
 
 // наследник от byteEEPROMvalue, дополнительно передает значение в шаговый мотор для его движения
-MotorPosition::MotorPosition (const StepMotor* _stepMotor) : byteEEPROMvalue (EEPROM_MOTOR_POSITION, 0, 250, 4, 3) {
-  stepMotor = _stepMotor;
+MotorPosition::MotorPosition () : byteEEPROMvalue (EEPROM_MOTOR_POSITION, 0, 250, 4, 3) {
 };
 
 String MotorPosition::display() {
@@ -186,20 +183,19 @@ String MotorPosition::display() {
 
 void MotorPosition::saveEditing() {
   currMode.editing = false;
-  stepMotor->set_positionMove(editValue - 125);
+  globStepMotor.set_positionMove(editValue - 125);
   EEPROM.update(adressEEPROM, editValue);
 };
 
 // выводит текущие минуты или секунды таймера, если он тикает,
 // иначе выводит и редактирует параметры по умолчанию таймера и сохраняет их в EEPROM
-TimerValue::TimerValue (const global::CurrSettings* _currSettings, const byte _valueIndex) {
-  currSettings = _currSettings;
+TimerValue::TimerValue (const byte _valueIndex) {
   valueIndex = _valueIndex;
 };
 
 String TimerValue::display() {
-  if (currSettings->timer != nullptr) {
-    return global::valToString(valueIndex ? currSettings->timer->getSecond() : currSettings->timer->getMinute(), 2);
+  if (globCurrSettings.timer != nullptr) {
+    return global::valToString(valueIndex ? globCurrSettings.timer->getSecond() : globCurrSettings.timer->getMinute(), 2);
   }
   else if (currMode.editing) {
     if (currMode.blinkOn) return global::valToString(editValue, 2);
@@ -211,7 +207,7 @@ String TimerValue::display() {
 };
 
 boolean TimerValue::editing() {
-  return currSettings->timer == nullptr;
+  return globCurrSettings.timer == nullptr;
 };
 
 void TimerValue::enterEditing() {
@@ -235,17 +231,13 @@ void TimerValue::saveEditing() {
 };
 
 // выводит и редактирует текущее состояние таймера - если меняем то перезапускаем или запускаем таймер
-TimerStart::TimerStart (const global::CurrSettings* _currSettings) {
-  currSettings = _currSettings;
-};
-
 String TimerStart::display() {
   if (currMode.editing) {
     if (currMode.blinkOn) return global::valToString(editValue, 2, 1);
     else return "  ";
   }
   else {
-    return currSettings->timer != nullptr ? " 1" : " 0";
+    return globCurrSettings.timer != nullptr ? " 1" : " 0";
   }
 };
 
@@ -255,7 +247,7 @@ boolean TimerStart::editing() {
 
 void TimerStart::enterEditing() {
   currMode.editing = currMode.blinkOn = true;
-  editValue = currSettings->timer != nullptr;
+  editValue = globCurrSettings.timer != nullptr;
 };
 
 void TimerStart::downValue() {
@@ -271,12 +263,12 @@ void TimerStart::upValue() {
 void TimerStart::saveEditing() {
   currMode.editing = false;
   if (editValue) {
-    if (currSettings->timer == nullptr) currSettings->timer = new Timer(EEPROM.read(EEPROM_TIMER_MINUTE), EEPROM.read(EEPROM_TIMER_SECOND));
-    else currSettings->timer->restart(EEPROM.read(EEPROM_TIMER_MINUTE), EEPROM.read(EEPROM_TIMER_SECOND));
+    if (globCurrSettings.timer == nullptr) globCurrSettings.timer = new Timer(EEPROM.read(EEPROM_TIMER_MINUTE), EEPROM.read(EEPROM_TIMER_SECOND));
+    else globCurrSettings.timer->restart(EEPROM.read(EEPROM_TIMER_MINUTE), EEPROM.read(EEPROM_TIMER_SECOND));
   }
-  else if (currSettings->timer != nullptr) {
-    delete currSettings->timer;
-    currSettings->timer = nullptr;
+  else if (globCurrSettings.timer != nullptr) {
+    delete globCurrSettings.timer;
+    globCurrSettings.timer = nullptr;
   }
 };
 
@@ -297,10 +289,6 @@ String AquaTemp::display() {
 
 // выводит логи температуру воды аквариума через объект ControlTemp
 // в режиме редактирования - просматриваем историю логов
-TempLog::TempLog (const global::CurrSettings* _currSettings) {
-  currSettings = _currSettings;
-};
-
 String TempLog::display() {
   if (currMode.editing) {
     if (currMode.blinkOn) return logToString(editValue);
@@ -331,7 +319,7 @@ void TempLog::upValue() {
 };
 
 String TempLog::logToString(byte _index) {
-  byte _indexOfNow = currSettings->nowHour;
+  byte _indexOfNow = globCurrSettings.nowHour;
   byte _indexOfLog;
   if ((23 - _index) > _indexOfNow) _indexOfLog = _indexOfNow + _index + 1;
   else _indexOfLog = _indexOfNow + _index - 23;
@@ -352,17 +340,16 @@ String TempLog::logToString(byte _index) {
 };
 
 // выводит заданный показатель счетчика CO2 через объект BubbleCounter
-bubbleCounterValue::bubbleCounterValue (const BubbleCounter* _bubbleCounter, const typeBubbleCounterValue _valueType) {
-  bubbleCounter = _bubbleCounter;
+bubbleCounterValue::bubbleCounterValue (const typeBubbleCounterValue _valueType) {
   valueType = _valueType;
 };
 
 String bubbleCounterValue::display() {
   int _intValue = 0;
   switch (valueType) {
-    case bubbleIn100Second: _intValue = bubbleCounter->getBubbleIn100Second(); break;
-    case minLevel: _intValue = bubbleCounter->getMinLevel(); break;
-    case maxLevel: _intValue = bubbleCounter->getMaxLevel(); break;
+    case bubbleIn100Second: _intValue = globBubbleCounter.getBubbleIn100Second(); break;
+    case minLevel: _intValue = globBubbleCounter.getMinLevel(); break;
+    case maxLevel: _intValue = globBubbleCounter.getMaxLevel(); break;
   }
   switch (_intValue) {
     case -1: return "Err1"; break;
@@ -378,31 +365,26 @@ String bubbleCounterValue::display() {
 };
 
 // выводит заданный показатель управления расходом CO2 через объект BubbleControl
-bubbleControlValue::bubbleControlValue (const BubbleControl* _bubbleControl, const typeBubbleControlValue _valueType) {
-  bubbleControl = _bubbleControl;
+bubbleControlValue::bubbleControlValue (const typeBubbleControlValue _valueType) {
   valueType = _valueType;
 };
 
 String bubbleControlValue::display() {
   switch (valueType) {
-    case controlCondition: return bubbleControl->get_condition(); break;
-    case minBubblesIn100Second: return global::valToString(bubbleControl->get_minBubblesIn100Second(), 4, 1); break;
-    case maxBubblesIn100Second: return global::valToString(bubbleControl->get_maxBubblesIn100Second(), 4, 1); break;
+    case controlCondition: return globBubbleControl.get_condition(); break;
+    case minBubblesIn100Second: return global::valToString(globBubbleControl.get_minBubblesIn100Second(), 4, 1); break;
+    case maxBubblesIn100Second: return global::valToString(globBubbleControl.get_maxBubblesIn100Second(), 4, 1); break;
   }
 };
 
 // выводит редактирует счетчик кормления через объект Feeding
-FeedingValue::FeedingValue (const Feeding* _feeding) {
-  feeding = _feeding;
-};
-
 String FeedingValue::display() {
   if (currMode.editing) {
     if (currMode.blinkOn) return global::valToString(editValue, 4, 3);
     else return "  ";
   }
   else {
-    return global::valToString(feeding->getFeedingLoop(), 4, 3);
+    return global::valToString(globFeeding.getFeedingLoop(), 4, 3);
   }
 };
 
@@ -412,7 +394,7 @@ boolean FeedingValue::editing() {
 
 void FeedingValue::enterEditing() {
   currMode.editing = currMode.blinkOn = true;
-  editValue = feeding->getFeedingLoop();
+  editValue = globFeeding.getFeedingLoop();
 };
 
 void FeedingValue::downValue() {
@@ -427,5 +409,5 @@ void FeedingValue::upValue() {
 
 void FeedingValue::saveEditing() {
   currMode.editing = false;
-  feeding->setFeedingLoop(editValue);
+  globFeeding.setFeedingLoop(editValue);
 };
