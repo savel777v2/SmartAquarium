@@ -28,6 +28,10 @@ class BubbleControl {
     word get_maxBubblesIn100Second();
     word get_minBubblesIn100Second();
     void clearError();
+    // функция управления скоростью подачи CO2, вызывать после прохождения каждого пузырька
+    // меняет положение игольчатого клапана через StepMotor в зависимости от показаний BubbleCounter
+    // после изменения положения игольчатого клапана модуль ожидает стабилизации сигнала
+    // тогда возвращает true, иначе false
     bool controlWaiting();
 
   private:

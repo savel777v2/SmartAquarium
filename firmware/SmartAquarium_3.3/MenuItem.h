@@ -43,7 +43,7 @@ enum typeBubbleControlValue
 
 enum typeSettingsValue
 {
-  dayNight, timerOn
+  dayNight, timerOn, dur
 };
 
 // реализация объекта родоначальника

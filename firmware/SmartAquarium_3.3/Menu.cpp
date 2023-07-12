@@ -10,19 +10,15 @@ Menu::Menu() {
   numEditItem = 0;
   initSubmenu(submenuName(gorInd, verInd));
   nextKeyboardTime = millis() + KEYBOARD_INTERVAL;
-  lastBlinkTime = 0;
 };
 
-bool Menu::loopNeedControl() {
-  blinkDisplay();
-  return readKeyboardNeedControl();
+bool Menu::editingMenu() {
+  return numEditItem;
 };
 
-void Menu::blinkDisplay() {
+void Menu::changeBlink() {
 
-  if (numEditItem == 0 || (millis() - lastBlinkTime) <= BLINK_INTERVAL) return;
-  lastBlinkTime = millis();
-
+  if (numEditItem == 0) return;
   subMenu[numEditItem - 1]->changeBlink();
   display();
 
@@ -35,7 +31,11 @@ bool Menu::readKeyboardNeedControl() {
   nextKeyboardTime = millis() + KEYBOARD_INTERVAL;
   bool ans = false;
 
-  byte keys = globModule1638.keysPressed(B00111111, B00111100);
+  byte keys = globModule1638.keysPressed(B10111111, B00111100);
+  if (globModule1638.keyPressed(7, keys)) {
+    // ручная регулировка света
+    globLamps.changeManualLamp();
+  }
   if (globModule1638.keyPressed(0, keys) && globCurrSettings.alarmMelody != nullptr) {
     // Esc - выход из мелодии
     delete globCurrSettings.alarmMelody;
@@ -69,12 +69,12 @@ bool Menu::readKeyboardNeedControl() {
     }
     if (globModule1638.keyPressed(2, keys)) {
       subMenu[numEditItem - 1]->downValue();
-      lastBlinkTime = millis();
+      globCurrSettings.lastBlinkTime = millis();
       display();
     }
     if (globModule1638.keyPressed(3, keys)) {
       subMenu[numEditItem - 1]->upValue();
-      lastBlinkTime = millis();
+      globCurrSettings.lastBlinkTime = millis();
       display();
     }
   }
@@ -127,6 +127,7 @@ submenu Menu::getSubmenu() {
 
 void Menu::display() {
   String sOut;
+  globCurrSettings.startEndDurations(0);
   for (auto& menuItem : subMenu) {
     if (menuItem == nullptr) break;
     sOut += menuItem->display();
@@ -137,6 +138,7 @@ void Menu::display() {
     sOut += ' ';
   }
   globModule1638.setDisplayToString(sOut, getDots(submenuName(gorInd, verInd)));
+  globCurrSettings.startEndDurations(1);
 };
 
 submenu Menu::submenuName(byte _gorInd, byte _verInd) {
@@ -175,18 +177,12 @@ submenu Menu::submenuName(byte _gorInd, byte _verInd) {
         case 1: return morningFeeding; break;
         case 2: return eveningFeeding; break;
         case 3: return dayFeedingSettings; break;
-        case 4: return nightFeeding; break;
-        case 5: return durations; break;
+        case 4: return nightFeeding; break;        
         default: return anon; break;
       }
     case 4: switch (_verInd) {
         case 0: return motorPosition; break;
-        case 1: return motorSpeed; break;
-        case 2: return bubbleDurations; break;
-        case 3: return bubbleCount; break;
-        case 4: return bubblesInMinute; break;
-        case 5: return sensorInSecond; break;
-        case 6: return errorsInSecond; break;
+        case 1: return durations; break;
         default: return anon; break;
       }
   }
@@ -347,30 +343,12 @@ void Menu::initSubmenu(submenu _submenu) {
       subMenu[2] = new TextItem("d");
       subMenu[3] = new byteEEPROMvalue(EEPROM_NIGHT_FEEDING_DURATION, 0, 250, 3, 0);
       break;
-    case durations:
-      subMenu[0] = new TextItem("45");
-      break;
     case motorPosition:
       subMenu[0] = new TextItem("POS ");
       subMenu[1] = new MotorPosition();
       break;
-    case motorSpeed:
-      subMenu[0] = new TextItem("51");
-      break;
-    case bubbleDurations:
-      subMenu[0] = new TextItem("52");
-      break;
-    case bubbleCount:
-      subMenu[0] = new TextItem("53");
-      break;
-    case bubblesInMinute:
-      subMenu[0] = new TextItem("54");
-      break;
-    case sensorInSecond:
-      subMenu[0] = new TextItem("55");
-      break;
-    case errorsInSecond:
-      subMenu[0] = new TextItem("56");
-      break;
+    case durations:
+      subMenu[0] = new SettingsValue(dur);
+      break;    
   }
 };

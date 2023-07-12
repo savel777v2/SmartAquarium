@@ -1,5 +1,6 @@
 /*
   Menu.h - Объект реализации меню в модуле дисплея TM1638My.h
+  Также этот объект выполняет любые дейсвтия по нажатию клавиатуры модуля
 */
 
 #ifndef Menu_h
@@ -20,16 +21,16 @@ extern TM1638My globModule1638;
 extern ControlTemp globControlTemp;
 #include "MenuItem.h"
 
-// интервал мигаия при редатировании детали меню
-#define BLINK_INTERVAL 500
+#include "Lamps.h"
+extern Lamps globLamps;
 
 enum submenu
 {
   timeMenu, timer, morning, evening, alarm, lampInterval,
   curTemp, logTemp, dayTemp, nightTemp, deltaTemp,
   bubblesInSecond, bubbleControlSettings, sensorValue, bubbleSettings, bubbleDaySpeed, bubbleNightSpeed, beforeMorningStart, bubbleControlSound,
-  feedingLoop, morningFeeding, eveningFeeding, dayFeedingSettings, nightFeeding, durations,
-  motorPosition, motorSpeed, bubbleDurations, bubbleCount, bubblesInMinute, sensorInSecond, errorsInSecond,
+  feedingLoop, morningFeeding, eveningFeeding, dayFeedingSettings, nightFeeding,
+  motorPosition, durations,
   anon
 };
 
@@ -37,21 +38,26 @@ class Menu {
 
   public:
     Menu();
+    // отображает содержимое меню в модуле дисплея
     void display();
-    bool loopNeedControl();
+    // читает клавиатуру и выполняет движение по меню, или другие вспомогательные дейсвтия,
+    // например управление светом. вызвать как можно чаще
+    bool readKeyboardNeedControl();
+    // возвращает true, если какое либо меню сейчас редактирууется
+    bool editingMenu();
+    // меняет флаг мигания текущего редактируемого меню, вызывать с интервалом времени мигания
+    void changeBlink();
     submenu getSubmenu();
 
   private:
     MenuItem* subMenu[6];
     byte gorInd, verInd;
-    unsigned long nextKeyboardTime, lastBlinkTime;
+    unsigned long nextKeyboardTime;
     byte numEditItem;
 
     void initSubmenu(submenu _submenu);
     submenu submenuName(byte _gorInd, byte _verInd);
-    byte getDots(submenu _submenu);
-    bool readKeyboardNeedControl();
-    void blinkDisplay();
+    byte getDots(submenu _submenu);    
 };
 
 #endif

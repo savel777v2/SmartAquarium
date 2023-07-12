@@ -6,21 +6,8 @@
 #include "LoopTime.h"
 
 LoopTime::LoopTime () {  
-  nextKeyboardTime = millis() + KEYBOARD_INTERVAL;
   nextSecondTime = 0;
   activeLedMotor = 0;
-};
-
-void LoopTime::readKeyboard() {
-
-  if (millis() <= nextKeyboardTime) return false;
-
-  nextKeyboardTime = millis() + KEYBOARD_INTERVAL;
-  byte keys = globModule1638.keysPressed(B10000000, B00000000);
-  if (globModule1638.keyPressed(7, keys)) {
-    // manualLamp
-    globLamps.changeManualLamp();
-  }
 };
 
 void LoopTime::loop() {
@@ -33,7 +20,13 @@ void LoopTime::loop() {
     globCurrSettings.nowHour = globDS3231.getHours();
     minuteControl();
     globMenu.display();
-  }
+  };
+
+  // blink isplay if editing
+  if (globMenu.editingMenu() && millis() > (globCurrSettings.lastBlinkTime + BLINK_INTERVAL)) {
+    globCurrSettings.lastBlinkTime = millis();
+    globMenu.changeBlink();
+  };
 
   // temp reader and display
   if (globControlTemp.loopNeedDisplay() && globMenu.getSubmenu() == curTemp) globMenu.display();
@@ -104,15 +97,11 @@ void LoopTime::loop() {
 
     if (globMenu.getSubmenu() == durations) {
       // print durations
-      globCurrSettings.printMax1 = globCurrSettings.max1;
-      globCurrSettings.printMax2 = globCurrSettings.max2;
-      globCurrSettings.printMax3 = globCurrSettings.max3;
-      globCurrSettings.printMax4 = globCurrSettings.max4;
+      for (int i = 0; i < DURATIONS_SIZE; i++) {
+        globCurrSettings.printDurations[i] = globCurrSettings.curDurations[i];
+        globCurrSettings.curDurations[i] = 0;
+      }
       globMenu.display();
-      globCurrSettings.max1 = 0;
-      globCurrSettings.max2 = 0;
-      globCurrSettings.max3 = 0;
-      globCurrSettings.max4 = 0;
     }
 
     globCurrSettings.nowSecond++;

@@ -91,17 +91,17 @@ bool BubbleControl::controlWaiting() {
   // пока не нужно контролировать
   if (globStepMotor.get_isActive()) {
     _bubblesAfterMotor = 0;
-    return false;
+    return true;
   }
 
   // после последнего движения ждем 5 пузырей на обратную связь по скорости пузырька
   if (_bubblesAfterMotor < 5) {
     _bubblesAfterMotor++;
-    return false;
+    return true;
   }
 
   // теперь проверяем дабы пузырьки стабилизировались
-  if (!globBubbleCounter.itsRegularBubbles()) return false;
+  if (!globBubbleCounter.itsRegularBubbles()) return true;
 
   // если не работаем - ничего не нужно
   if (_currStatus == 0) return false;
@@ -115,14 +115,14 @@ bool BubbleControl::controlWaiting() {
   if (bubbleDuration <= _maxBubbleDuration && bubbleDuration >= _minBubbleDuration) {
     // ура все срослось
     _currStatus = 3;
-    return true;
+    return false;
   }
 
   // критерий продолжения ошибок
   if (_currStatus == 4 || _currStatus == 5) {
-    if ((bubbleDuration > _maxBubbleDuration && _lastPositionMove > 0) || (bubbleDuration < _minBubbleDuration && _lastPositionMove < 0)) return true;
+    if ((bubbleDuration > _maxBubbleDuration && _lastPositionMove > 0) || (bubbleDuration < _minBubbleDuration && _lastPositionMove < 0)) return false;
   }
-  else if (_currStatus == 6) return true;
+  else if (_currStatus == 6) return false;
 
   if (_currStatus == 2) {
     // если ранее двигались
@@ -132,7 +132,7 @@ bool BubbleControl::controlWaiting() {
       if (_moveNoResult >= 300 || _moveNoResult <= -300) {
         tone(PIEZO_PIN, 2500, 3000);
         _currStatus = 4;
-        return true;
+        return false;
       }
     }
     else {
@@ -151,7 +151,7 @@ bool BubbleControl::controlWaiting() {
             tone(PIEZO_PIN, 2500, 3000);
             _currStatus = 6;
             _countError3 = 0;
-            return true;
+            return false;
           }
           else {
             _lastPositionMove = -_lastPositionMove;
@@ -165,7 +165,7 @@ bool BubbleControl::controlWaiting() {
       if (_moveOneWay >= 2000 || _moveNoResult <= -2000) {
         tone(PIEZO_PIN, 2500, 3000);
         _currStatus = 5;
-        return true;
+        return false;
       }
     }
   }
@@ -191,6 +191,6 @@ bool BubbleControl::controlWaiting() {
   _bubblesAfterMotor = 0;
   globStepMotor.set_positionMove(_lastPositionMove);
 
-  return true;
+  return false;
 
 };

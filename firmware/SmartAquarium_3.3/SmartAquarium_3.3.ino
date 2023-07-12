@@ -41,10 +41,13 @@ void setup() {
   Serial.begin(9600);
   Serial.println("debugging");
 #endif
+  globModule1638.setDisplayToString("AQUA  33", B00000010, false);
+  delay(2000);
+  pinMode(PIEZO_PIN, OUTPUT); // настраиваем вывод 2 на выход
+  tone(PIEZO_PIN, 2500, 100);
 }
 
 void loop() {
-  if (globMenu.loopNeedControl()) globLoopTime.minuteControl();
-  globLoopTime.readKeyboard();
+  if (globMenu.readKeyboardNeedControl()) globLoopTime.minuteControl();
   globLoopTime.loop();
 }

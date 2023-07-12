@@ -10,7 +10,12 @@
 #include "Timer.h"
 
 #define DEBUG_MODE 0 // Отладка по COM порту
+// интервал мигания при редатировании детали меню
+#define BLINK_INTERVAL 500
+// интервал опроса клавиатуры модуля или отдельных клавиш
 #define KEYBOARD_INTERVAL 100
+// буфер обсчета продолжительности блоков программы (выводит в реальном устройсве)
+#define DURATIONS_SIZE 4
 
 #define EEPROM_TIMER_MINUTE 7
 #define EEPROM_TIMER_SECOND 8
@@ -63,17 +68,25 @@ struct CurrSettings {
   bool heaterOn: 1;
   bool secondLed: 1;
 
+  unsigned long lastBlinkTime;
+
   Melody* alarmMelody; // проигрыш мелодии
   Timer* timer; // timer
 
-  byte max1 = 0;
-  byte max2 = 0;
-  byte max3 = 0;
-  byte max4 = 0;
-  byte printMax1 = 0;
-  byte printMax2 = 0;
-  byte printMax3 = 0;
-  byte printMax4 = 0;
+  byte curDurations[DURATIONS_SIZE];
+  byte printDurations[DURATIONS_SIZE];
+
+  // if you want to get statistic of duration executing of the code
+  //  add this in the begin of the code: startEndDurations(0)
+  //  and this in the end of the code: startEndDurations(numberOfIndex)
+  // there are four index off the durations (get max duration in second)
+  //  which is display on the menu 'Y'
+  void startEndDurations(byte toDo) {
+    static unsigned long _beginTime;
+    if (toDo) curDurations[toDo - 1] = max(curDurations[toDo - 1], millis() - _beginTime);
+    _beginTime = millis();
+  };
+  
 };
 
 };

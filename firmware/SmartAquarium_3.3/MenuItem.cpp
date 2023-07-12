@@ -66,7 +66,16 @@ SettingsValue::SettingsValue (const typeSettingsValue _valueType) {
 };
 
 String SettingsValue::display() {
-  return valueType == timerOn ? (globCurrSettings.timer == nullptr ? " " : "t") : (globCurrSettings.nowDay ? "d" : "n");
+  switch (valueType) {
+    case dayNight: return globCurrSettings.nowDay ? "d" : "n"; break;
+    case timerOn: return globCurrSettings.timer == nullptr ? " " : "t"; break;
+    case dur:
+      String ans;
+      for (byte value : globCurrSettings.printDurations) {
+        ans += global::valToString(value, 2, 1);
+      }
+      return ans;
+  }
 };
 
 // выводит флаг будильника из EEPROM
