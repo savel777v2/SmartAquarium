@@ -127,7 +127,7 @@ submenu Menu::getSubmenu() {
 
 void Menu::display() {
   String sOut;
-  globCurrSettings.startEndDurations(0);
+  //globCurrSettings.startEndDurations(0);
   for (auto& menuItem : subMenu) {
     if (menuItem == nullptr) break;
     sOut += menuItem->display();
@@ -138,7 +138,7 @@ void Menu::display() {
     sOut += ' ';
   }
   globModule1638.setDisplayToString(sOut, getDots(submenuName(gorInd, verInd)));
-  globCurrSettings.startEndDurations(1);
+  //globCurrSettings.startEndDurations(1);
 };
 
 submenu Menu::submenuName(byte _gorInd, byte _verInd) {

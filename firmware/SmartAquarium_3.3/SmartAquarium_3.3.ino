@@ -48,6 +48,16 @@ void setup() {
 }
 
 void loop() {
-  if (globMenu.readKeyboardNeedControl()) globLoopTime.minuteControl();
+  
+  bool res = globMenu.readKeyboardNeedControl();
+  globCurrSettings.startEndDurations(1);
+  
+  if (res) {
+    globLoopTime.minuteControl();
+  }
+  globCurrSettings.startEndDurations(2);
+  
   globLoopTime.loop();
+  globCurrSettings.startEndDurations(3);
+  
 }
